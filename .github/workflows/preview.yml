@@ -1,0 +1,103 @@
+name: Preview build
+
+# Release binaries for trying a change before tagging it: run it from the
+# Actions tab ("Run workflow", on any branch). Nothing is published; the
+# Linux and Windows builds are attached to the run as artifacts, kept for
+# 14 days. Built exactly like release-app.yml builds them.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Toolchain
+        run: |
+          rustup update stable
+          rustup default stable
+          rustc --version
+
+      - name: Cache
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+
+      - name: Build
+        run: cargo build --release --locked
+
+      # An artifact is downloaded as a zip, which drops the executable bit;
+      # a tarball inside it keeps the binary runnable once extracted.
+      - name: Package
+        id: package
+        run: |
+          VERSION=$(grep -m1 '^version = "' Cargo.toml | cut -d'"' -f2)
+          NAME="mimirdlp-$VERSION-${GITHUB_SHA::7}-linux-x86_64"
+          mkdir -p "dist/$NAME"
+          cp target/release/mimirdlp "dist/$NAME/"
+          tar -czf "dist/$NAME.tar.gz" -C dist "$NAME"
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
+          ls -lh dist
+
+      - name: Upload
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ${{ steps.package.outputs.name }}
+          path: dist/${{ steps.package.outputs.name }}.tar.gz
+          retention-days: 14
+          if-no-files-found: error
+
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 40
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Toolchain
+        run: |
+          rustup update stable
+          rustup default stable
+          rustc --version
+
+      - name: Cache
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+
+      - name: Build
+        run: cargo build --release --locked
+
+      # Same check as the release: the icon and the version information
+      # come from build.rs in one resource.
+      - name: Check the embedded icon and version
+        shell: pwsh
+        run: |
+          $info = (Get-Item target/release/mimirdlp.exe).VersionInfo
+          if ($info.ProductName -ne 'MimirDLP') {
+            Write-Error "The .exe has no version resource (ProductName: '$($info.ProductName)')"
+            exit 1
+          }
+          "ProductName: $($info.ProductName), FileVersion: $($info.FileVersion)"
+
+      - name: Package
+        id: package
+        shell: pwsh
+        run: |
+          $version = (Select-String -Path Cargo.toml -Pattern '^version = "(.+)"' | Select-Object -First 1).Matches[0].Groups[1].Value
+          $name = "mimirdlp-$version-$($env:GITHUB_SHA.Substring(0, 7))-windows-x86_64"
+          New-Item -ItemType Directory -Path "dist/$name" | Out-Null
+          Copy-Item target/release/mimirdlp.exe "dist/$name/"
+          "name=$name" >> $env:GITHUB_OUTPUT
+          Get-ChildItem "dist/$name"
+
+      # The artifact is a zip already, so the folder goes in as it is.
+      - name: Upload
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ${{ steps.package.outputs.name }}
+          path: dist/${{ steps.package.outputs.name }}
+          retention-days: 14
+          if-no-files-found: error
