@@ -1,0 +1,6 @@
+# Signed fixtures and keys: the signatures cover these exact bytes, so git
+# must never rewrite their line endings (Windows checkouts default to
+# core.autocrlf=true, which turned LF into CRLF and broke the signature
+# tests on the Windows runner).
+src/provision/testdata/* -text
+src/provision/ytdlp-signing-key.asc -text
