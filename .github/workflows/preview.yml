@@ -3,7 +3,10 @@ name: Preview build
 # Release binaries for trying a change before tagging it: run it from the
 # Actions tab ("Run workflow", on any branch). Nothing is published; the
 # Linux and Windows builds are attached to the run as artifacts, kept for
-# 14 days. Built exactly like release-app.yml builds them.
+# 14 days. Built and packaged exactly like release-app.yml does, and
+# uploaded as-is (`archive: false`), so each one is the same single
+# .tar.gz or .zip a release would have: extracted once, not a zip inside
+# a zip.
 on:
   workflow_dispatch:
 
@@ -30,8 +33,7 @@ jobs:
       - name: Build
         run: cargo build --release --locked
 
-      # An artifact is downloaded as a zip, which drops the executable bit;
-      # a tarball inside it keeps the binary runnable once extracted.
+      # A tarball keeps the executable bit, which a zip would drop.
       - name: Package
         id: package
         run: |
@@ -46,8 +48,9 @@ jobs:
       - name: Upload
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: ${{ steps.package.outputs.name }}
+          # With archive: false the file's own name is the artifact's name.
           path: dist/${{ steps.package.outputs.name }}.tar.gz
+          archive: false
           retention-days: 14
           if-no-files-found: error
 
@@ -90,14 +93,15 @@ jobs:
           $name = "mimirdlp-$version-$($env:GITHUB_SHA.Substring(0, 7))-windows-x86_64"
           New-Item -ItemType Directory -Path "dist/$name" | Out-Null
           Copy-Item target/release/mimirdlp.exe "dist/$name/"
+          Compress-Archive -Path "dist/$name" -DestinationPath "dist/$name.zip"
           "name=$name" >> $env:GITHUB_OUTPUT
-          Get-ChildItem "dist/$name"
+          Get-ChildItem dist
 
-      # The artifact is a zip already, so the folder goes in as it is.
       - name: Upload
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: ${{ steps.package.outputs.name }}
-          path: dist/${{ steps.package.outputs.name }}
+          # With archive: false the file's own name is the artifact's name.
+          path: dist/${{ steps.package.outputs.name }}.zip
+          archive: false
           retention-days: 14
           if-no-files-found: error
