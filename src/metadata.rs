@@ -142,6 +142,9 @@ pub fn fetch(paths: &Paths, url: &str, lookup: &Lookup) -> Result<Metadata, Stri
     let mut command = process::command(&tool);
     command
         .args([
+            // No -P here, so yt-dlp would otherwise read a yt-dlp.conf from
+            // whatever directory the app was started in.
+            crate::engine::IGNORE_CONFIG,
             "-J",
             "--flat-playlist",
             "--no-warnings",
@@ -343,6 +346,8 @@ mod tests {
             .windows(2)
             .any(|w| w == ["--cookies-from-browser", "firefox:work"]);
         assert!(pair && args.contains(&"--no-playlist"), "{args:?}");
+        // A yt-dlp.conf in the starting directory could hold --exec.
+        assert!(args.contains(&"--ignore-config"), "{args:?}");
         assert_eq!(
             args[args.len() - 2..],
             ["--", "https://example.com/watch?v=a&list=b"]

@@ -253,6 +253,15 @@ pub fn chapters_wanted(o: &Options) -> bool {
     o.embed_chapters || matches!(o.sponsorblock, SponsorBlock::Mark { .. })
 }
 
+/// On every yt-dlp command line. Without it yt-dlp also reads a
+/// `yt-dlp.conf` from the folder given to `-P` (the download folder) or,
+/// with no `-P`, from the current directory, and from the user's and the
+/// system's config folders. Any of those can hold `--exec`, so a file
+/// named `yt-dlp.conf` that lands in the Downloads folder would run a
+/// command on the next download. Checked against yt-dlp's `load_configs`:
+/// only this flag on the command line stops every one of them.
+pub const IGNORE_CONFIG: &str = "--ignore-config";
+
 fn tool_path(bin_dir: &Path, name: &str) -> OsString {
     bin_dir.join(format!("{name}{EXE_SUFFIX}")).into_os_string()
 }
@@ -267,6 +276,7 @@ pub fn build_args(
     let mut a: Vec<OsString> = Vec::new();
     let mut push = |s: &str| a.push(s.into());
 
+    push(IGNORE_CONFIG);
     if o.verbose {
         push("--verbose");
     }
