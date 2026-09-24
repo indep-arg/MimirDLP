@@ -32,13 +32,24 @@ In Norse mythology, Mimir guards a well of wisdom so deep that Odin gave up an e
 
 ## Screenshots
 
-| Setup | Download |
-|---|---|
-| ![Setup screen](screenshots/setup.png) | ![Download screen with a queued link](screenshots/download.png) |
-
-| Settings | Light theme |
-|---|---|
-| ![Settings screen](screenshots/settings.png) | ![Download screen in light mode](screenshots/light-theme.png) |
+<table>
+  <tr>
+    <th width="50%">Setup</th>
+    <th width="50%">Download</th>
+  </tr>
+  <tr>
+    <td><img src="screenshots/setup.png" alt="Setup screen" width="100%"></td>
+    <td><img src="screenshots/download.png" alt="Download screen with a queued link" width="100%"></td>
+  </tr>
+  <tr>
+    <th width="50%">Settings</th>
+    <th width="50%">Light theme</th>
+  </tr>
+  <tr>
+    <td><img src="screenshots/settings.png" alt="Settings screen" width="100%"></td>
+    <td><img src="screenshots/light-theme.png" alt="Download screen in light mode" width="100%"></td>
+  </tr>
+</table>
 
 ## Download
 
