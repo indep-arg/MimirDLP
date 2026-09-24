@@ -44,6 +44,7 @@ fn scenarios() -> Vec<Scenario> {
             output_dir: None,
             urls: &["https://example.com/video"],
             argv: &[
+                "--ignore-config",
                 "--socket-timeout",
                 "30",
                 "--sleep-requests",
@@ -88,6 +89,7 @@ fn scenarios() -> Vec<Scenario> {
             output_dir: None,
             urls: &["https://example.com/video"],
             argv: &[
+                "--ignore-config",
                 "--verbose",
                 "--socket-timeout",
                 "30",
@@ -133,6 +135,7 @@ fn scenarios() -> Vec<Scenario> {
             output_dir: None,
             urls: &["https://example.com/video"],
             argv: &[
+                "--ignore-config",
                 "--verbose",
                 "--socket-timeout",
                 "30",
@@ -178,6 +181,7 @@ fn scenarios() -> Vec<Scenario> {
             output_dir: None,
             urls: &["https://example.com/video"],
             argv: &[
+                "--ignore-config",
                 "--verbose",
                 "--socket-timeout",
                 "30",
@@ -223,6 +227,7 @@ fn scenarios() -> Vec<Scenario> {
             output_dir: None,
             urls: &["https://example.com/video"],
             argv: &[
+                "--ignore-config",
                 "--verbose",
                 "--socket-timeout",
                 "30",
@@ -264,6 +269,7 @@ fn scenarios() -> Vec<Scenario> {
             output_dir: None,
             urls: &["https://example.com/video"],
             argv: &[
+                "--ignore-config",
                 "--verbose",
                 "--socket-timeout",
                 "30",
@@ -306,6 +312,7 @@ fn scenarios() -> Vec<Scenario> {
             output_dir: None,
             urls: &["https://example.com/video"],
             argv: &[
+                "--ignore-config",
                 "--verbose",
                 "--socket-timeout",
                 "30",
@@ -343,6 +350,7 @@ fn scenarios() -> Vec<Scenario> {
             output_dir: None,
             urls: &["https://example.com/video"],
             argv: &[
+                "--ignore-config",
                 "--verbose",
                 "--socket-timeout",
                 "30",
@@ -380,6 +388,7 @@ fn scenarios() -> Vec<Scenario> {
             output_dir: None,
             urls: &["https://example.com/video"],
             argv: &[
+                "--ignore-config",
                 "--verbose",
                 "--socket-timeout",
                 "30",
@@ -420,6 +429,7 @@ fn scenarios() -> Vec<Scenario> {
             output_dir: None,
             urls: &["https://example.com/video"],
             argv: &[
+                "--ignore-config",
                 "--verbose",
                 "--socket-timeout",
                 "30",
@@ -460,6 +470,7 @@ fn scenarios() -> Vec<Scenario> {
             output_dir: None,
             urls: &["https://example.com/video"],
             argv: &[
+                "--ignore-config",
                 "--verbose",
                 "--socket-timeout",
                 "30",
@@ -498,6 +509,7 @@ fn scenarios() -> Vec<Scenario> {
             output_dir: None,
             urls: &["https://example.com/video"],
             argv: &[
+                "--ignore-config",
                 "--verbose",
                 "--socket-timeout",
                 "30",
@@ -536,6 +548,7 @@ fn scenarios() -> Vec<Scenario> {
             output_dir: None,
             urls: &["https://example.com/video"],
             argv: &[
+                "--ignore-config",
                 "--verbose",
                 "--socket-timeout",
                 "30",
@@ -574,6 +587,7 @@ fn scenarios() -> Vec<Scenario> {
             output_dir: None,
             urls: &["https://example.com/video"],
             argv: &[
+                "--ignore-config",
                 "--verbose",
                 "--socket-timeout",
                 "30",
@@ -614,6 +628,7 @@ fn scenarios() -> Vec<Scenario> {
             output_dir: None,
             urls: &["https://example.com/video"],
             argv: &[
+                "--ignore-config",
                 "--verbose",
                 "--socket-timeout",
                 "30",
@@ -652,6 +667,7 @@ fn scenarios() -> Vec<Scenario> {
             output_dir: None,
             urls: &["https://example.com/video"],
             argv: &[
+                "--ignore-config",
                 "--verbose",
                 "--socket-timeout",
                 "30",
@@ -690,6 +706,7 @@ fn scenarios() -> Vec<Scenario> {
             output_dir: None,
             urls: &["https://example.com/video"],
             argv: &[
+                "--ignore-config",
                 "--verbose",
                 "--socket-timeout",
                 "30",
@@ -731,6 +748,7 @@ fn scenarios() -> Vec<Scenario> {
             output_dir: None,
             urls: &["https://example.com/video"],
             argv: &[
+                "--ignore-config",
                 "--verbose",
                 "--socket-timeout",
                 "30",
@@ -771,6 +789,7 @@ fn scenarios() -> Vec<Scenario> {
             output_dir: None,
             urls: &["https://example.com/video"],
             argv: &[
+                "--ignore-config",
                 "--verbose",
                 "--socket-timeout",
                 "30",
@@ -811,6 +830,7 @@ fn scenarios() -> Vec<Scenario> {
             output_dir: None,
             urls: &["https://example.com/video"],
             argv: &[
+                "--ignore-config",
                 "--verbose",
                 "--socket-timeout",
                 "30",
@@ -852,6 +872,7 @@ fn scenarios() -> Vec<Scenario> {
             output_dir: None,
             urls: &["https://example.com/video"],
             argv: &[
+                "--ignore-config",
                 "--verbose",
                 "--socket-timeout",
                 "30",
@@ -893,6 +914,7 @@ fn scenarios() -> Vec<Scenario> {
             output_dir: None,
             urls: &["https://example.com/video"],
             argv: &[
+                "--ignore-config",
                 "--verbose",
                 "--socket-timeout",
                 "30",
@@ -933,6 +955,7 @@ fn scenarios() -> Vec<Scenario> {
             output_dir: None,
             urls: &["https://example.com/video"],
             argv: &[
+                "--ignore-config",
                 "--verbose",
                 "--socket-timeout",
                 "30",
@@ -971,6 +994,7 @@ fn scenarios() -> Vec<Scenario> {
             output_dir: Some("<HOME>/Videos/yt"),
             urls: &["https://example.com/video"],
             argv: &[
+                "--ignore-config",
                 "--verbose",
                 "--socket-timeout",
                 "30",
@@ -1015,6 +1039,7 @@ fn scenarios() -> Vec<Scenario> {
             output_dir: None,
             urls: &["https://example.com/video"],
             argv: &[
+                "--ignore-config",
                 "--verbose",
                 "--socket-timeout",
                 "30",
@@ -1057,6 +1082,7 @@ fn scenarios() -> Vec<Scenario> {
             output_dir: None,
             urls: &["https://example.com/video"],
             argv: &[
+                "--ignore-config",
                 "--verbose",
                 "--socket-timeout",
                 "30",
@@ -1101,6 +1127,7 @@ fn scenarios() -> Vec<Scenario> {
             output_dir: None,
             urls: &["https://example.com/video"],
             argv: &[
+                "--ignore-config",
                 "--verbose",
                 "--socket-timeout",
                 "30",
@@ -1140,6 +1167,7 @@ fn scenarios() -> Vec<Scenario> {
             output_dir: None,
             urls: &["-xxxxxxxxxx"],
             argv: &[
+                "--ignore-config",
                 "--verbose",
                 "--socket-timeout",
                 "30",
@@ -1177,6 +1205,7 @@ fn scenarios() -> Vec<Scenario> {
             output_dir: None,
             urls: &["https://example.com/video"],
             argv: &[
+                "--ignore-config",
                 "--verbose",
                 "--socket-timeout",
                 "30",
@@ -1215,6 +1244,7 @@ fn scenarios() -> Vec<Scenario> {
             output_dir: None,
             urls: &["https://example.com/video"],
             argv: &[
+                "--ignore-config",
                 "--verbose",
                 "--socket-timeout",
                 "30",
@@ -1253,6 +1283,7 @@ fn scenarios() -> Vec<Scenario> {
             output_dir: None,
             urls: &["https://example.com/a", "https://example.com/b"],
             argv: &[
+                "--ignore-config",
                 "--verbose",
                 "--socket-timeout",
                 "30",
@@ -1292,6 +1323,7 @@ fn scenarios() -> Vec<Scenario> {
             output_dir: None,
             urls: &["https://example.com/video"],
             argv: &[
+                "--ignore-config",
                 "--verbose",
                 "--socket-timeout",
                 "30",
@@ -1328,6 +1360,7 @@ fn scenarios() -> Vec<Scenario> {
             output_dir: None,
             urls: &["https://example.com/video"],
             argv: &[
+                "--ignore-config",
                 "--verbose",
                 "--socket-timeout",
                 "30",
@@ -1368,6 +1401,7 @@ fn scenarios() -> Vec<Scenario> {
             output_dir: None,
             urls: &["https://example.com/video"],
             argv: &[
+                "--ignore-config",
                 "--verbose",
                 "--socket-timeout",
                 "30",
@@ -1409,6 +1443,7 @@ fn scenarios() -> Vec<Scenario> {
             output_dir: None,
             urls: &["https://example.com/video"],
             argv: &[
+                "--ignore-config",
                 "--verbose",
                 "--socket-timeout",
                 "30",
@@ -1444,6 +1479,7 @@ fn scenarios() -> Vec<Scenario> {
             output_dir: None,
             urls: &["https://example.com/video"],
             argv: &[
+                "--ignore-config",
                 "--verbose",
                 "--socket-timeout",
                 "30",
@@ -1488,6 +1524,7 @@ fn scenarios() -> Vec<Scenario> {
             output_dir: None,
             urls: &["https://example.com/video"],
             argv: &[
+                "--ignore-config",
                 "--verbose",
                 "--socket-timeout",
                 "30",
@@ -1532,6 +1569,7 @@ fn scenarios() -> Vec<Scenario> {
             output_dir: None,
             urls: &["https://example.com/video"],
             argv: &[
+                "--ignore-config",
                 "--verbose",
                 "--socket-timeout",
                 "30",
@@ -1576,6 +1614,7 @@ fn scenarios() -> Vec<Scenario> {
             output_dir: None,
             urls: &["https://example.com/video"],
             argv: &[
+                "--ignore-config",
                 "--verbose",
                 "--socket-timeout",
                 "30",
@@ -1622,6 +1661,7 @@ fn scenarios() -> Vec<Scenario> {
             output_dir: None,
             urls: &["https://example.com/video"],
             argv: &[
+                "--ignore-config",
                 "--verbose",
                 "--socket-timeout",
                 "30",
@@ -1669,6 +1709,7 @@ fn scenarios() -> Vec<Scenario> {
             output_dir: None,
             urls: &["https://example.com/video"],
             argv: &[
+                "--ignore-config",
                 "--verbose",
                 "--socket-timeout",
                 "30",
@@ -1718,6 +1759,7 @@ fn scenarios() -> Vec<Scenario> {
             output_dir: None,
             urls: &["https://example.com/video"],
             argv: &[
+                "--ignore-config",
                 "--socket-timeout",
                 "30",
                 "--sleep-requests",
@@ -1763,6 +1805,7 @@ fn scenarios() -> Vec<Scenario> {
             output_dir: None,
             urls: &["https://example.com/video"],
             argv: &[
+                "--ignore-config",
                 "--socket-timeout",
                 "30",
                 "--sleep-requests",
@@ -1802,6 +1845,7 @@ fn scenarios() -> Vec<Scenario> {
             output_dir: None,
             urls: &["https://example.com/video"],
             argv: &[
+                "--ignore-config",
                 "--socket-timeout",
                 "30",
                 "--sleep-requests",
@@ -1841,6 +1885,7 @@ fn scenarios() -> Vec<Scenario> {
             output_dir: None,
             urls: &["https://example.com/video"],
             argv: &[
+                "--ignore-config",
                 "--verbose",
                 "--socket-timeout",
                 "30",
@@ -1879,6 +1924,7 @@ fn scenarios() -> Vec<Scenario> {
             output_dir: None,
             urls: &["https://example.com/video"],
             argv: &[
+                "--ignore-config",
                 "--verbose",
                 "--socket-timeout",
                 "30",
@@ -1918,6 +1964,7 @@ fn scenarios() -> Vec<Scenario> {
             output_dir: None,
             urls: &["https://example.com/video"],
             argv: &[
+                "--ignore-config",
                 "--verbose",
                 "--socket-timeout",
                 "30",
@@ -1951,6 +1998,7 @@ fn scenarios() -> Vec<Scenario> {
             output_dir: None,
             urls: &["https://example.com/video"],
             argv: &[
+                "--ignore-config",
                 "--verbose",
                 "--socket-timeout",
                 "30",
@@ -1987,6 +2035,7 @@ fn scenarios() -> Vec<Scenario> {
             output_dir: None,
             urls: &["https://example.com/video"],
             argv: &[
+                "--ignore-config",
                 "--verbose",
                 "--socket-timeout",
                 "30",
