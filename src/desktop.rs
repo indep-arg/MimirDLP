@@ -65,16 +65,42 @@ pub fn remove(data: &Path) -> io::Result<()> {
 
 /// The application folder was moved since the entry was added: point the
 /// entry at where the executable is now. Only ever touches an entry the
-/// user asked for.
+/// user asked for, and only when the program it starts is gone: a second
+/// copy (an older one, or a new one being tried out) must not take over
+/// the entry just by being opened.
 pub fn refresh(data: &Path, exe: &Path) -> io::Result<()> {
     if !installed(data) {
         return Ok(());
     }
     let current = fs::read_to_string(entry_file(data)).unwrap_or_default();
-    if current != entry(exe, &icon_file(data)) {
-        install(data, exe)?;
+    if current == entry(exe, &icon_file(data)) {
+        return Ok(());
     }
-    Ok(())
+    match exec_target(&current) {
+        Some(target) if target != exe && target.is_file() => Ok(()),
+        _ => install(data, exe),
+    }
+}
+
+/// The program an entry starts, from its `Exec` line as [`exec_quote`]
+/// writes it.
+fn exec_target(entry: &str) -> Option<PathBuf> {
+    let line = entry.lines().find_map(|l| l.strip_prefix("Exec="))?;
+    let quoted = line.strip_prefix('"')?;
+    let mut out = String::new();
+    let mut chars = quoted.chars();
+    while let Some(c) = chars.next() {
+        match c {
+            '"' => return Some(PathBuf::from(out)),
+            '\\' => out.push(chars.next()?),
+            '%' => {
+                chars.next()?;
+                out.push('%');
+            }
+            c => out.push(c),
+        }
+    }
+    None
 }
 
 fn write(file: &Path, bytes: &[u8]) -> io::Result<()> {
@@ -163,11 +189,32 @@ mod tests {
     }
 
     #[test]
+    fn another_copy_that_is_opened_leaves_the_entry_alone() {
+        let data = tempdir();
+        let first = data.join("first/mimirdlp");
+        fs::create_dir_all(first.parent().unwrap()).unwrap();
+        fs::write(&first, "").unwrap();
+        install(&data, &first).unwrap();
+        refresh(&data, Path::new("/second/copy/mimirdlp")).unwrap();
+        let text = fs::read_to_string(entry_file(&data)).unwrap();
+        assert!(text.contains(&exec_quote(&first.to_string_lossy())));
+        // Once the first copy is gone, the one that is opened takes over.
+        fs::remove_file(&first).unwrap();
+        refresh(&data, Path::new("/second/copy/mimirdlp")).unwrap();
+        let text = fs::read_to_string(entry_file(&data)).unwrap();
+        assert!(text.contains("Exec=\"/second/copy/mimirdlp\""));
+    }
+
+    #[test]
     fn exec_paths_are_quoted_the_way_the_specification_asks() {
         assert_eq!(exec_quote("/a b/mimirdlp"), r#""/a b/mimirdlp""#);
         assert_eq!(
             exec_quote(r#"/x"y`z$w\v/100%/m"#),
             r#""/x\"y\`z\$w\\v/100%%/m""#
         );
+        for path in ["/a b/mimirdlp", r#"/x"y`z$w\v/100%/m"#] {
+            let entry = format!("[Desktop Entry]\nExec={}\n", exec_quote(path));
+            assert_eq!(exec_target(&entry), Some(PathBuf::from(path)));
+        }
     }
 }
