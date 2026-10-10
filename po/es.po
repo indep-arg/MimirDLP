@@ -8,13 +8,11 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: src/config.rs
-#: src/gui/settings.rs
+#: src/config.rs src/gui/settings.rs
 msgid "Video and audio"
 msgstr "Video y audio"
 
-#: src/config.rs
-#: src/gui/settings.rs
+#: src/config.rs src/gui/settings.rs
 msgid "Audio only"
 msgstr "Solo audio"
 
@@ -170,13 +168,11 @@ msgstr "Una lista propia"
 msgid "Follow system"
 msgstr "Según el sistema"
 
-#: src/config.rs
-#: src/gui/mod.rs
+#: src/config.rs src/gui/mod.rs
 msgid "Light"
 msgstr "Claro"
 
-#: src/config.rs
-#: src/gui/mod.rs
+#: src/config.rs src/gui/mod.rs
 msgid "Dark"
 msgstr "Oscuro"
 
@@ -446,8 +442,7 @@ msgstr "Mostrar actividad"
 msgid "Clear finished"
 msgstr "Quitar terminados"
 
-#: src/gui/download.rs
-#: src/gui/setup.rs
+#: src/gui/download.rs src/gui/setup.rs
 msgid "Working..."
 msgstr "Trabajando..."
 
@@ -555,8 +550,7 @@ msgid_plural "yt-dlp is {n} days old. Sites change often; if a download fails, u
 msgstr[0] "yt-dlp tiene {n} día de antigüedad. Los sitios cambian a menudo; si una descarga falla, actualízalo primero."
 msgstr[1] "yt-dlp tiene {n} días de antigüedad. Los sitios cambian a menudo; si una descarga falla, actualízalo primero."
 
-#: src/gui/mod.rs
-#: src/gui/setup.rs
+#: src/gui/mod.rs src/gui/setup.rs
 msgid "Check for updates"
 msgstr "Buscar actualizaciones"
 
@@ -765,8 +759,7 @@ msgstr "Nombres de archivo solo en ASCII"
 msgid "This deletes the history file for good."
 msgstr "Esto borra el archivo de historial para siempre."
 
-#: src/gui/settings.rs
-#: src/gui/setup.rs
+#: src/gui/settings.rs src/gui/setup.rs
 msgid "Cancel"
 msgstr "Cancelar"
 
@@ -992,8 +985,7 @@ msgstr "Versión {version} (falló la búsqueda de actualizaciones)"
 msgid "Timed out looking up this link."
 msgstr "Se agotó el tiempo al consultar este enlace."
 
-#: src/metadata.rs
-#: src/runner.rs
+#: src/metadata.rs src/runner.rs
 #, python-brace-format
 msgid "Could not start {tool}: {e}"
 msgstr "No se pudo iniciar {tool}: {e}"
