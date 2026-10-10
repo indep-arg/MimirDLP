@@ -573,7 +573,8 @@ fn extras_section(settings: &Settings) -> Element<'_, Message> {
             );
     }
     body = body.push(choice(
-        tr!("SponsorBlock"),
+        // A name, the same in every language.
+        "SponsorBlock".to_string(),
         dropdown(Sponsor::ALL, Some(settings.sponsor), Message::Sponsor).into(),
     ));
     if settings.sponsor != Sponsor::Off {

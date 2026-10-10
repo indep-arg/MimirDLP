@@ -29,8 +29,14 @@ pub const FILE_NAME: &str = "mimirdlp.config";
 pub const QUEUE_NAME: &str = "mimirdlp.queue";
 pub const ARCHIVE_NAME: &str = "download_archive.txt";
 
+/// `Variant => "key", "Label"` per choice: the key is what the settings file
+/// and yt-dlp see, the label what the pick list shows, translated. A label
+/// that is a proper name (`"Firefox" as name`) is shown as written and not
+/// sent to translators.
 macro_rules! keyed {
-    ($name:ident { $($variant:ident => $key:literal, $label:literal),+ $(,)? }) => {
+    (@label $label:literal) => { crate::i18n::label($label) };
+    (@label $label:literal $proper:ident) => { String::from($label) };
+    ($name:ident { $($variant:ident => $key:literal, $label:literal $(as $proper:ident)?),+ $(,)? }) => {
         impl $name {
             pub const ALL: &'static [$name] = &[$($name::$variant),+];
 
@@ -47,7 +53,7 @@ macro_rules! keyed {
             fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
                 // Translated here, so every pick list shows the user's
                 // language; keys stay English for the file and for yt-dlp.
-                f.write_str(&crate::i18n::label(match self { $($name::$variant => $label),+ }))
+                f.write_str(&match self { $($name::$variant => keyed!(@label $label $($proper)?)),+ })
             }
         }
     };
@@ -123,10 +129,10 @@ pub enum Audio {
 }
 keyed!(Audio {
     Mp3 => "mp3", "MP3 (most compatible)",
-    Aac => "aac", "AAC",
-    M4a => "m4a", "M4A",
+    Aac => "aac", "AAC" as name,
+    M4a => "m4a", "M4A" as name,
     Opus => "opus", "Opus (smallest)",
-    Vorbis => "vorbis", "Vorbis",
+    Vorbis => "vorbis", "Vorbis" as name,
     Flac => "flac", "FLAC (lossless)",
     Alac => "alac", "ALAC (lossless)",
     Wav => "wav", "WAV (uncompressed)",
@@ -272,14 +278,14 @@ pub enum Browser {
 }
 keyed!(Browser {
     None => "none", "Don't use cookies",
-    Firefox => "firefox", "Firefox",
-    Chrome => "chrome", "Chrome",
-    Chromium => "chromium", "Chromium",
-    Edge => "edge", "Edge",
-    Brave => "brave", "Brave",
-    Opera => "opera", "Opera",
-    Vivaldi => "vivaldi", "Vivaldi",
-    Whale => "whale", "Whale",
+    Firefox => "firefox", "Firefox" as name,
+    Chrome => "chrome", "Chrome" as name,
+    Chromium => "chromium", "Chromium" as name,
+    Edge => "edge", "Edge" as name,
+    Brave => "brave", "Brave" as name,
+    Opera => "opera", "Opera" as name,
+    Vivaldi => "vivaldi", "Vivaldi" as name,
+    Whale => "whale", "Whale" as name,
 });
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

@@ -262,7 +262,12 @@ fn keyed_labels(stream: TokenStream, found: &mut Vec<Found>) {
             let arrow = matches!(token, TokenTree::Punct(p) if p.as_char() == '>')
                 && i >= 1
                 && matches!(&tokens[i - 1], TokenTree::Punct(p) if p.as_char() == '=');
-            if arrow && let Some(label) = tokens.get(i + 3).and_then(string) {
+            // `"Firefox" as name` is a proper name, shown as written.
+            let proper = matches!(tokens.get(i + 4), Some(TokenTree::Ident(id)) if id == "as");
+            if arrow
+                && !proper
+                && let Some(label) = tokens.get(i + 3).and_then(string)
+            {
                 found.push((None, label, None));
             }
         }
@@ -347,6 +352,10 @@ fn the_extractor_reads_every_form_of_tr() {
             Off => "off", "Don't download",
             Embed => "embed", "Embed in the video",
         });
+        keyed!(Browser {
+            None => "none", "Don't use cookies",
+            Firefox => "firefox", "Firefox" as name,
+        });
     "#;
     let mut found = Vec::new();
     walk(TokenStream::from_str(source).unwrap(), &mut found);
@@ -361,6 +370,7 @@ fn the_extractor_reads_every_form_of_tr() {
             (None, s("Line one\nwith \"quotes\""), None),
             (None, s("Don't download"), None),
             (None, s("Embed in the video"), None),
+            (None, s("Don't use cookies"), None),
         ]
     );
     assert_eq!(quote("a \"b\"\n\\"), r#""a \"b\"\n\\""#);
