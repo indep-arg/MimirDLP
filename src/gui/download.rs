@@ -250,7 +250,7 @@ impl Download {
                 let dir = settings.output_dir(&self.paths);
                 if !dir.is_dir() {
                     self.note((Level::Info, tr!("The output folder doesn't exist yet.")));
-                } else if let Err(e) = open_folder(&dir) {
+                } else if let Err(e) = open(&dir) {
                     self.note((Level::Warn, tr!("Could not open the folder: {e}", e)));
                 }
             }
@@ -897,20 +897,21 @@ fn fetch_thumbnail(url: String) -> impl Future<Output = Result<Vec<u8>, String>>
     }
 }
 
-/// Opens `dir` in the system's file manager. `explorer.exe` on Windows is
-/// known to return a non-zero exit status even on success, so only the
-/// spawn itself is checked, never the exit code.
+/// Opens a folder in the system's file manager, or a web address in the
+/// browser. `explorer.exe` on Windows is known to return a non-zero exit
+/// status even on success, so only the spawn itself is checked, never the
+/// exit code.
 #[cfg(windows)]
-fn open_folder(dir: &Path) -> std::io::Result<()> {
-    std::process::Command::new("explorer").arg(dir).spawn()?;
+pub(super) fn open(target: impl AsRef<std::ffi::OsStr>) -> std::io::Result<()> {
+    std::process::Command::new("explorer").arg(target).spawn()?;
     Ok(())
 }
 
 /// Waited for on a thread of its own: a child that is never waited for
 /// stays behind as a zombie until the app exits, one per click.
 #[cfg(unix)]
-fn open_folder(dir: &Path) -> std::io::Result<()> {
-    let mut child = std::process::Command::new("xdg-open").arg(dir).spawn()?;
+pub(super) fn open(target: impl AsRef<std::ffi::OsStr>) -> std::io::Result<()> {
+    let mut child = std::process::Command::new("xdg-open").arg(target).spawn()?;
     thread::spawn(move || child.wait());
     Ok(())
 }
@@ -927,7 +928,7 @@ fn reveal_file(path: &Path) -> std::io::Result<()> {
 
 #[cfg(unix)]
 fn reveal_file(path: &Path) -> std::io::Result<()> {
-    open_folder(path.parent().unwrap_or(path))
+    open(path.parent().unwrap_or(path))
 }
 
 /// A live stream fetches video and audio at the same time, so yt-dlp

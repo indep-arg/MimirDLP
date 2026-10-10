@@ -9,7 +9,7 @@ mod style;
 
 use iced::theme::Mode as ThemeMode;
 use iced::widget::{
-    button, column, container, mouse_area, opaque, row, rule, scrollable, space, stack, text,
+    button, column, container, image, mouse_area, opaque, row, rule, scrollable, space, stack, text,
 };
 use iced::{Alignment, Element, Font, Length, Subscription, Task, Theme, font, window};
 use tr::tr;
@@ -63,6 +63,7 @@ enum Page {
     Download,
     Setup,
     Settings,
+    About,
 }
 
 #[derive(Debug, Clone)]
@@ -81,6 +82,8 @@ enum Message {
     Language(&'static str),
     /// From the "yt-dlp is old" notice: go to Setup and check for updates.
     CheckYtDlp,
+    /// A web address from the About page, opened in the browser.
+    OpenLink(&'static str),
     CloseRequested,
     /// Debug builds only, see [`dev_snapshot`].
     SnapshotDue,
@@ -223,6 +226,15 @@ impl App {
                 *menu_open = false;
                 Task::none()
             }
+            (App::Running { download, .. }, Message::OpenLink(url)) => {
+                if let Err(e) = download::open(url) {
+                    download.log((
+                        crate::log::Level::Warn,
+                        tr!("Could not open {url}: {e}", url, e),
+                    ));
+                }
+                Task::none()
+            }
             (
                 App::Running {
                     page,
@@ -242,7 +254,7 @@ impl App {
                 let allowed = match target {
                     Page::Download => (setup.ready() && !setup.busy()) || *confirming_tools,
                     Page::Setup => !download.uses_tools(),
-                    Page::Settings => true,
+                    Page::Settings | Page::About => true,
                 };
                 if allowed {
                     // Typed values are saved on leaving the page.
@@ -442,6 +454,7 @@ impl App {
             )
             .height(Length::Fill)
             .into(),
+            Page::About => about(setup.ytdlp_version()),
         };
 
         let window =
@@ -513,6 +526,7 @@ fn header_bar<'a>(page: Page, can_go_back: bool, menu_open: bool) -> Element<'a,
         Page::Download => "MimirDLP".to_string(),
         Page::Setup => tr!("Setup"),
         Page::Settings => tr!("Settings"),
+        Page::About => tr!("About"),
     };
     let side = |content: Element<'a, Message>, align: Alignment| {
         container(content).width(Length::Fixed(80.0)).align_x(align)
@@ -596,6 +610,7 @@ fn main_menu<'a>(can_setup: bool, settings: &Settings) -> Element<'a, Message> {
                 tr!("Setup and updates"),
                 can_setup.then_some(Message::Navigate(Page::Setup))
             ),
+            item(tr!("About MimirDLP"), Some(Message::Navigate(Page::About))),
         ]
         .spacing(4),
     )
@@ -603,6 +618,70 @@ fn main_menu<'a>(can_setup: bool, settings: &Settings) -> Element<'a, Message> {
     .width(Length::Fixed(280.0))
     .style(style::popover)
     .into()
+}
+
+const REPOSITORY: &str = "https://github.com/indep-arg/MimirDLP";
+const REPORT: &str = "https://github.com/indep-arg/MimirDLP/issues/new/choose";
+const TRANSLATE: &str = "https://hosted.weblate.org/engage/mimirdlp/";
+
+/// What a bug report asks for (this version and yt-dlp's), and where to
+/// report, translate or read more. Kept to the essentials, like GNOME's
+/// About windows.
+fn about<'a>(ytdlp: Option<&str>) -> Element<'a, Message> {
+    let link = |label: String, url: &'static str| {
+        button(text(label))
+            .padding([8, 16])
+            .style(style::pill_secondary)
+            .on_press(Message::OpenLink(url))
+    };
+    let muted = |label: String| {
+        text(label).style(|t: &Theme| text::Style {
+            color: Some(style::muted(t)),
+        })
+    };
+    let mut info = column![
+        text(tr!(
+            "Version {version}",
+            version = env!("CARGO_PKG_VERSION")
+        ))
+        .size(15),
+    ]
+    .spacing(4)
+    .align_x(Alignment::Center);
+    if let Some(version) = ytdlp {
+        info = info.push(muted(tr!("Using yt-dlp {version}", version)));
+    }
+    let content = column![
+        image(image::Handle::from_bytes(
+            include_bytes!("../../branding/icon.png").as_slice()
+        ))
+        .width(Length::Fixed(96.0))
+        .height(Length::Fixed(96.0)),
+        text("MimirDLP").size(26).font(Font {
+            weight: font::Weight::Bold,
+            ..Font::DEFAULT
+        }),
+        info,
+        text(tr!(
+            "Download videos and music from YouTube and many other sites."
+        ))
+        .center(),
+        column![
+            link(tr!("Website"), REPOSITORY),
+            link(tr!("Report a problem"), REPORT),
+            link(tr!("Help translate"), TRANSLATE),
+        ]
+        .spacing(8)
+        .align_x(Alignment::Center),
+        muted(tr!("Free software under the MIT license.")),
+    ]
+    .spacing(16)
+    .padding(24)
+    .max_width(560)
+    .align_x(Alignment::Center);
+    scrollable(container(content).center_x(Length::Fill))
+        .height(Length::Fill)
+        .into()
 }
 
 /// One entry of the language picker: the system's language, or one of the
@@ -718,7 +797,7 @@ fn choice<'a, Message: 'a>(label: String, control: Element<'a, Message>) -> Elem
         .into()
 }
 
-/// Debug builds only: `YTP_DEV_PAGE=setup|download|settings` opens directly
+/// Debug builds only: `YTP_DEV_PAGE=setup|download|settings|about` opens directly
 /// on that page, so a screen's layout can be checked without installing
 /// anything or navigating there by hand. Takes priority over `YTP_DEV_DOWNLOAD`'s
 /// own page choice when both are set.
@@ -730,6 +809,7 @@ fn dev_page() -> Option<Page> {
         "setup" => Some(Page::Setup),
         "download" => Some(Page::Download),
         "settings" => Some(Page::Settings),
+        "about" => Some(Page::About),
         _ => None,
     }
 }

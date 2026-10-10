@@ -138,6 +138,14 @@ impl Setup {
     /// How many days old the installed yt-dlp is, when that can be told
     /// and it is worth saying: not once a check found it up to date, since
     /// there is then nothing newer to get.
+    /// The installed yt-dlp's version, once it answered.
+    pub fn ytdlp_version(&self) -> Option<&str> {
+        match &self.rows[index(Component::YtDlp)].status {
+            Some(Status::Installed { version }) => Some(version),
+            _ => None,
+        }
+    }
+
     pub fn ytdlp_age(&self) -> Option<i64> {
         let row = &self.rows[index(Component::YtDlp)];
         if row.update == Some(UpdateCheck::Current) {

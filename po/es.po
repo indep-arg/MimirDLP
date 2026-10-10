@@ -480,6 +480,11 @@ msgid "Could not find the folder this app is in: {e}"
 msgstr "No se encontró la carpeta donde está esta aplicación: {e}"
 
 #: src/gui/mod.rs
+#, python-brace-format
+msgid "Could not open {url}: {e}"
+msgstr "No se pudo abrir {url}: {e}"
+
+#: src/gui/mod.rs
 msgid "Setup"
 msgstr "Instalación"
 
@@ -488,12 +493,50 @@ msgid "Settings"
 msgstr "Ajustes"
 
 #: src/gui/mod.rs
+msgid "About"
+msgstr "Acerca de"
+
+#: src/gui/mod.rs
 msgid "System"
 msgstr "Sistema"
 
 #: src/gui/mod.rs
 msgid "Setup and updates"
 msgstr "Instalación y actualizaciones"
+
+#: src/gui/mod.rs
+msgid "About MimirDLP"
+msgstr "Acerca de MimirDLP"
+
+#: src/gui/mod.rs
+#, python-brace-format
+msgid "Version {version}"
+msgstr "Versión {version}"
+
+#: src/gui/mod.rs
+#, python-brace-format
+msgid "Using yt-dlp {version}"
+msgstr "Usa yt-dlp {version}"
+
+#: src/gui/mod.rs
+msgid "Download videos and music from YouTube and many other sites."
+msgstr "Descarga videos y música de YouTube y muchos otros sitios."
+
+#: src/gui/mod.rs
+msgid "Website"
+msgstr "Sitio web"
+
+#: src/gui/mod.rs
+msgid "Report a problem"
+msgstr "Reportar un problema"
+
+#: src/gui/mod.rs
+msgid "Help translate"
+msgstr "Ayudar a traducir"
+
+#: src/gui/mod.rs
+msgid "Free software under the MIT license."
+msgstr "Software libre con licencia MIT."
 
 #: src/gui/mod.rs
 msgid "System language"

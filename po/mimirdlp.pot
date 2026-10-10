@@ -479,6 +479,11 @@ msgid "Could not find the folder this app is in: {e}"
 msgstr ""
 
 #: src/gui/mod.rs
+#, python-brace-format
+msgid "Could not open {url}: {e}"
+msgstr ""
+
+#: src/gui/mod.rs
 msgid "Setup"
 msgstr ""
 
@@ -487,11 +492,49 @@ msgid "Settings"
 msgstr ""
 
 #: src/gui/mod.rs
+msgid "About"
+msgstr ""
+
+#: src/gui/mod.rs
 msgid "System"
 msgstr ""
 
 #: src/gui/mod.rs
 msgid "Setup and updates"
+msgstr ""
+
+#: src/gui/mod.rs
+msgid "About MimirDLP"
+msgstr ""
+
+#: src/gui/mod.rs
+#, python-brace-format
+msgid "Version {version}"
+msgstr ""
+
+#: src/gui/mod.rs
+#, python-brace-format
+msgid "Using yt-dlp {version}"
+msgstr ""
+
+#: src/gui/mod.rs
+msgid "Download videos and music from YouTube and many other sites."
+msgstr ""
+
+#: src/gui/mod.rs
+msgid "Website"
+msgstr ""
+
+#: src/gui/mod.rs
+msgid "Report a problem"
+msgstr ""
+
+#: src/gui/mod.rs
+msgid "Help translate"
+msgstr ""
+
+#: src/gui/mod.rs
+msgid "Free software under the MIT license."
 msgstr ""
 
 #: src/gui/mod.rs
