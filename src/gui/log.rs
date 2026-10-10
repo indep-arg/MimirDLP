@@ -15,11 +15,7 @@ pub fn panel<'a, Message: 'a>(
 ) -> Element<'a, Message> {
     let height = height.into();
     let body: Element<'a, Message> = if entries.is_empty() {
-        text(empty)
-            .style(|t: &Theme| text::Style {
-                color: Some(style::muted(t)),
-            })
-            .into()
+        text(empty).style(style::muted_text).into()
     } else {
         Column::with_children(entries.iter().map(|(level, line)| entry(*level, line)))
             .spacing(4)

@@ -10,7 +10,7 @@ use iced::widget::{Column, button, column, container, progress_bar, row, space, 
 use iced::{Alignment, Element, Font, Length, Task, Theme};
 use tr::tr;
 
-use super::{card, log as log_panel, style};
+use super::{amount, card, log as log_panel, style};
 use crate::provision::{self, Component, Event, Level, Paths, Status, UpdateCheck};
 
 /// What the worker thread sends back while it runs.
@@ -38,12 +38,13 @@ pub enum Message {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Job {
     Inspecting,
-    Installing(Kind),
+    Installing(Scope),
     CheckingUpdates,
 }
 
+/// Which components an install covers.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum Kind {
+enum Scope {
     Missing,
     Outdated,
     All,
@@ -90,7 +91,7 @@ impl Setup {
             pending: dev_action(),
             auto_install: !dev_no_auto_install(),
         };
-        let task = work(move |send| {
+        let task = in_thread(move |send| {
             if let Err(e) = provision::app_dir_writable(&paths) {
                 send(Report::Unwritable);
                 let log = |text: String| send(Report::Provision(Event::Log(Level::Error, text)));
@@ -135,9 +136,6 @@ impl Setup {
         self.job.is_some()
     }
 
-    /// How many days old the installed yt-dlp is, when that can be told
-    /// and it is worth saying: not once a check found it up to date, since
-    /// there is then nothing newer to get.
     /// The installed yt-dlp's version, once it answered.
     pub fn ytdlp_version(&self) -> Option<&str> {
         match &self.rows[index(Component::YtDlp)].status {
@@ -146,6 +144,8 @@ impl Setup {
         }
     }
 
+    /// How many days old the installed yt-dlp is, when that can be told
+    /// and is worth saying: not once a check found nothing newer.
     pub fn ytdlp_age(&self) -> Option<i64> {
         let row = &self.rows[index(Component::YtDlp)];
         if row.update == Some(UpdateCheck::Current) {
@@ -168,7 +168,7 @@ impl Setup {
             Message::InstallMissing => {
                 let targets =
                     self.select(|row| matches!(row.status, Some(Status::Missing | Status::Broken)));
-                return self.install(targets, Kind::Missing);
+                return self.install(targets, Scope::Missing);
             }
             Message::CheckUpdates => {
                 let targets = self.select(|row| {
@@ -177,7 +177,7 @@ impl Setup {
                 });
                 self.start(Job::CheckingUpdates);
                 let paths = self.paths.clone();
-                return work(move |send| {
+                return in_thread(move |send| {
                     let log =
                         |level, text: String| send(Report::Provision(Event::Log(level, text)));
                     log(
@@ -205,13 +205,13 @@ impl Setup {
                     matches!(row.status, Some(Status::Installed { .. }))
                         && row.update == Some(UpdateCheck::Outdated)
                 });
-                return self.install(targets, Kind::Outdated);
+                return self.install(targets, Scope::Outdated);
             }
             Message::AskReinstall => self.confirm_reinstall = true,
             Message::CancelReinstall => self.confirm_reinstall = false,
             Message::ConfirmReinstall => {
                 self.confirm_reinstall = false;
-                return self.install(Component::ALL.to_vec(), Kind::All);
+                return self.install(Component::ALL.to_vec(), Scope::All);
             }
         }
         Task::none()
@@ -276,13 +276,13 @@ impl Setup {
             .collect()
     }
 
-    fn install(&mut self, targets: Vec<Component>, kind: Kind) -> Task<Message> {
+    fn install(&mut self, targets: Vec<Component>, scope: Scope) -> Task<Message> {
         if targets.is_empty() {
             return Task::none();
         }
-        self.start(Job::Installing(kind));
+        self.start(Job::Installing(scope));
         let paths = self.paths.clone();
-        work(move |send| {
+        in_thread(move |send| {
             let mut failed = false;
             for component in targets {
                 let result =
@@ -303,13 +303,13 @@ impl Setup {
             }
             log(
                 Level::Success,
-                match kind {
-                    Kind::Missing => tr!("Installation completed"),
-                    Kind::Outdated => tr!("Update completed"),
-                    Kind::All => tr!("Full reinstallation completed"),
+                match scope {
+                    Scope::Missing => tr!("Installation completed"),
+                    Scope::Outdated => tr!("Update completed"),
+                    Scope::All => tr!("Full reinstallation completed"),
                 },
             );
-            if kind != Kind::Outdated {
+            if scope != Scope::Outdated {
                 log(
                     Level::Info,
                     tr!(
@@ -327,9 +327,7 @@ impl Setup {
                 "yt-dlp, FFmpeg and Deno are kept in the bin folder next to this app. \
                  Nothing is installed on your system."
             ))
-            .style(|t: &Theme| text::Style {
-                color: Some(style::muted(t))
-            }),
+            .style(style::muted_text),
         ]
         .spacing(4);
 
@@ -389,8 +387,7 @@ impl Setup {
             .into();
         }
 
-        let statuses: Vec<&Row> = self.rows.iter().collect();
-        let any = |f: &dyn Fn(&Row) -> bool| statuses.iter().any(|row| f(row));
+        let any = |f: &dyn Fn(&Row) -> bool| self.rows.iter().any(f);
         let installed = |row: &Row| matches!(row.status, Some(Status::Installed { .. }));
         let has_missing = self.needs_install();
         let has_unchecked =
@@ -441,9 +438,7 @@ impl Setup {
                 Job::Installing(_) => tr!("Working..."),
                 Job::CheckingUpdates => tr!("Checking for updates..."),
             };
-            actions = actions.push(text(busy).style(|t: &Theme| text::Style {
-                color: Some(style::muted(t)),
-            }));
+            actions = actions.push(text(busy).style(style::muted_text));
         }
         actions.into()
     }
@@ -456,9 +451,9 @@ fn index(component: Component) -> usize {
         .expect("every component is in ALL")
 }
 
-/// Starts `job` on its own thread and turns what it sends into messages.
-/// Blocking work (network, hashing, extracting) never runs on the UI.
-fn work(job: impl FnOnce(&dyn Fn(Report)) + Send + 'static) -> Task<Message> {
+/// Runs `job` on its own thread and turns what it sends into messages:
+/// downloading, hashing and extracting never block the window.
+fn in_thread(job: impl FnOnce(&dyn Fn(Report)) + Send + 'static) -> Task<Message> {
     let (sender, receiver) = mpsc::unbounded();
     thread::spawn(move || {
         let send = |report| {
@@ -479,28 +474,28 @@ fn component_row(component: Component, row: &Row) -> Element<'static, Message> {
         Bad,
         Neutral,
     }
-    let (tone, detail) = match (&row.status, &row.update) {
-        (None, _) => (Tone::Neutral, tr!("Checking...")),
-        (Some(Status::Missing), _) => (Tone::Bad, tr!("Not installed")),
-        (Some(Status::Broken), _) => (Tone::Bad, tr!("Installed but not responding")),
-        // A yt-dlp that is weeks old is the usual reason a site stops
-        // working, so its age is said, and warned about once it's stale.
-        (Some(Status::Installed { version }), None)
-            if component == Component::YtDlp
-                && provision::ytdlp_age_days(version, provision::today())
-                    .is_some_and(|age| age > provision::YTDLP_STALE_DAYS) =>
-        {
-            let age = provision::ytdlp_age_days(version, provision::today()).unwrap_or(0);
-            (
-                Tone::Warn,
-                tr!(
-                    "Version {version} ({n} day old, check for updates)"
-                        | "Version {version} ({n} days old, check for updates)" % age,
-                    version
-                ),
-            )
+    // A yt-dlp weeks old is the usual reason a site stops working, so its
+    // age is shown once it is stale.
+    let stale_age = match &row.status {
+        Some(Status::Installed { version }) if component == Component::YtDlp => {
+            provision::ytdlp_age_days(version, provision::today())
+                .filter(|age| *age > provision::YTDLP_STALE_DAYS)
         }
-        (Some(Status::Installed { version }), update) => match update {
+        _ => None,
+    };
+    let (tone, detail) = match (&row.status, &row.update, stale_age) {
+        (None, ..) => (Tone::Neutral, tr!("Checking...")),
+        (Some(Status::Missing), ..) => (Tone::Bad, tr!("Not installed")),
+        (Some(Status::Broken), ..) => (Tone::Bad, tr!("Installed but not responding")),
+        (Some(Status::Installed { version }), None, Some(age)) => (
+            Tone::Warn,
+            tr!(
+                "Version {version} ({n} day old, check for updates)"
+                    | "Version {version} ({n} days old, check for updates)" % age,
+                version
+            ),
+        ),
+        (Some(Status::Installed { version }), update, _) => match update {
             None => (Tone::Good, tr!("Version {version} (installed)", version)),
             Some(UpdateCheck::Current) => {
                 (Tone::Good, tr!("Version {version} (up to date)", version))
@@ -543,9 +538,7 @@ fn component_row(component: Component, row: &Row) -> Element<'static, Message> {
         text(mark).width(22).style(color),
         text(component.label()).width(90),
         text(detail).style(move |t: &Theme| match tone {
-            Tone::Good | Tone::Neutral => text::Style {
-                color: Some(style::muted(t))
-            },
+            Tone::Good | Tone::Neutral => style::muted_text(t),
             _ => color(t),
         }),
     ]
@@ -554,29 +547,12 @@ fn component_row(component: Component, row: &Row) -> Element<'static, Message> {
 }
 
 fn transfer_view(transfer: &Transfer) -> Element<'_, Message> {
-    let mb = |bytes: u64| bytes as f64 / 1_000_000.0;
-    let (amount, fraction) = match transfer.total {
-        Some(total) if total > 0 => {
-            let fraction = (transfer.received as f64 / total as f64).min(1.0);
-            (
-                format!(
-                    "{:.1} / {:.1} MB  ({:.0}%)",
-                    mb(transfer.received),
-                    mb(total),
-                    fraction * 100.0
-                ),
-                fraction as f32,
-            )
-        }
-        _ => (format!("{:.1} MB", mb(transfer.received)), 0.0),
-    };
+    let (amount, fraction) = amount(transfer.received, transfer.total);
     column![
         row![
             text(&transfer.file).font(Font::MONOSPACE).size(13),
             space::horizontal(),
-            text(amount).size(13).style(|t: &Theme| text::Style {
-                color: Some(style::muted(t))
-            }),
+            text(amount).size(13).style(style::muted_text),
         ]
         .align_y(Alignment::Center),
         progress_bar(0.0..=1.0, fraction)
@@ -587,16 +563,14 @@ fn transfer_view(transfer: &Transfer) -> Element<'_, Message> {
     .into()
 }
 
-/// Debug builds only: `YTP_DEV_ACTION=install|check|update|ask-reinstall|reinstall` runs
-/// that action on start, so screenshots of a running install can be taken
-/// without clicking. Release builds ignore it.
 /// Debug builds only: `YTP_DEV_ACTION=none` keeps a first launch from
-/// installing anything on its own, for looking at the screens of an empty
-/// folder without downloading about 200 MB.
+/// installing anything, to look at an empty folder's screens.
 fn dev_no_auto_install() -> bool {
     cfg!(debug_assertions) && std::env::var("YTP_DEV_ACTION").is_ok_and(|a| a == "none")
 }
 
+/// Debug builds only: `YTP_DEV_ACTION=install|check|update|ask-reinstall|reinstall`
+/// runs that action after the first inspection, instead of a click.
 fn dev_action() -> Option<Message> {
     if !cfg!(debug_assertions) {
         return None;
@@ -674,7 +648,7 @@ mod tests {
         // A failed install ends with something still missing; trying again
         // on its own would loop.
         let mut after_install = missing();
-        after_install.job = Some(Job::Installing(Kind::Missing));
+        after_install.job = Some(Job::Installing(Scope::Missing));
         assert!(!installs_by_itself(after_install));
 
         let mut complete = with_ytdlp("2026.09.16", None);

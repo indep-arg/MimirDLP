@@ -12,7 +12,7 @@ use iced::theme::Mode as ThemeMode;
 use iced::widget::{
     button, column, container, image, mouse_area, opaque, row, rule, scrollable, space, stack, text,
 };
-use iced::{Alignment, Element, Font, Length, Subscription, Task, Theme, font, window};
+use iced::{Alignment, Element, Length, Subscription, Task, Theme, window};
 use tr::tr;
 
 use crate::config::{Settings, ThemePref};
@@ -36,7 +36,7 @@ pub fn run() -> iced::Result {
             // Closing is handled in `update`, so typed settings are saved
             // and a running download is stopped first.
             exit_on_close_request: false,
-            platform_specific: platform_window(),
+            platform_specific: platform_settings(),
             ..window::Settings::default()
         })
         .run()
@@ -47,7 +47,7 @@ pub fn run() -> iced::Result {
 /// (`crate::desktop`, the opt-in menu entry). X11 takes the icon from
 /// `window::Settings::icon`.
 #[cfg(target_os = "linux")]
-fn platform_window() -> window::settings::PlatformSpecific {
+fn platform_settings() -> window::settings::PlatformSpecific {
     window::settings::PlatformSpecific {
         application_id: crate::desktop::APP_ID.to_string(),
         ..Default::default()
@@ -55,7 +55,7 @@ fn platform_window() -> window::settings::PlatformSpecific {
 }
 
 #[cfg(not(target_os = "linux"))]
-fn platform_window() -> window::settings::PlatformSpecific {
+fn platform_settings() -> window::settings::PlatformSpecific {
     window::settings::PlatformSpecific::default()
 }
 
@@ -82,13 +82,13 @@ enum Message {
     /// A code from `i18n::LANGUAGES`, or empty for the system's language.
     Language(&'static str),
     /// From the "yt-dlp is old" notice: go to Setup and check for updates.
-    CheckYtDlp,
+    CheckForUpdates,
     /// A web address from the About page, opened in the browser.
     OpenLink(&'static str),
     LinkOpened(&'static str, Result<(), String>),
     CloseRequested,
     /// The window got the focus: a link copied meanwhile may be offered.
-    Focused,
+    WindowFocused,
     /// Debug builds only, see [`dev_snapshot`].
     SnapshotDue,
     SnapshotFrame,
@@ -114,8 +114,7 @@ enum App {
         /// Download was pressed while that inspection still ran; it starts
         /// as soon as the tools are known to work.
         start_when_ready: bool,
-        /// Unknown until the startup query resolves; treated as dark, this
-        /// app's original and only appearance before this existed.
+        /// `None` until the startup query answers.
         system_theme: ThemeMode,
         /// Debug builds only: the state is frozen until the capture is taken.
         snapshot_due: bool,
@@ -132,9 +131,8 @@ impl App {
                 return (App::Broken(reason), Task::none());
             }
         };
-        // With everything already in bin/, Download is where the app ends
-        // up, so it opens there: showing Setup for the half second the
-        // first inspection takes was a visible flash on every launch.
+        // With every tool in bin/, open on Download rather than showing Setup
+        // for the half second the first inspection takes.
         let tools_present = crate::provision::all_present(&paths);
         // A menu entry the user added follows the folder if it was moved.
         // Release builds only: a development build must not repoint it.
@@ -230,7 +228,7 @@ impl App {
                 *menu_open = false;
                 Task::none()
             }
-            (App::Running { download, .. }, Message::Focused) => {
+            (App::Running { download, .. }, Message::WindowFocused) => {
                 if download.wants_clipboard() {
                     iced::clipboard::read()
                         .map(|text| Message::Download(download::Message::Clipboard(text)))
@@ -238,7 +236,7 @@ impl App {
                     Task::none()
                 }
             }
-            (App::Broken(_), Message::Focused) => Task::none(),
+            (App::Broken(_), Message::WindowFocused) => Task::none(),
             (App::Running { .. }, Message::OpenLink(url)) => {
                 open::open(url).map(move |result| Message::LinkOpened(url, result))
             }
@@ -265,9 +263,8 @@ impl App {
             ) => {
                 *menu_open = false;
                 *leave_setup_when_ready = false;
-                // The same rules the header bar's buttons follow.
                 let allowed = match target {
-                    Page::Download => (setup.ready() && !setup.busy()) || *confirming_tools,
+                    Page::Download => can_download(setup, *confirming_tools),
                     Page::Setup => !download.uses_tools(),
                     Page::Settings | Page::About => true,
                 };
@@ -290,7 +287,7 @@ impl App {
                     leave_setup_when_ready,
                     ..
                 },
-                Message::CheckYtDlp,
+                Message::CheckForUpdates,
             ) => {
                 if download.uses_tools() || setup.busy() {
                     return Task::none();
@@ -443,8 +440,7 @@ impl App {
                 *confirming_tools,
             ),
         };
-        // The same rule `Message::Navigate` follows.
-        let can_download = (setup.ready() && !setup.busy()) || confirming_tools;
+        let can_download = can_download(setup, confirming_tools);
         let can_setup = !download.uses_tools();
 
         let content = match page {
@@ -509,7 +505,7 @@ impl App {
             App::Running { snapshot_due, .. } => {
                 let theme = iced::system::theme_changes().map(Message::SystemTheme);
                 let focus = iced::event::listen_with(|event, _, _| match event {
-                    iced::Event::Window(window::Event::Focused) => Some(Message::Focused),
+                    iced::Event::Window(window::Event::Focused) => Some(Message::WindowFocused),
                     _ => None,
                 });
                 if *snapshot_due {
@@ -526,6 +522,12 @@ impl App {
             App::Broken(_) => close,
         }
     }
+}
+
+/// Download can be shown once the tools work, or while the first
+/// inspection confirms the ones that are there.
+fn can_download(setup: &Setup, confirming_tools: bool) -> bool {
+    (setup.ready() && !setup.busy()) || confirming_tools
 }
 
 const HEADER_HEIGHT: f32 = 52.0;
@@ -553,11 +555,7 @@ fn header_bar<'a>(page: Page, can_go_back: bool, menu_open: bool) -> Element<'a,
     };
     let bar = row![
         side(back, Alignment::Start),
-        container(text(title).size(15).font(Font {
-            weight: font::Weight::Bold,
-            ..Font::DEFAULT
-        }))
-        .center_x(Length::Fill),
+        container(text(title).size(15).font(style::BOLD)).center_x(Length::Fill),
         side(menu_button(menu_open), Alignment::End),
     ]
     .padding([0, 8])
@@ -604,7 +602,7 @@ fn main_menu<'a>(can_setup: bool, settings: &Settings) -> Element<'a, Message> {
         button(text(label).size(13).center().width(Length::Fill))
             .width(Length::Fill)
             .padding([6, 8])
-            .style(style::nav(theme == target))
+            .style(style::segment(theme == target))
             .on_press(Message::ThemePref(target))
     };
     container(
@@ -616,15 +614,9 @@ fn main_menu<'a>(can_setup: bool, settings: &Settings) -> Element<'a, Message> {
             ]
             .spacing(4)
             .padding([4, 4]),
-            rule::horizontal(1).style(|t: &Theme| rule::Style {
-                color: style::separator(t),
-                ..rule::default(t)
-            }),
+            rule::horizontal(1).style(style::separator),
             language_picker(&settings.language),
-            rule::horizontal(1).style(|t: &Theme| rule::Style {
-                color: style::separator(t),
-                ..rule::default(t)
-            }),
+            rule::horizontal(1).style(style::separator),
             item(tr!("Settings"), Some(Message::Navigate(Page::Settings))),
             item(
                 tr!("Setup and updates"),
@@ -650,9 +642,7 @@ const REPOSITORY: &str = "https://github.com/indep-arg/MimirDLP";
 const REPORT: &str = "https://github.com/indep-arg/MimirDLP/issues/new/choose";
 const TRANSLATE: &str = "https://hosted.weblate.org/engage/mimirdlp/";
 
-/// What a bug report asks for (this version and yt-dlp's), and where to
-/// report, translate or read more. Kept to the essentials, like GNOME's
-/// About windows.
+/// The versions a bug report asks for, and where to report or translate.
 fn about<'a>(ytdlp: Option<&str>) -> Element<'a, Message> {
     let link = |label: String, url: &'static str| {
         button(text(label))
@@ -660,11 +650,7 @@ fn about<'a>(ytdlp: Option<&str>) -> Element<'a, Message> {
             .style(style::pill_secondary)
             .on_press(Message::OpenLink(url))
     };
-    let muted = |label: String| {
-        text(label).style(|t: &Theme| text::Style {
-            color: Some(style::muted(t)),
-        })
-    };
+    let muted = |label: String| text(label).style(style::muted_text);
     let mut info = column![
         text(tr!(
             "Version {version}",
@@ -681,10 +667,7 @@ fn about<'a>(ytdlp: Option<&str>) -> Element<'a, Message> {
         image(LOGO.clone())
             .width(Length::Fixed(96.0))
             .height(Length::Fixed(96.0)),
-        text("MimirDLP").size(26).font(Font {
-            weight: font::Weight::Bold,
-            ..Font::DEFAULT
-        }),
+        text("MimirDLP").size(26).font(style::BOLD),
         info,
         text(tr!(
             "Download videos and music from YouTube and many other sites."
@@ -757,7 +740,7 @@ fn stale_notice<'a>(age: i64, can_update: bool) -> Element<'a, Message> {
             button(text(tr!("Check for updates")).size(13))
                 .padding([4, 14])
                 .style(style::pill_secondary)
-                .on_press_maybe(can_update.then_some(Message::CheckYtDlp)),
+                .on_press_maybe(can_update.then_some(Message::CheckForUpdates)),
         ]
         .spacing(12)
         .align_y(Alignment::Center),
@@ -821,10 +804,8 @@ fn choice<'a, Message: 'a>(label: String, control: Element<'a, Message>) -> Elem
         .into()
 }
 
-/// Debug builds only: `YTP_DEV_PAGE=setup|download|settings|about` opens directly
-/// on that page, so a screen's layout can be checked without installing
-/// anything or navigating there by hand. Takes priority over `YTP_DEV_DOWNLOAD`'s
-/// own page choice when both are set.
+/// Debug builds only: `YTP_DEV_PAGE=setup|download|settings|about` opens on
+/// that page, even with `YTP_DEV_DOWNLOAD` set.
 fn dev_page() -> Option<Page> {
     if !cfg!(debug_assertions) {
         return None;
@@ -860,7 +841,7 @@ fn dev_snapshot() -> Task<Message> {
         .ok()
         .and_then(|ms| ms.parse().ok())
         .unwrap_or(1500);
-    Task::perform(wait_on_a_thread(after), |_| Message::SnapshotDue)
+    Task::perform(delay(after), |_| Message::SnapshotDue)
 }
 
 /// Debug builds only: `YTP_DEV_STOP_AFTER=<ms>` presses Stop on its own,
@@ -873,21 +854,44 @@ fn dev_stop() -> Task<Message> {
         Some(Ok(ms)) if cfg!(debug_assertions) => ms,
         _ => return Task::none(),
     };
-    Task::perform(wait_on_a_thread(after), |_| {
-        Message::Download(download::Message::Stop)
-    })
+    Task::perform(delay(after), |_| Message::Download(download::Message::Stop))
 }
 
-/// Waits without blocking the executor: a `thread::sleep` inside a future
-/// stalls every task batched with it, the worker threads included.
-fn wait_on_a_thread(millis: u64) -> impl std::future::Future<Output = ()> {
-    let (done, wait) = iced::futures::channel::oneshot::channel();
+/// Runs blocking work (a lookup, a dialog, a sleep) on a thread of its own
+/// and resolves with its result, `None` if the thread died. Blocking inside
+/// a future instead stalls every task batched with it.
+fn in_background<T: Send + 'static>(
+    work: impl FnOnce() -> T + Send + 'static,
+) -> impl std::future::Future<Output = Option<T>> {
+    let (done, result) = iced::futures::channel::oneshot::channel();
     std::thread::spawn(move || {
-        std::thread::sleep(std::time::Duration::from_millis(millis));
-        let _ = done.send(());
+        let _ = done.send(work());
     });
-    async move {
-        let _ = wait.await;
+    async move { result.await.ok() }
+}
+
+fn delay(millis: u64) -> impl std::future::Future<Output = Option<()>> {
+    in_background(move || std::thread::sleep(std::time::Duration::from_millis(millis)))
+}
+
+/// "12.3 / 45.6 MB  (27%)" and the fraction for a progress bar, or just
+/// the amount when the total isn't known.
+fn amount(done: u64, total: Option<u64>) -> (String, f32) {
+    let mb = |bytes: u64| bytes as f64 / 1_000_000.0;
+    match total {
+        Some(total) if total > 0 => {
+            let fraction = (done as f64 / total as f64).min(1.0);
+            (
+                format!(
+                    "{:.1} / {:.1} MB  ({:.0}%)",
+                    mb(done),
+                    mb(total),
+                    fraction * 100.0
+                ),
+                fraction as f32,
+            )
+        }
+        _ => (format!("{:.1} MB", mb(done)), 0.0),
     }
 }
 

@@ -7,14 +7,13 @@
 //! with. `config::Settings`, `Settings::to_options` and `Settings::problems`
 //! hold the model and its rules; this module only edits and shows it.
 
-use iced::futures::channel::oneshot;
 use iced::widget::{Column, button, column, container, radio, row, rule, scrollable, text};
-use iced::{Alignment, Element, Font, Length, Task, Theme};
+use iced::{Alignment, Element, Font, Length, Task};
 use tr::tr;
 
-use super::{card, choice, dropdown, entry, style, switch};
+use super::{card, choice, dropdown, entry, in_background, style, switch};
 use crate::config::{
-    Audio, Browser, Cats, Container, Convert, Kind, PlaylistChoice, Quality, Settings, Sponsor,
+    Audio, Browser, Container, Convert, Kind, PlaylistChoice, Quality, Segments, Settings, Sponsor,
     Subs, Template, ThemePref, Thumb, VideoFormat,
 };
 use crate::log::Level;
@@ -37,7 +36,7 @@ pub enum Message {
     ThumbFormat(Thumb),
     Subs(Subs),
     Sponsor(Sponsor),
-    Cats(Cats),
+    Segments(Segments),
     Playlist(PlaylistChoice),
     Template(Template),
     Browser(Browser),
@@ -63,7 +62,7 @@ pub enum Field {
     CustomFormat,
     ConvertTarget,
     SubLangs,
-    CustomCats,
+    CustomSegments,
     PlaylistItems,
     ArchiveFile,
     MaxDownloads,
@@ -82,7 +81,7 @@ impl Field {
             Field::CustomFormat => &mut s.custom_format,
             Field::ConvertTarget => &mut s.convert_target,
             Field::SubLangs => &mut s.sub_langs,
-            Field::CustomCats => &mut s.custom_cats,
+            Field::CustomSegments => &mut s.custom_segments,
             Field::PlaylistItems => &mut s.playlist_items,
             Field::ArchiveFile => &mut s.archive_file,
             Field::MaxDownloads => &mut s.max_downloads,
@@ -225,7 +224,7 @@ impl SettingsPage {
         self.history = self
             .settings
             .archive
-            .then(|| self.settings.history_entries(&self.paths))
+            .then(|| self.settings.history_count(&self.paths))
             .flatten();
         if self.history_list.is_some() {
             self.history_list = self.settings.history_lines(&self.paths);
@@ -258,7 +257,7 @@ impl SettingsPage {
             Message::ThumbFormat(value) => s.thumbnail_format = value,
             Message::Subs(value) => s.subs = value,
             Message::Sponsor(value) => s.sponsor = value,
-            Message::Cats(value) => s.cats = value,
+            Message::Segments(value) => s.segments = value,
             Message::Playlist(value) => s.playlist = value,
             Message::Template(value) => s.template = value,
             Message::Browser(value) => s.cookies_browser = value,
@@ -272,7 +271,7 @@ impl SettingsPage {
             }
             Message::ConfirmClearHistory => {
                 self.clearing_history = false;
-                let entries = self.settings.history_entries(&self.paths).unwrap_or(0);
+                let entries = self.settings.history_count(&self.paths).unwrap_or(0);
                 let path = self.settings.archive_path(&self.paths);
                 let note = match std::fs::remove_file(&path) {
                     Ok(()) => (
@@ -319,17 +318,16 @@ impl SettingsPage {
     /// in the current output folder when that exists.
     pub fn choose_folder(&self) -> Task<Message> {
         let start = self.settings.output_dir(&self.paths);
-        let (tx, rx) = oneshot::channel();
-        std::thread::spawn(move || {
-            let mut dialog = rfd::FileDialog::new().set_title(tr!("Where to save downloads"));
-            if start.is_dir() {
-                dialog = dialog.set_directory(&start);
-            }
-            let _ = tx.send(dialog.pick_folder());
-        });
+        let title = tr!("Where to save downloads");
         Task::perform(
-            async move { rx.await.ok().flatten() },
-            Message::FolderChosen,
+            in_background(move || {
+                let mut dialog = rfd::FileDialog::new().set_title(title);
+                if start.is_dir() {
+                    dialog = dialog.set_directory(&start);
+                }
+                dialog.pick_folder()
+            }),
+            |folder| Message::FolderChosen(folder.flatten()),
         )
     }
 
@@ -357,9 +355,7 @@ fn desktop_section<'a>(installed: bool) -> Element<'a, Message> {
             "Adds a launcher and the icon to your user folder, so MimirDLP can be started from the menu and shows its icon in the taskbar. Turning it off removes them."
         ))
         .size(13)
-        .style(|t: &Theme| text::Style {
-            color: Some(style::muted(t)),
-        }),
+        .style(style::muted_text),
     ]
     .spacing(8)
     .into()
@@ -381,9 +377,7 @@ fn advanced_toggle<'a>(open: bool) -> Element<'a, Message> {
                     "Signing in, playlists, history, file names, speed limits"
                 ))
                 .size(13)
-                .style(|t: &Theme| text::Style {
-                    color: Some(style::muted(t)),
-                }),
+                .style(style::muted_text),
             ]
             .spacing(2)
             .width(Length::Fill),
@@ -398,9 +392,8 @@ fn advanced_toggle<'a>(open: bool) -> Element<'a, Message> {
     .into()
 }
 
-/// A card's rows with a hairline between each two, like an Adwaita boxed
-/// list. Built like a `column!` (`rows![...]`, then `.push`), so a section
-/// reads the same as before.
+/// A card's rows with a line between each two, like an Adwaita boxed list.
+/// Built like a `column!`: `rows![...]`, then `.push`.
 struct Rows<'a>(Vec<Element<'a, Message>>);
 
 macro_rules! rows {
@@ -421,15 +414,26 @@ impl<'a> From<Rows<'a>> for Element<'a, Message> {
         let mut list = Column::new().spacing(10);
         for (i, row) in rows.0.into_iter().enumerate() {
             if i > 0 {
-                list = list.push(rule::horizontal(1).style(|t: &Theme| rule::Style {
-                    color: style::separator(t),
-                    ..rule::default(t)
-                }));
+                list = list.push(rule::horizontal(1).style(style::separator));
             }
             list = list.push(row);
         }
         list.into()
     }
+}
+
+/// A typed value, saved later (see [`Field`]).
+fn text_field<'a>(
+    placeholder: &str,
+    value: &'a str,
+    field: Field,
+    width: u32,
+) -> Element<'a, Message> {
+    entry(placeholder, value)
+        .on_input(move |v| Message::Text(field, v))
+        .padding(8)
+        .width(width)
+        .into()
 }
 
 /// yt-dlp's `--audio-quality` scale.
@@ -453,11 +457,7 @@ fn view<'a>(
     desktop_entry: bool,
 ) -> Element<'a, Message> {
     let page = column![
-        text(tr!("These apply to every link you queue from now on. Links already in the queue keep what they were queued with.")).style(|t: &Theme| {
-            text::Style {
-                color: Some(style::muted(t)),
-            }
-        }),
+        text(tr!("These apply to every link you queue from now on. Links already in the queue keep what they were queued with.")).style(style::muted_text),
         card(tr!("What to download"), format_section(settings)),
         card(tr!("Where to save"), destination_section(settings, paths)),
         card(tr!("Extras"), extras_section(settings)),
@@ -478,7 +478,7 @@ fn view<'a>(
             tr!("Automation and naming"),
             automation_section(settings, history),
         ))
-        .push(card(tr!("Network and other"), advanced_section(settings)))
+        .push(card(tr!("Network and other"), network_section(settings)))
         .into()
 }
 
@@ -512,11 +512,12 @@ fn format_section(settings: &Settings) -> Element<'_, Message> {
             if settings.video_format == VideoFormat::Custom {
                 body = body.push(choice(
                     tr!("Format string"),
-                    entry("bestvideo+bestaudio", &settings.custom_format)
-                        .on_input(|v| Message::Text(Field::CustomFormat, v))
-                        .padding(8)
-                        .width(300)
-                        .into(),
+                    text_field(
+                        "bestvideo+bestaudio",
+                        &settings.custom_format,
+                        Field::CustomFormat,
+                        300,
+                    ),
                 ));
             }
             body = body
@@ -535,11 +536,7 @@ fn format_section(settings: &Settings) -> Element<'_, Message> {
             if settings.convert != Convert::Keep {
                 body = body.push(choice(
                     tr!("Convert to"),
-                    entry("mp4", &settings.convert_target)
-                        .on_input(|v| Message::Text(Field::ConvertTarget, v))
-                        .padding(8)
-                        .width(160)
-                        .into(),
+                    text_field("mp4", &settings.convert_target, Field::ConvertTarget, 160),
                 ));
             }
         }
@@ -569,9 +566,7 @@ fn format_section(settings: &Settings) -> Element<'_, Message> {
                 body = body.push(
                     text(tr!("The audio is kept exactly as the site serves it."))
                         .size(13)
-                        .style(|t: &Theme| text::Style {
-                            color: Some(style::muted(t)),
-                        }),
+                        .style(style::muted_text),
                 );
             }
         }
@@ -616,11 +611,12 @@ fn extras_section(settings: &Settings) -> Element<'_, Message> {
         body = body
             .push(choice(
                 tr!("Languages"),
-                entry(&tr!("all but live chat"), &settings.sub_langs)
-                    .on_input(|v| Message::Text(Field::SubLangs, v))
-                    .padding(8)
-                    .width(240)
-                    .into(),
+                text_field(
+                    &tr!("all but live chat"),
+                    &settings.sub_langs,
+                    Field::SubLangs,
+                    240,
+                ),
             ))
             .push(
                 switch(settings.auto_subs)
@@ -636,16 +632,17 @@ fn extras_section(settings: &Settings) -> Element<'_, Message> {
     if settings.sponsor != Sponsor::Off {
         body = body.push(choice(
             tr!("Segments"),
-            dropdown(Cats::ALL, Some(settings.cats), Message::Cats).into(),
+            dropdown(Segments::ALL, Some(settings.segments), Message::Segments).into(),
         ));
-        if settings.cats == Cats::Custom {
+        if settings.segments == Segments::Custom {
             body = body.push(choice(
                 tr!("Categories"),
-                entry("sponsor,intro,outro", &settings.custom_cats)
-                    .on_input(|v| Message::Text(Field::CustomCats, v))
-                    .padding(8)
-                    .width(240)
-                    .into(),
+                text_field(
+                    "sponsor,intro,outro",
+                    &settings.custom_segments,
+                    Field::CustomSegments,
+                    240,
+                ),
             ));
         }
     }
@@ -674,11 +671,7 @@ fn automation_section<'a>(settings: &'a Settings, history: History<'a>) -> Eleme
         body = body
             .push(choice(
                 tr!("Items (empty for all)"),
-                entry("1-5,8", &settings.playlist_items)
-                    .on_input(|v| Message::Text(Field::PlaylistItems, v))
-                    .padding(8)
-                    .width(160)
-                    .into(),
+                text_field("1-5,8", &settings.playlist_items, Field::PlaylistItems, 160),
             ))
             .push(
                 switch(settings.playlist_reverse)
@@ -701,11 +694,12 @@ fn automation_section<'a>(settings: &'a Settings, history: History<'a>) -> Eleme
         body = body
             .push(choice(
                 tr!("History file"),
-                entry("download_archive.txt", &settings.archive_file)
-                    .on_input(|v| Message::Text(Field::ArchiveFile, v))
-                    .padding(8)
-                    .width(240)
-                    .into(),
+                text_field(
+                    "download_archive.txt",
+                    &settings.archive_file,
+                    Field::ArchiveFile,
+                    240,
+                ),
             ))
             .push(
                 switch(settings.archive_stop)
@@ -717,11 +711,12 @@ fn automation_section<'a>(settings: &'a Settings, history: History<'a>) -> Eleme
     body = body
         .push(choice(
             tr!("Stop after this many files"),
-            entry(&tr!("no limit"), &settings.max_downloads)
-                .on_input(|v| Message::Text(Field::MaxDownloads, v))
-                .padding(8)
-                .width(160)
-                .into(),
+            text_field(
+                &tr!("no limit"),
+                &settings.max_downloads,
+                Field::MaxDownloads,
+                160,
+            ),
         ))
         .push(choice(
             tr!("File names"),
@@ -730,11 +725,12 @@ fn automation_section<'a>(settings: &'a Settings, history: History<'a>) -> Eleme
     if settings.template == Template::Custom {
         body = body.push(choice(
             tr!("Template"),
-            entry("%(title)s [%(id)s].%(ext)s", &settings.custom_template)
-                .on_input(|v| Message::Text(Field::CustomTemplate, v))
-                .padding(8)
-                .width(300)
-                .into(),
+            text_field(
+                "%(title)s [%(id)s].%(ext)s",
+                &settings.custom_template,
+                Field::CustomTemplate,
+                300,
+            ),
         ));
     }
     body = body.push(
@@ -772,9 +768,7 @@ fn history_row(history: History<'_>) -> Element<'_, Message> {
     let row = row![
         text(summary)
             .size(13)
-            .style(|t: &Theme| text::Style {
-                color: Some(style::muted(t))
-            })
+            .style(style::muted_text)
             .width(Length::Fill),
         button(
             text(if history.entries.is_some() {
@@ -813,9 +807,7 @@ fn history_list_view(lines: &[String]) -> Element<'_, Message> {
     let body: Element<'_, Message> = if lines.is_empty() {
         text(tr!("The history is empty."))
             .size(13)
-            .style(|t: &Theme| text::Style {
-                color: Some(style::muted(t)),
-            })
+            .style(style::muted_text)
             .into()
     } else {
         Column::with_children(
@@ -847,11 +839,12 @@ fn sign_in_section(settings: &Settings) -> Element<'_, Message> {
         body = body
             .push(choice(
                 tr!("Profile (empty for the last used)"),
-                entry(&tr!("default"), &settings.cookies_profile)
-                    .on_input(|v| Message::Text(Field::CookiesProfile, v))
-                    .padding(8)
-                    .width(240)
-                    .into(),
+                text_field(
+                    &tr!("default"),
+                    &settings.cookies_profile,
+                    Field::CookiesProfile,
+                    240,
+                ),
             ))
             .push(
                 text(tr!(
@@ -860,50 +853,42 @@ fn sign_in_section(settings: &Settings) -> Element<'_, Message> {
                      first, and recent versions on Windows can't be read at all."
                 ))
                 .size(13)
-                .style(|t: &Theme| text::Style {
-                    color: Some(style::muted(t)),
-                }),
+                .style(style::muted_text),
             );
     }
     body.into()
 }
 
-fn advanced_section(settings: &Settings) -> Element<'_, Message> {
+fn network_section(settings: &Settings) -> Element<'_, Message> {
     rows![
         choice(
             tr!("Speed limit"),
-            entry(&tr!("no limit"), &settings.limit_rate)
-                .on_input(|v| Message::Text(Field::LimitRate, v))
-                .padding(8)
-                .width(160)
-                .into(),
+            text_field(
+                &tr!("no limit"),
+                &settings.limit_rate,
+                Field::LimitRate,
+                160
+            ),
         ),
         choice(
             tr!("Parts downloaded at once"),
-            entry("5", &settings.fragments)
-                .on_input(|v| Message::Text(Field::Fragments, v))
-                .padding(8)
-                .width(160)
-                .into(),
+            text_field("5", &settings.fragments, Field::Fragments, 160),
         ),
         choice(
             tr!("Seconds between requests"),
-            entry("1.5", &settings.sleep)
-                .on_input(|v| Message::Text(Field::Sleep, v))
-                .padding(8)
-                .width(160)
-                .into(),
+            text_field("1.5", &settings.sleep, Field::Sleep, 160),
         ),
         switch(settings.live_from_start)
             .label(tr!("Record live streams from the start"))
             .on_toggle(|v| Message::Toggle(Flag::LiveFromStart, v)),
         choice(
             tr!("Wait for a scheduled stream (seconds)"),
-            entry("60-3600", &settings.wait_for_video)
-                .on_input(|v| Message::Text(Field::WaitForVideo, v))
-                .padding(8)
-                .width(160)
-                .into(),
+            text_field(
+                "60-3600",
+                &settings.wait_for_video,
+                Field::WaitForVideo,
+                160
+            ),
         ),
         switch(settings.preserve_mtime)
             .label(tr!("Keep the original upload date on the file"))
@@ -936,9 +921,7 @@ fn destination_section<'a>(settings: &'a Settings, paths: &'a Paths) -> Element<
             "Leave it empty to use the downloads folder next to this app."
         ))
         .size(13)
-        .style(|t: &Theme| text::Style {
-            color: Some(style::muted(t))
-        }),
+        .style(style::muted_text),
     ]
     .spacing(8)
     .into()
@@ -1043,7 +1026,7 @@ mod tests {
             Field::CustomFormat,
             Field::ConvertTarget,
             Field::SubLangs,
-            Field::CustomCats,
+            Field::CustomSegments,
             Field::PlaylistItems,
             Field::ArchiveFile,
             Field::MaxDownloads,

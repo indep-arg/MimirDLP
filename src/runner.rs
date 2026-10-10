@@ -1,12 +1,11 @@
 //! Runs yt-dlp and turns its output into events the GUI can show.
 //!
-//! The arguments come from [`crate::engine::build_args`], which is pinned by
-//! `tests/engine_scenarios.rs`. Only the presentation flags added here are
-//! extra, and they are prepended so the engine's argv stays comparable with
-//! those scenarios. They were checked against real downloads: progress lines arrive
-//! on stdout, postprocessor lines on stderr, and `--print` implies `--quiet`,
-//! so `--progress` and `--no-quiet` are needed to keep the rest of the
-//! output flowing.
+//! The arguments come from [`crate::engine::build_args`], pinned by
+//! `tests/engine_scenarios.rs`. The presentation flags added here are
+//! prepended, so the engine's argv stays comparable with those scenarios.
+//! Checked against real downloads: progress lines arrive on stdout,
+//! postprocessor lines on stderr, and `--print` implies `--quiet`, so
+//! `--progress` and `--no-quiet` keep the rest of the output flowing.
 
 use std::ffi::OsString;
 use std::io::{BufRead, BufReader, Read};

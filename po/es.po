@@ -287,6 +287,10 @@ msgstr[0] "{n} de esos enlaces ya está en la cola."
 msgstr[1] "{n} de esos enlaces ya están en la cola."
 
 #: src/gui/download.rs
+msgid "the lookup was interrupted"
+msgstr "la consulta se interrumpió"
+
+#: src/gui/download.rs
 #, python-brace-format
 msgid "Restored {n} link from the last session."
 msgid_plural "Restored {n} links from the last session."
@@ -447,14 +451,6 @@ msgstr "Reintentar"
 #: src/gui/download.rs
 msgid "Remove"
 msgstr "Quitar"
-
-#: src/gui/download.rs
-msgid "the lookup was interrupted"
-msgstr "la consulta se interrumpió"
-
-#: src/gui/download.rs
-msgid "the thumbnail fetch was interrupted"
-msgstr "la descarga de la miniatura se interrumpió"
 
 #: src/gui/download.rs
 #, python-brace-format
@@ -1225,6 +1221,9 @@ msgstr "Aplicando SponsorBlock..."
 #: src/runner.rs
 msgid "Moving the file into place..."
 msgstr "Moviendo el archivo a su lugar..."
+
+#~ msgid "the thumbnail fetch was interrupted"
+#~ msgstr "la descarga de la miniatura se interrumpió"
 
 #~ msgid "AAC"
 #~ msgstr "AAC"

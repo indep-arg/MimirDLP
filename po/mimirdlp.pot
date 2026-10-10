@@ -286,6 +286,10 @@ msgstr[0] ""
 msgstr[1] ""
 
 #: src/gui/download.rs
+msgid "the lookup was interrupted"
+msgstr ""
+
+#: src/gui/download.rs
 #, python-brace-format
 msgid "Restored {n} link from the last session."
 msgid_plural "Restored {n} links from the last session."
@@ -445,14 +449,6 @@ msgstr ""
 
 #: src/gui/download.rs
 msgid "Remove"
-msgstr ""
-
-#: src/gui/download.rs
-msgid "the lookup was interrupted"
-msgstr ""
-
-#: src/gui/download.rs
-msgid "the thumbnail fetch was interrupted"
 msgstr ""
 
 #: src/gui/download.rs

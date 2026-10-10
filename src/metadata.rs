@@ -1,12 +1,10 @@
-//! Looks up a link before it is queued: title, thumbnail, duration and an
-//! approximate size for a video, or the title and the number of videos for
-//! a playlist, the way a queue card needs to show something useful before
-//! the download itself has even started.
+//! What a queue card shows before the download starts: title, thumbnail,
+//! duration and approximate size of a video, or the title and number of
+//! videos of a playlist.
 //!
-//! Both lookups are blocking and run on a worker thread from the GUI, same
-//! as everything else in `provision` and `runner`. Neither is retried: a
-//! failure here just means a plainer card (the raw URL as its title, no
-//! thumbnail), not a reason to refuse queuing the link.
+//! Both lookups block, so the GUI runs them on a thread of their own. They
+//! are not retried: a failure only means a plainer card (the link as its
+//! title, no thumbnail), never a link refused.
 
 use std::sync::{Condvar, Mutex};
 use std::time::Duration;
@@ -18,8 +16,7 @@ use crate::process::{self, RunError};
 use crate::provision::Paths;
 use crate::provision::download::agent;
 
-/// A playlist is looked up flat (`--flat-playlist`, one entry), so it
-/// answers with its own title and count instead of walking every video.
+/// How long one lookup may take.
 const TIMEOUT: Duration = Duration::from_secs(30);
 
 /// What the lookup has to agree on with the download it previews.
@@ -96,44 +93,44 @@ impl From<Info> for Metadata {
 /// start thirty of them.
 const MAX_LOOKUPS: usize = 3;
 
-/// A counting semaphore: `std` has none, and this is all it takes.
-struct Turns {
+/// A counting semaphore (`std` has none) for [`MAX_LOOKUPS`].
+struct Slots {
     running: Mutex<usize>,
     freed: Condvar,
 }
 
-static TURNS: Turns = Turns {
+static SLOTS: Slots = Slots {
     running: Mutex::new(0),
     freed: Condvar::new(),
 };
 
-/// Held while a lookup runs; gives the turn back when dropped, panics
-/// included.
-struct Turn;
+/// Held while a lookup runs; frees its slot when dropped, panics included.
+struct Slot;
 
-impl Turn {
-    fn take() -> Turn {
-        let mut running = TURNS.running.lock().unwrap_or_else(|e| e.into_inner());
+impl Slot {
+    fn acquire() -> Slot {
+        let mut running = SLOTS.running.lock().unwrap_or_else(|e| e.into_inner());
         while *running >= MAX_LOOKUPS {
-            running = TURNS.freed.wait(running).unwrap_or_else(|e| e.into_inner());
+            running = SLOTS.freed.wait(running).unwrap_or_else(|e| e.into_inner());
         }
         *running += 1;
-        Turn
+        Slot
     }
 }
 
-impl Drop for Turn {
+impl Drop for Slot {
     fn drop(&mut self) {
-        let mut running = TURNS.running.lock().unwrap_or_else(|e| e.into_inner());
+        let mut running = SLOTS.running.lock().unwrap_or_else(|e| e.into_inner());
         *running -= 1;
-        TURNS.freed.notify_one();
+        SLOTS.freed.notify_one();
     }
 }
 
-/// Runs `yt-dlp -j` on `url` and parses the one line of JSON it prints.
-/// Blocks while [`MAX_LOOKUPS`] others are already running.
+/// Runs `yt-dlp -J --flat-playlist --playlist-items 1` on `url` and reads
+/// the JSON it prints. A playlist answers with its own title and count
+/// instead of walking every video. Waits while [`MAX_LOOKUPS`] others run.
 pub fn fetch(paths: &Paths, url: &str, lookup: &Lookup) -> Result<Metadata, String> {
-    let _turn = Turn::take();
+    let _slot = Slot::acquire();
     let tool = paths.tool("yt-dlp");
     // Same JS runtime the real download uses: without it, sites that throw
     // JavaScript challenges at extractors (YouTube chief among them) can
@@ -192,8 +189,7 @@ pub fn fetch(paths: &Paths, url: &str, lookup: &Lookup) -> Result<Metadata, Stri
     Ok(info.into())
 }
 
-/// A one-shot, best-effort download of the thumbnail image bytes, handed
-/// straight to `iced::widget::image::Handle::from_bytes` by the caller.
+/// The thumbnail's bytes, one attempt.
 pub fn fetch_thumbnail(url: &str) -> Result<Vec<u8>, String> {
     agent()
         .get(url)

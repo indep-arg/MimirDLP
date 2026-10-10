@@ -18,7 +18,7 @@
 use std::path::{Path, PathBuf};
 use std::sync::{Mutex, OnceLock};
 
-use mimirdlp::config::{Audio, Cats, Container, Kind, Quality, Settings, Sponsor, VideoFormat};
+use mimirdlp::config::{Audio, Container, Kind, Quality, Segments, Settings, Sponsor, VideoFormat};
 use mimirdlp::metadata::{self, Lookup};
 use mimirdlp::provision::{self, Component, Paths, Status};
 use mimirdlp::runner::{self, Cancel, Event, Finish};
@@ -290,8 +290,8 @@ fn chapters_are_embedded_when_asked_for() {
 fn sponsorblock_marking_adds_the_segment_as_a_chapter() {
     let settings = Settings {
         sponsor: Sponsor::Mark,
-        cats: Cats::Custom,
-        custom_cats: "intro".into(),
+        segments: Segments::Custom,
+        custom_segments: "intro".into(),
         ..small()
     };
     let (_dir, file) = download(&settings, CHAPTERS);
@@ -305,8 +305,8 @@ fn sponsorblock_removal_really_cuts_the_segment() {
     let full = probe(&download(&small(), CHAPTERS).1).duration;
     let settings = Settings {
         sponsor: Sponsor::Remove,
-        cats: Cats::Custom,
-        custom_cats: "intro".into(),
+        segments: Segments::Custom,
+        custom_segments: "intro".into(),
         ..small()
     };
     let cut = probe(&download(&settings, CHAPTERS).1).duration;

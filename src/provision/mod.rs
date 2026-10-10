@@ -158,10 +158,6 @@ impl From<io::Error> for Error {
     }
 }
 
-// ---------------------------------------------------------------------------
-// Status
-// ---------------------------------------------------------------------------
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Status {
     Missing,
@@ -172,7 +168,6 @@ pub enum Status {
     },
 }
 
-/// What is installed, based on actually running the binaries.
 /// Every component's files are in `bin/`. Says nothing about whether they
 /// run (that takes [`inspect`], about half a second for yt-dlp, which
 /// unpacks itself first); it is what the window opens on before that.
@@ -183,6 +178,7 @@ pub fn all_present(paths: &Paths) -> bool {
         .all(|name| paths.tool(name).is_file())
 }
 
+/// What is installed, found by running each binary.
 pub fn inspect(component: Component, paths: &Paths) -> Status {
     for name in component.binaries() {
         if !paths.tool(name).is_file() {
@@ -265,10 +261,6 @@ fn days_from_civil(year: i64, month: i64, day: i64) -> i64 {
     era * 146_097 + doe - 719_468
 }
 
-// ---------------------------------------------------------------------------
-// Install state (a small key=value file)
-// ---------------------------------------------------------------------------
-
 pub fn read_state(paths: &Paths, key: &str) -> Option<String> {
     let text = fs::read_to_string(paths.state_file()).ok()?;
     text.lines()
@@ -290,10 +282,6 @@ pub fn write_state(paths: &Paths, key: &str, value: &str) -> io::Result<()> {
     fs::write(&tmp, lines.join("\n") + "\n")?;
     fs::rename(tmp, file)
 }
-
-// ---------------------------------------------------------------------------
-// Update checks
-// ---------------------------------------------------------------------------
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum UpdateCheck {
@@ -368,10 +356,6 @@ pub fn sha256_file(path: &Path) -> io::Result<String> {
 pub(crate) fn hex(bytes: &[u8]) -> String {
     bytes.iter().map(|b| format!("{b:02x}")).collect()
 }
-
-// ---------------------------------------------------------------------------
-// Install
-// ---------------------------------------------------------------------------
 
 /// Whether the application folder can be written to, which everything
 /// portable depends on (`bin/`, the settings, the history). It can't in
@@ -485,10 +469,8 @@ fn install_source(
     if !actual.eq_ignore_ascii_case(&expected) {
         // "latest" can move while a large file downloads (FFmpeg-Builds
         // replaces its assets daily), so the file may be a newer build
-        // than the checksum fetched before it. Ask once more before
-        // calling it a mismatch.
-        // Signed like the first one: this path must not be a way around
-        // the signature check.
+        // than the checksum fetched before it. Ask once more, signature
+        // checked like the first time, before calling it a mismatch.
         if let Ok(sums) = fetch_sums(source)
             && let Ok(refreshed) = source.checksum.find(&sums, source.asset)
             && refreshed.eq_ignore_ascii_case(&actual)

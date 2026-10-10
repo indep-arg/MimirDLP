@@ -2,16 +2,14 @@
 
 use iced::overlay::menu;
 use iced::theme::{Mode, Palette};
-use iced::widget::{button, container, pick_list, progress_bar, text_input, toggler};
-use iced::{Border, Color, Shadow, Theme, Vector, border};
+use iced::widget::{button, container, pick_list, progress_bar, rule, text, text_input, toggler};
+use iced::{Border, Color, Font, Shadow, Theme, Vector, border, font};
 
 use crate::config::ThemePref;
 use crate::provision::Level;
 
-/// The theme to render with, given the user's preference and (for
-/// [`ThemePref::System`]) the OS's current light/dark mode. `Mode::None`
-/// (unknown, or a platform iced can't ask) falls back to dark, matching
-/// this app's original, only appearance.
+/// The theme for the user's preference and, for [`ThemePref::System`], the
+/// system's mode. An unknown mode (`Mode::None`) gets the dark theme.
 pub fn theme(pref: ThemePref, system: Mode) -> Theme {
     let dark = match pref {
         ThemePref::Dark => true,
@@ -21,9 +19,7 @@ pub fn theme(pref: ThemePref, system: Mode) -> Theme {
     if dark { dark_theme() } else { light_theme() }
 }
 
-// Both palettes are GNOME's Adwaita colors (libadwaita's named colors), so
-// the app looks at home next to GNOME apps and reads as one family on
-// Windows too.
+// Both palettes are libadwaita's named colors.
 fn dark_theme() -> Theme {
     Theme::custom(
         "MimirDLP Dark",
@@ -65,10 +61,24 @@ fn surface(theme: &Theme) -> (Color, Color) {
     }
 }
 
-/// Lines between rows and menu sections.
-pub fn separator(theme: &Theme) -> Color {
-    surface(theme).1
+/// The line between rows and menu sections.
+pub fn separator(theme: &Theme) -> rule::Style {
+    rule::Style {
+        color: surface(theme).1,
+        ..rule::default(theme)
+    }
 }
+
+pub const BOLD: Font = Font {
+    weight: font::Weight::Bold,
+    ..Font::DEFAULT
+};
+
+const SHADOW: Shadow = Shadow {
+    color: Color::from_rgba8(0, 0, 0, 0.25),
+    offset: Vector::new(0.0, 2.0),
+    blur_radius: 12.0,
+};
 
 /// Adwaita's card: a lighter surface than the window (white in light mode),
 /// 12 px corners and a hairline outline instead of a shadow.
@@ -96,11 +106,7 @@ pub fn header_bar(theme: &Theme) -> container::Style {
 /// The menu floats over the screen, so it gets a shadow too.
 pub fn popover(theme: &Theme) -> container::Style {
     container::Style {
-        shadow: Shadow {
-            color: Color::from_rgba8(0, 0, 0, 0.25),
-            offset: Vector::new(0.0, 2.0),
-            blur_radius: 12.0,
-        },
+        shadow: SHADOW,
         ..card(theme)
     }
 }
@@ -185,7 +191,9 @@ pub fn pill_danger(theme: &Theme, status: button::Status) -> button::Style {
     })
 }
 
-pub fn nav(active: bool) -> impl Fn(&Theme, button::Status) -> button::Style {
+/// One choice of a row of choices (the theme in the menu): filled when it
+/// is the current one.
+pub fn segment(active: bool) -> impl Fn(&Theme, button::Status) -> button::Style {
     move |theme, status| {
         if active {
             pill(theme, status)
@@ -232,11 +240,7 @@ pub fn dropdown_menu(theme: &Theme) -> menu::Style {
         text_color: text,
         selected_text_color: text,
         selected_background: Color { a: 0.10, ..text }.into(),
-        shadow: Shadow {
-            color: Color::from_rgba8(0, 0, 0, 0.25),
-            offset: Vector::new(0.0, 2.0),
-            blur_radius: 12.0,
-        },
+        shadow: SHADOW,
     }
 }
 
@@ -355,6 +359,13 @@ pub fn muted(theme: &Theme) -> Color {
     let mut color = theme.palette().text;
     color.a = 0.55;
     color
+}
+
+/// [`muted`] as a text style.
+pub fn muted_text(theme: &Theme) -> text::Style {
+    text::Style {
+        color: Some(muted(theme)),
+    }
 }
 
 /// The color for each log tag.

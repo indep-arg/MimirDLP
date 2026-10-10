@@ -235,13 +235,13 @@ keyed!(Sponsor {
 /// filler for removing, and it never includes the two categories that can
 /// only be marked.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Cats {
+pub enum Segments {
     SponsorsOnly,
     Promos,
     Everything,
     Custom,
 }
-keyed!(Cats {
+keyed!(Segments {
     SponsorsOnly => "sponsor", "Sponsors only",
     Promos => "promos", "Sponsors, self-promotion, interaction",
     Everything => "default", "Everything SponsorBlock covers",
@@ -361,9 +361,9 @@ pub struct Settings {
     /// Many YouTube videos have no others.
     pub auto_subs: bool,
     pub sponsor: Sponsor,
-    pub cats: Cats,
-    /// Used when [`Cats::Custom`] is selected.
-    pub custom_cats: String,
+    pub segments: Segments,
+    /// Used when [`Segments::Custom`] is selected.
+    pub custom_segments: String,
     pub keyframes: bool,
     pub playlist: PlaylistChoice,
     /// yt-dlp `-I` syntax, for example `1-5,8`. Empty means every item.
@@ -422,8 +422,8 @@ impl Default for Settings {
             sub_langs: String::new(),
             auto_subs: false,
             sponsor: Sponsor::Off,
-            cats: Cats::SponsorsOnly,
-            custom_cats: String::new(),
+            segments: Segments::SponsorsOnly,
+            custom_segments: String::new(),
             keyframes: false,
             playlist: PlaylistChoice::Auto,
             playlist_items: String::new(),
@@ -454,10 +454,9 @@ impl Default for Settings {
 
 impl Settings {
     /// Where files land: the configured folder, or `downloads` next to the
-    /// application. A leading `~` is expanded by hand, since nothing else
-    /// in this text field's path does it for us. A relative folder is next
-    /// to the application, like the history file, never relative to
-    /// wherever the app happened to be started from.
+    /// application. A leading `~` is expanded here, since no shell sees
+    /// this path. A relative folder is next to the application, like the
+    /// history file, not wherever the app was started from.
     pub fn output_dir(&self, paths: &Paths) -> PathBuf {
         let dir = self.output_dir.trim();
         if dir.is_empty() {
@@ -499,18 +498,18 @@ impl Settings {
         )
     }
 
-    /// How many videos the history already holds, if it exists.
-    pub fn history_entries(&self, paths: &Paths) -> Option<usize> {
+    /// How many videos the history holds, if it exists.
+    pub fn history_count(&self, paths: &Paths) -> Option<usize> {
         self.history_lines(paths).map(|lines| lines.len())
     }
 
     /// The categories that will be sent to yt-dlp.
     pub fn categories(&self) -> &str {
-        match self.cats {
-            Cats::SponsorsOnly => "sponsor",
-            Cats::Promos => "sponsor,selfpromo,interaction",
-            Cats::Everything => "default",
-            Cats::Custom => self.custom_cats.trim(),
+        match self.segments {
+            Segments::SponsorsOnly => "sponsor",
+            Segments::Promos => "sponsor,selfpromo,interaction",
+            Segments::Everything => "default",
+            Segments::Custom => self.custom_segments.trim(),
         }
     }
 
@@ -582,7 +581,7 @@ impl Settings {
                     VideoFormat::VideoOnly => "bestvideo".into(),
                     // problems() refuses an empty one, so this is only a
                     // guard against ever handing yt-dlp nothing at all.
-                    VideoFormat::Custom => some_text(&self.custom_format).unwrap_or(o.format),
+                    VideoFormat::Custom => non_empty(&self.custom_format).unwrap_or(o.format),
                 };
                 o.max_resolution = match self.video_format {
                     // A format string of your own picks its own quality.
@@ -647,7 +646,7 @@ impl Settings {
             PlaylistChoice::Auto => Playlist::Auto,
             PlaylistChoice::Single => Playlist::Single,
             PlaylistChoice::Whole => Playlist::Whole {
-                items: some_text(&self.playlist_items),
+                items: non_empty(&self.playlist_items),
                 reverse: self.playlist_reverse,
             },
         };
@@ -665,7 +664,7 @@ impl Settings {
             Template::Custom => self.custom_template.trim().to_string(),
             preset => preset.preset().to_string(),
         };
-        o.limit_rate = some_text(&self.limit_rate);
+        o.limit_rate = non_empty(&self.limit_rate);
         if let Ok(fragments) = self.fragments.trim().parse::<u32>()
             && fragments >= 1
         {
@@ -677,7 +676,7 @@ impl Settings {
             o.sleep_requests = sleep;
         }
         o.live_from_start = self.live_from_start;
-        o.wait_for_video = some_text(&self.wait_for_video);
+        o.wait_for_video = non_empty(&self.wait_for_video);
         o.verbose = self.verbose;
         o.restrict_filenames = self.restrict_filenames;
         o.preserve_mtime = self.preserve_mtime;
@@ -692,7 +691,7 @@ impl Settings {
             return None;
         }
         let browser = self.cookies_browser.key();
-        Some(match some_text(&self.cookies_profile) {
+        Some(match non_empty(&self.cookies_profile) {
             Some(profile) => format!("{browser}:{profile}"),
             None => browser.to_string(),
         })
@@ -742,8 +741,8 @@ impl Settings {
             ("subtitle_langs", self.sub_langs.clone()),
             ("subtitle_auto", yes(self.auto_subs).into()),
             ("sponsorblock", self.sponsor.key().into()),
-            ("sponsorblock_cats", self.cats.key().into()),
-            ("sponsorblock_custom", self.custom_cats.clone()),
+            ("sponsorblock_cats", self.segments.key().into()),
+            ("sponsorblock_custom", self.custom_segments.clone()),
             ("sponsorblock_keyframes", yes(self.keyframes).into()),
             ("playlist", self.playlist.key().into()),
             ("playlist_items", self.playlist_items.clone()),
@@ -814,8 +813,8 @@ impl Settings {
                 "subtitle_langs" => s.sub_langs = value.to_string(),
                 "subtitle_auto" => s.auto_subs = flag(s.auto_subs),
                 "sponsorblock" => s.sponsor = Sponsor::from_key(value).unwrap_or(s.sponsor),
-                "sponsorblock_cats" => s.cats = Cats::from_key(value).unwrap_or(s.cats),
-                "sponsorblock_custom" => s.custom_cats = value.to_string(),
+                "sponsorblock_cats" => s.segments = Segments::from_key(value).unwrap_or(s.segments),
+                "sponsorblock_custom" => s.custom_segments = value.to_string(),
                 "sponsorblock_keyframes" => s.keyframes = flag(s.keyframes),
                 "playlist" => s.playlist = PlaylistChoice::from_key(value).unwrap_or(s.playlist),
                 "playlist_items" => s.playlist_items = value.to_string(),
@@ -910,7 +909,7 @@ fn home_dir() -> Option<std::ffi::OsString> {
     std::env::var_os("HOME").or_else(|| std::env::var_os("USERPROFILE"))
 }
 
-fn some_text(value: &str) -> Option<String> {
+fn non_empty(value: &str) -> Option<String> {
     let value = value.trim();
     (!value.is_empty()).then(|| value.to_string())
 }
@@ -1075,8 +1074,8 @@ mod tests {
             convert: Convert::Recode,
             convert_target: "mp4".into(),
             sponsor: Sponsor::Remove,
-            cats: Cats::Custom,
-            custom_cats: "sponsor,intro".into(),
+            segments: Segments::Custom,
+            custom_segments: "sponsor,intro".into(),
             keyframes: true,
             playlist: PlaylistChoice::Whole,
             playlist_items: "1-5".into(),
@@ -1239,7 +1238,7 @@ mod tests {
             archive: true,
             ..Settings::default()
         };
-        assert_eq!(settings.history_entries(&paths), None, "no file yet");
+        assert_eq!(settings.history_count(&paths), None, "no file yet");
         fs::write(
             settings.archive_path(&paths),
             "youtube a
@@ -1248,7 +1247,7 @@ youtube b
 ",
         )
         .unwrap();
-        assert_eq!(settings.history_entries(&paths), Some(2));
+        assert_eq!(settings.history_count(&paths), Some(2));
         fs::remove_dir_all(dir).unwrap();
     }
 
@@ -1335,7 +1334,7 @@ youtube b
     fn sponsorblock_and_subtitles_map_to_the_documented_category_lists() {
         let settings = Settings {
             sponsor: Sponsor::Mark,
-            cats: Cats::Promos,
+            segments: Segments::Promos,
             subs: Subs::Both,
             sub_langs: " en.* ".into(),
             ..Settings::default()
@@ -1367,8 +1366,8 @@ youtube b
 
         let settings = Settings {
             sponsor: Sponsor::Remove,
-            cats: Cats::Custom,
-            custom_cats: "chapter".into(),
+            segments: Segments::Custom,
+            custom_segments: "chapter".into(),
             ..Settings::default()
         };
         assert!(settings.problems().iter().any(|p| p.contains("marked")));

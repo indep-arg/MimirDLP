@@ -1,5 +1,4 @@
-//! Translations, the gettext way (like unrud/video-downloader): every text
-//! a user sees is written in English inside `tr!("...")`, `po/mimirdlp.pot`
+//! Translations, the gettext way: every text a user sees is written in English inside `tr!("...")`, `po/mimirdlp.pot`
 //! lists them all (`tests/translations.rs` keeps it current), and each
 //! language is a `po/<code>.po` file, translated on Weblate.
 //!

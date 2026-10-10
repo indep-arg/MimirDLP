@@ -1,31 +1,24 @@
-//! The Download screen: a queue of links, each previewed with real metadata
-//! before it downloads.
+//! The Download screen: the queue and the activity log.
 //!
-//! Adding a link queues it immediately and kicks off a background lookup
-//! (`crate::metadata::fetch`, then a thumbnail fetch) that fills the card in
-//! once it resolves; a lookup failure never blocks queuing, it just leaves a
-//! plainer card. Each item takes a copy of the Settings page's `Settings`
-//! when it is added (kind and quality then stay editable on its card while
-//! it waits); turning one item's
-//! configuration into yt-dlp arguments is [`Settings::to_options`] plus
-//! [`crate::engine::build_args`], and running it is [`crate::runner`]. Items
-//! download one at a time, in order; every step yt-dlp reports lands in the
-//! tagged activity log shared with the Setup screen.
+//! Adding a link queues it at once and starts a lookup (`metadata::fetch`,
+//! then the thumbnail) that fills its card in; a failed lookup only leaves
+//! a plainer card. Each item keeps a copy of the `Settings` it was queued
+//! with, and its kind and quality can be changed on the card while it
+//! waits. Items download one at a time, in order, through `runner`.
 
 use std::collections::BTreeMap;
-use std::future::Future;
 use std::path::Path;
 use std::sync::Arc;
 use std::thread;
 
-use iced::futures::channel::{mpsc, oneshot};
+use iced::futures::channel::mpsc;
 use iced::widget::{
     Column, button, column, container, image, progress_bar, row, scrollable, space, text,
 };
-use iced::{Alignment, Element, Length, Task, Theme};
+use iced::{Alignment, Element, Length, Task};
 use tr::tr;
 
-use super::{dropdown, entry, log as log_panel, style};
+use super::{amount, dropdown, entry, in_background, log as log_panel, style};
 use crate::config::{self, Kind, Quality, Settings, valid_url};
 use crate::engine::{ThumbnailPlan, thumbnail_plan};
 use crate::log::Level;
@@ -33,8 +26,8 @@ use crate::metadata::{self, Metadata};
 use crate::provision::Paths;
 use crate::runner::{self, Cancel, Event, Finish, Progress};
 
-/// How many activity lines are kept. Enough to see a whole run, capped so
-/// an hours long recording can't grow without end.
+/// How many activity lines are kept: enough for a whole run, and a limit
+/// for a recording that goes on for hours.
 const MAX_LOG: usize = 2000;
 
 #[derive(Debug, Clone)]
@@ -74,6 +67,12 @@ enum ItemStatus {
     Downloading(Progress),
     Completed { path: Option<String> },
     Failed(String),
+}
+
+impl ItemStatus {
+    fn is_finished(&self) -> bool {
+        matches!(self, ItemStatus::Completed { .. } | ItemStatus::Failed(_))
+    }
 }
 
 struct QueueItem {
@@ -164,11 +163,6 @@ impl Download {
         self.persist();
     }
 
-    /// Adds a line to the activity log on behalf of another screen.
-    pub fn log(&mut self, note: (Level, String)) {
-        self.note(note);
-    }
-
     /// `settings` is the Settings page's current state: what a link added
     /// now is queued with, and where "Open folder" looks.
     pub fn update(&mut self, message: Message, settings: &Settings) -> Task<Message> {
@@ -209,12 +203,7 @@ impl Download {
             }
             Message::ToggleLog => self.show_log = !self.show_log,
             Message::ClearFinished => {
-                self.items.retain(|i| {
-                    !matches!(
-                        i.status,
-                        ItemStatus::Completed { .. } | ItemStatus::Failed(_)
-                    )
-                });
+                self.items.retain(|i| !i.status.is_finished());
             }
             // An item that ran (or is running) keeps what it ran with.
             Message::ItemKind(id, value) => {
@@ -240,9 +229,12 @@ impl Download {
                     };
                 }
                 if let Some(url) = thumbnail_url {
-                    return Task::perform(fetch_thumbnail(url), move |result| {
-                        Message::ThumbnailFetched(id, result)
-                    });
+                    return Task::perform(
+                        in_background(move || metadata::fetch_thumbnail(&url)),
+                        move |result| {
+                            Message::ThumbnailFetched(id, result.unwrap_or(Err(String::new())))
+                        },
+                    );
                 }
             }
             Message::ThumbnailFetched(id, result) => {
@@ -255,7 +247,7 @@ impl Download {
             Message::Start => return self.start(),
             Message::Stop => {
                 if let Some(cancel) = self.job.clone() {
-                    self.note((Level::Warn, tr!("Stopping the download...")));
+                    self.log((Level::Warn, tr!("Stopping the download...")));
                     cancel.cancel();
                 }
                 return Task::none();
@@ -263,7 +255,7 @@ impl Download {
             Message::OpenFolder => {
                 let dir = settings.output_dir(&self.paths);
                 if !dir.is_dir() {
-                    self.note((Level::Info, tr!("The output folder doesn't exist yet.")));
+                    self.log((Level::Info, tr!("The output folder doesn't exist yet.")));
                 } else {
                     return super::open::open(dir).map(Message::FolderOpened);
                 }
@@ -273,7 +265,7 @@ impl Download {
             }
             Message::FolderOpened(result) => {
                 if let Err(e) = result {
-                    self.note((Level::Warn, tr!("Could not open the folder: {e}", e)));
+                    self.log((Level::Warn, tr!("Could not open the folder: {e}", e)));
                 }
             }
             Message::Report(event) => return self.report(event),
@@ -281,13 +273,10 @@ impl Download {
         Task::none()
     }
 
-    /// Adds one line to the activity log, keeping only the last
-    /// [`MAX_LOG`] of them. A live recording can run for hours, and an
-    /// unbounded log would grow (and slow the window down) with it.
-    fn note(&mut self, entry: (Level, String)) {
-        // A live recording repeats the same line over and over (yt-dlp
-        // sleeps between requests and says so every time), so repeats are
-        // counted on one line instead of pushing the rest out of view.
+    /// Adds a line to the activity log, keeping the last [`MAX_LOG`]. A
+    /// line repeated right away (yt-dlp says so every time it sleeps during
+    /// a live recording) is counted on the line before instead.
+    pub fn log(&mut self, entry: (Level, String)) {
         if self.last.as_ref() == Some(&entry)
             && let Some(last) = self.log.last_mut()
         {
@@ -388,9 +377,13 @@ impl Download {
             status,
         });
         self.lookups += 1;
+        let paths = self.paths.clone();
         Task::perform(
-            fetch_metadata(self.paths.clone(), url, lookup),
-            move |result| Message::MetadataFetched(id, result),
+            in_background(move || metadata::fetch(&paths, &url, &lookup)),
+            move |result| {
+                let result = result.unwrap_or_else(|| Err(tr!("the lookup was interrupted")));
+                Message::MetadataFetched(id, result)
+            },
         )
     }
 
@@ -400,7 +393,7 @@ impl Download {
     pub fn restore(&mut self) -> Task<Message> {
         let saved = config::load_queue(&self.paths);
         if !saved.is_empty() {
-            self.note((
+            self.log((
                 Level::Info,
                 tr!("Restored {n} link from the last session."
                     | "Restored {n} links from the last session." % saved.len()),
@@ -435,7 +428,7 @@ impl Download {
             })
             .collect();
         if let Err(e) = config::save_queue(&self.paths, &items) {
-            self.note((Level::Warn, tr!("Could not save the queue: {e}", e)));
+            self.log((Level::Warn, tr!("Could not save the queue: {e}", e)));
         }
     }
 
@@ -473,7 +466,7 @@ impl Download {
             if let Some(problem) = item_settings.problems().into_iter().next() {
                 self.items[index].status = ItemStatus::Failed(problem.clone());
                 let url = self.items[index].url.clone();
-                self.note((Level::Error, format!("{url}: {problem}")));
+                self.log((Level::Error, format!("{url}: {problem}")));
                 continue;
             }
 
@@ -490,17 +483,17 @@ impl Download {
             self.files.clear();
 
             if !self.log.is_empty() {
-                self.note((Level::Info, String::new()));
+                self.log((Level::Info, String::new()));
             }
-            self.note((Level::Download, url.clone()));
-            self.note((
+            self.log((Level::Download, url.clone()));
+            self.log((
                 Level::Info,
                 tr!("Saving into: {folder}", folder = output_dir.display()),
             ));
             if let ThumbnailPlan::Skip(ext) = thumbnail_plan(&options)
                 && options.embed_thumbnail
             {
-                self.note((
+                self.log((
                     Level::Info,
                     tr!("No thumbnail: a .{ext} file can't hold one.", ext),
                 ));
@@ -526,10 +519,10 @@ impl Download {
 
     fn report(&mut self, event: Event) -> Task<Message> {
         match event {
-            Event::Log(level, line) => self.note((level, line)),
+            Event::Log(level, line) => self.log((level, line)),
             Event::Progress(progress) => {
                 self.progress.insert(progress.stream, progress);
-                let combined = combined(&self.progress);
+                let combined = combine(&self.progress);
                 if let Some(id) = self.current
                     && let Some(item) = self.items.iter_mut().find(|i| i.id == id)
                 {
@@ -539,7 +532,7 @@ impl Download {
             // Not the end of the item: a playlist reports one file per
             // video, and the item completes when yt-dlp exits.
             Event::File(path) => {
-                self.note((Level::Ok, tr!("Saved: {path}", path)));
+                self.log((Level::Ok, tr!("Saved: {path}", path)));
                 self.files.push(path);
             }
             Event::Finished(finish) => {
@@ -568,7 +561,7 @@ impl Download {
                     ),
                     Finish::Failed(reason) => (Level::Error, reason.clone()),
                 };
-                self.note((level, message));
+                self.log((level, message));
                 if let Some(id) = id
                     && let Some(item) = self.items.iter_mut().find(|i| i.id == id)
                 {
@@ -610,16 +603,11 @@ impl Download {
             // Adwaita's status page: what this screen is for, said once.
             container(
                 column![
-                    text(tr!("Download a video")).size(24).font(iced::Font {
-                        weight: iced::font::Weight::Bold,
-                        ..iced::Font::DEFAULT
-                    }),
+                    text(tr!("Download a video")).size(24).font(style::BOLD),
                     text(tr!(
                         "Paste a link from YouTube or almost any other site above."
                     ))
-                    .style(|t: &Theme| text::Style {
-                        color: Some(style::muted(t))
-                    }),
+                    .style(style::muted_text),
                 ]
                 .spacing(8)
                 .align_x(Alignment::Center),
@@ -651,23 +639,13 @@ impl Download {
             .into()
     }
 
-    /// A thin aggregate bar across the whole queue, the way a batch of
-    /// downloads reports overall progress once each item has its own.
+    /// How much of the whole queue is done.
     fn queue_progress(&self) -> Element<'_, Message> {
         let total = self.items.len();
         if total == 0 {
             return space::vertical().height(0).into();
         }
-        let done = self
-            .items
-            .iter()
-            .filter(|i| {
-                matches!(
-                    i.status,
-                    ItemStatus::Completed { .. } | ItemStatus::Failed(_)
-                )
-            })
-            .count();
+        let done = self.items.iter().filter(|i| i.status.is_finished()).count();
         let summary = if self.running() {
             tr!("Downloading queue: {done} of {total} done", done, total)
         } else if done == total {
@@ -676,9 +654,7 @@ impl Download {
             tr!("Ready: {done} of {total} done", done, total)
         };
         column![
-            text(summary).size(13).style(|t: &Theme| text::Style {
-                color: Some(style::muted(t))
-            }),
+            text(summary).size(13).style(style::muted_text),
             progress_bar(0.0..=1.0, done as f32 / total as f32)
                 .girth(6)
                 .style(style::progress),
@@ -714,12 +690,7 @@ impl Download {
         let mut actions = row![button, open_folder]
             .spacing(12)
             .align_y(Alignment::Center);
-        if self.items.iter().any(|i| {
-            matches!(
-                i.status,
-                ItemStatus::Completed { .. } | ItemStatus::Failed(_)
-            )
-        }) {
+        if self.items.iter().any(|i| i.status.is_finished()) {
             actions = actions.push(
                 iced::widget::button(text(tr!("Clear finished")))
                     .padding([10, 20])
@@ -730,9 +701,7 @@ impl Download {
         if let Some(problem) = &self.problem {
             actions = actions.push(text(problem).style(text::danger));
         } else if self.running() {
-            actions = actions.push(text(tr!("Working...")).style(|t: &Theme| text::Style {
-                color: Some(style::muted(t)),
-            }));
+            actions = actions.push(text(tr!("Working...")).style(style::muted_text));
         }
         actions.push(space::horizontal()).push(log_toggle).into()
     }
@@ -757,15 +726,13 @@ fn item_card(item: &QueueItem) -> Element<'_, Message> {
             };
             // `center(Length::Fill)` would override the fixed size and
             // let a long title squeeze the placeholder away.
-            container(text(glyph).size(20).style(|t: &Theme| text::Style {
-                color: Some(style::muted(t)),
-            }))
-            .width(120)
-            .height(68)
-            .align_x(Alignment::Center)
-            .align_y(Alignment::Center)
-            .style(style::card)
-            .into()
+            container(text(glyph).size(20).style(style::muted_text))
+                .width(120)
+                .height(68)
+                .align_x(Alignment::Center)
+                .align_y(Alignment::Center)
+                .style(style::card)
+                .into()
         }
     };
 
@@ -777,9 +744,7 @@ fn item_card(item: &QueueItem) -> Element<'_, Message> {
     let details: Element<'_, Message> = match &item.meta {
         MetaState::Fetching => text(tr!("Looking up this link..."))
             .size(13)
-            .style(|t: &Theme| text::Style {
-                color: Some(style::muted(t)),
-            })
+            .style(style::muted_text)
             .into(),
         MetaState::Failed(e) => text(tr!("Could not look this link up ({e})", e))
             .size(13)
@@ -805,9 +770,7 @@ fn item_card(item: &QueueItem) -> Element<'_, Message> {
             } else {
                 text(parts.join("   "))
                     .size(13)
-                    .style(|t: &Theme| text::Style {
-                        color: Some(style::muted(t)),
-                    })
+                    .style(style::muted_text)
                     .into()
             }
         }
@@ -835,21 +798,11 @@ fn item_card(item: &QueueItem) -> Element<'_, Message> {
             ),
             Kind::AudioOnly => kind.to_string(),
         };
-        text(label)
-            .size(13)
-            .style(|t: &Theme| text::Style {
-                color: Some(style::muted(t)),
-            })
-            .into()
+        text(label).size(13).style(style::muted_text).into()
     };
 
     let status_row: Element<'_, Message> = match &item.status {
-        ItemStatus::Queued => text(tr!("Queued"))
-            .size(13)
-            .style(|t: &Theme| text::Style {
-                color: Some(style::muted(t)),
-            })
-            .into(),
+        ItemStatus::Queued => text(tr!("Queued")).size(13).style(style::muted_text).into(),
         ItemStatus::Downloading(progress) => progress_view(*progress),
         ItemStatus::Completed { path } => {
             let mut row = row![text(tr!("Completed")).size(13).style(text::success)]
@@ -905,39 +858,9 @@ fn item_card(item: &QueueItem) -> Element<'_, Message> {
     .into()
 }
 
-/// Runs `metadata::fetch` on a worker thread and resolves once it returns,
-/// the same one-shot idiom `gui::wait_on_a_thread` uses for a plain delay:
-/// a blocking call has no business running on the iced executor.
-fn fetch_metadata(
-    paths: Paths,
-    url: String,
-    lookup: metadata::Lookup,
-) -> impl Future<Output = Result<Metadata, String>> {
-    let (tx, rx) = oneshot::channel();
-    thread::spawn(move || {
-        let _ = tx.send(metadata::fetch(&paths, &url, &lookup));
-    });
-    async move {
-        rx.await
-            .unwrap_or_else(|_| Err(tr!("the lookup was interrupted")))
-    }
-}
-
-fn fetch_thumbnail(url: String) -> impl Future<Output = Result<Vec<u8>, String>> {
-    let (tx, rx) = oneshot::channel();
-    thread::spawn(move || {
-        let _ = tx.send(metadata::fetch_thumbnail(&url));
-    });
-    async move {
-        rx.await
-            .unwrap_or_else(|_| Err(tr!("the thumbnail fetch was interrupted")))
-    }
-}
-
-/// A live stream fetches video and audio at the same time, so yt-dlp
-/// reports two progress lines. They belong to one download as far as the
-/// person watching is concerned, so they are added up.
-fn combined(streams: &BTreeMap<u32, Progress>) -> Progress {
+/// A live stream is fetched as video and audio at once, so yt-dlp reports
+/// two progress lines for one download. They are added up.
+fn combine(streams: &BTreeMap<u32, Progress>) -> Progress {
     let speed: f64 = streams.values().filter_map(|p| p.speed).sum();
     Progress {
         stream: 0,
@@ -958,22 +881,7 @@ fn combined(streams: &BTreeMap<u32, Progress>) -> Progress {
 
 fn progress_view(progress: Progress) -> Element<'static, Message> {
     let mb = |bytes: u64| bytes as f64 / 1_000_000.0;
-    let (amount, fraction) = match progress.total {
-        Some(total) if total > 0 => {
-            let fraction = (progress.downloaded as f64 / total as f64).min(1.0);
-            (
-                format!(
-                    "{:.1} / {:.1} MB  ({:.0}%)",
-                    mb(progress.downloaded),
-                    mb(total),
-                    fraction * 100.0
-                ),
-                fraction as f32,
-            )
-        }
-        _ => (format!("{:.1} MB", mb(progress.downloaded)), 0.0),
-    };
-    let mut details = amount;
+    let (mut details, fraction) = amount(progress.downloaded, progress.total);
     if let Some(speed) = progress.speed {
         details.push_str("  ");
         details.push_str(&tr!(
@@ -994,9 +902,7 @@ fn progress_view(progress: Progress) -> Element<'static, Message> {
             })
             .size(13),
             space::horizontal(),
-            text(details).size(13).style(|t: &Theme| text::Style {
-                color: Some(style::muted(t))
-            }),
+            text(details).size(13).style(style::muted_text),
         ]
         .align_y(Alignment::Center),
         progress_bar(0.0..=1.0, fraction)
@@ -1015,11 +921,8 @@ fn duration(seconds: u64) -> String {
     }
 }
 
-/// Debug builds only: `YTP_DEV_DOWNLOAD=<link>` starts with that link
-/// already typed in, so a real download can be checked without clicking.
-/// Release builds ignore it.
-/// A comma-separated list queues more than one link, to check that the
-/// queue moves on to the next item by itself once one finishes.
+/// Debug builds only: `YTP_DEV_DOWNLOAD=<link>[,<link>...]` queues those
+/// links and starts, so a real download can be checked without clicking.
 pub(super) fn dev_urls() -> Vec<String> {
     if !cfg!(debug_assertions) {
         return Vec::new();
@@ -1117,7 +1020,7 @@ mod tests {
                 },
             ),
         ]);
-        let all = combined(&streams);
+        let all = combine(&streams);
         assert_eq!(all.downloaded, 25_000);
         assert_eq!(all.total, None, "one unknown size makes the whole unknown");
         assert_eq!(all.speed, Some(1_500.0));
@@ -1130,9 +1033,9 @@ mod tests {
         let dir = tempdir();
         let mut screen = Download::new(Paths::new(dir.clone()));
         for _ in 0..3 {
-            screen.note((Level::Info, "[youtube] Sleeping 1.5 seconds ...".into()));
+            screen.log((Level::Info, "[youtube] Sleeping 1.5 seconds ...".into()));
         }
-        screen.note((Level::Info, "[download] Destination: /tmp/v.mkv".into()));
+        screen.log((Level::Info, "[download] Destination: /tmp/v.mkv".into()));
         assert_eq!(screen.log.len(), 2);
         assert_eq!(screen.log[0].1, "[youtube] Sleeping 1.5 seconds ...  (x3)");
         assert_eq!(screen.log[1].1, "[download] Destination: /tmp/v.mkv");
@@ -1144,7 +1047,7 @@ mod tests {
         let dir = tempdir();
         let mut screen = Download::new(Paths::new(dir.clone()));
         for n in 0..MAX_LOG + 50 {
-            screen.note((Level::Info, format!("line {n}")));
+            screen.log((Level::Info, format!("line {n}")));
         }
         assert_eq!(screen.log.len(), MAX_LOG);
         // The newest line survives, the oldest ones are gone.
