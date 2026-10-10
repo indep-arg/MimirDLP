@@ -291,9 +291,10 @@ fn template(messages: &[Message]) -> String {
     );
     for message in messages {
         out.push('\n');
-        for file in &message.files {
-            out += &format!("#: {file}\n");
-        }
+        // One line, as gettext's own tools write it (Weblate's msgmerge
+        // rewrites every .po that way).
+        let files: Vec<&str> = message.files.iter().map(String::as_str).collect();
+        out += &format!("#: {}\n", files.join(" "));
         let braces = |t: &str| !placeholders(t).is_empty();
         if braces(&message.id) || message.plural.as_deref().is_some_and(braces) {
             // Weblate then checks that a translation keeps every {name}.
