@@ -4,3 +4,9 @@
 # tests on the Windows runner).
 src/provision/testdata/* -text
 src/provision/ytdlp-signing-key.asc -text
+
+# Translations: tests/translations.rs compares the template byte for byte
+# and the .po files are compiled into the binary, so they stay LF on every
+# checkout (Weblate writes LF too).
+po/*.po text eol=lf
+po/*.pot text eol=lf
