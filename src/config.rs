@@ -453,14 +453,14 @@ impl Default for Settings {
 }
 
 impl Settings {
-    /// Where files land: the configured folder, or `downloads` next to the
-    /// application. A leading `~` is expanded here, since no shell sees
-    /// this path. A relative folder is next to the application, like the
-    /// history file, not wherever the app was started from.
+    /// Where files land: the configured folder, or [`default_output_dir`].
+    /// A leading `~` is expanded here, since no shell sees this path. A
+    /// relative folder is in the app's folder, like the history file, not
+    /// wherever the app was started from.
     pub fn output_dir(&self, paths: &Paths) -> PathBuf {
         let dir = self.output_dir.trim();
         if dir.is_empty() {
-            return paths.app_dir.join("downloads");
+            return default_output_dir(paths);
         }
         if let Some(rest) = dir.strip_prefix('~')
             && (rest.is_empty() || rest.starts_with(std::path::is_separator))
@@ -909,6 +909,39 @@ fn home_dir() -> Option<std::ffi::OsString> {
     std::env::var_os("HOME").or_else(|| std::env::var_os("USERPROFILE"))
 }
 
+/// `downloads` next to a portable copy; the user's Downloads folder for an
+/// installed one.
+pub fn default_output_dir(paths: &Paths) -> PathBuf {
+    if !paths.installed {
+        return paths.app_dir.join("downloads");
+    }
+    let Some(home) = home_dir().map(PathBuf::from) else {
+        return paths.app_dir.join("downloads");
+    };
+    let config = std::env::var_os("XDG_CONFIG_HOME")
+        .map(PathBuf::from)
+        .filter(|dir| dir.is_absolute())
+        .unwrap_or_else(|| home.join(".config"));
+    xdg_download_dir(&config, &home).unwrap_or_else(|| home.join("Downloads"))
+}
+
+/// `XDG_DOWNLOAD_DIR` from `user-dirs.dirs`, which names the folder in the
+/// system's language (`~/Descargas`). The format is shell assignments with
+/// `$HOME` as the only variable, and a value of `$HOME/` means unset.
+fn xdg_download_dir(config: &std::path::Path, home: &std::path::Path) -> Option<PathBuf> {
+    let text = fs::read_to_string(config.join("user-dirs.dirs")).ok()?;
+    let value = text
+        .lines()
+        .find_map(|l| l.trim().strip_prefix("XDG_DOWNLOAD_DIR="))?
+        .trim()
+        .trim_matches('"');
+    let dir = match value.strip_prefix("$HOME") {
+        Some(rest) => home.join(rest.trim_start_matches('/')),
+        None => PathBuf::from(value),
+    };
+    (dir.is_absolute() && dir != home).then_some(dir)
+}
+
 fn non_empty(value: &str) -> Option<String> {
     let value = value.trim();
     (!value.is_empty()).then(|| value.to_string())
@@ -1055,6 +1088,36 @@ mod tests {
 
     fn paths() -> Paths {
         Paths::new(PathBuf::from("/app"))
+    }
+
+    #[test]
+    fn the_downloads_folder_comes_from_user_dirs_in_any_language() {
+        let dir = tempdir();
+        let home = std::path::Path::new("/home/ana");
+        assert_eq!(xdg_download_dir(&dir, home), None, "no file");
+        let write = |line: &str| fs::write(dir.join("user-dirs.dirs"), line).unwrap();
+        write("# written by xdg-user-dirs-update\nXDG_DOWNLOAD_DIR=\"$HOME/Descargas\"\n");
+        assert_eq!(
+            xdg_download_dir(&dir, home),
+            Some(PathBuf::from("/home/ana/Descargas"))
+        );
+        write("XDG_DOWNLOAD_DIR=\"/data/bajadas\"\n");
+        assert_eq!(
+            xdg_download_dir(&dir, home),
+            Some(PathBuf::from("/data/bajadas"))
+        );
+        // "$HOME/" means the folder is turned off.
+        write("XDG_DOWNLOAD_DIR=\"$HOME/\"\n");
+        assert_eq!(xdg_download_dir(&dir, home), None);
+        fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn a_portable_copy_downloads_next_to_itself() {
+        assert_eq!(
+            default_output_dir(&paths()),
+            PathBuf::from("/app/downloads")
+        );
     }
 
     #[test]

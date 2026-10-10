@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.indep_arg.MimirDLP</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
+  <name>MimirDLP</name>
+  <summary>Download videos and music from YouTube and most other sites</summary>
+  <developer id="io.github.indep_arg">
+    <name>indep-arg</name>
+  </developer>
+  <description>
+    <p>
+      A simple window around yt-dlp. Paste a link, choose video or audio and the quality, and download.
+    </p>
+    <ul>
+      <li>A queue that shows each video's title, thumbnail, length and size</li>
+      <li>Subtitles, thumbnails, metadata and chapters</li>
+      <li>SponsorBlock, to mark or cut sponsor segments</li>
+      <li>Videos that need an account, through your browser's cookies</li>
+    </ul>
+    <p>
+      The first launch downloads its own copies of yt-dlp, FFmpeg and Deno and checks every file, so it always uses a recent yt-dlp.
+    </p>
+  </description>
+  <launchable type="desktop-id">io.github.indep_arg.MimirDLP.desktop</launchable>
+  <provides>
+    <binary>mimirdlp</binary>
+  </provides>
+  <url type="homepage">https://github.com/indep-arg/MimirDLP</url>
+  <url type="bugtracker">https://github.com/indep-arg/MimirDLP/issues</url>
+  <url type="translate">https://hosted.weblate.org/engage/mimirdlp/</url>
+  <url type="vcs-browser">https://github.com/indep-arg/MimirDLP</url>
+  <screenshots>
+    <screenshot type="default">
+      <caption>The download queue</caption>
+      <image>https://raw.githubusercontent.com/indep-arg/MimirDLP/main/screenshots/download.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Settings</caption>
+      <image>https://raw.githubusercontent.com/indep-arg/MimirDLP/main/screenshots/settings.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>The light theme</caption>
+      <image>https://raw.githubusercontent.com/indep-arg/MimirDLP/main/screenshots/light-theme.png</image>
+    </screenshot>
+  </screenshots>
+  <branding>
+    <color type="primary" scheme_preference="light">#99c1f1</color>
+    <color type="primary" scheme_preference="dark">#1a5fb4</color>
+  </branding>
+  <content_rating type="oars-1.1"/>
+  <supports>
+    <control>pointing</control>
+    <control>keyboard</control>
+  </supports>
+  <requires>
+    <internet>always</internet>
+  </requires>
+  <releases>
+    <release version="0.2.0" date="2026-10-10">
+      <description>
+        <p>A link you copy now shows up in the box when you switch to MimirDLP, ready to add.</p>
+      </description>
+    </release>
+    <release version="0.1.0" date="2026-10-10">
+      <description>
+        <p>First release.</p>
+      </description>
+    </release>
+  </releases>
+</component>

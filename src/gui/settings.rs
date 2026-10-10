@@ -463,8 +463,9 @@ fn view<'a>(
         card(tr!("Extras"), extras_section(settings)),
     ]
     .spacing(20);
-    // Only Linux desktops build their menus from .desktop files.
-    let page = if cfg!(target_os = "linux") {
+    // Only Linux desktops build their menus from .desktop files, and an
+    // installed copy came with its own.
+    let page = if cfg!(target_os = "linux") && !paths.installed {
         page.push(card(tr!("Desktop"), desktop_section(desktop_entry)))
     } else {
         page
@@ -904,7 +905,12 @@ fn network_section(settings: &Settings) -> Element<'_, Message> {
 }
 
 fn destination_section<'a>(settings: &'a Settings, paths: &'a Paths) -> Element<'a, Message> {
-    let default = paths.app_dir.join("downloads");
+    let default = crate::config::default_output_dir(paths);
+    let hint = if paths.installed {
+        tr!("Leave it empty to use your Downloads folder.")
+    } else {
+        tr!("Leave it empty to use the downloads folder next to this app.")
+    };
     column![
         row![
             entry(&default.to_string_lossy(), &settings.output_dir)
@@ -917,11 +923,7 @@ fn destination_section<'a>(settings: &'a Settings, paths: &'a Paths) -> Element<
         ]
         .spacing(10)
         .align_y(Alignment::Center),
-        text(tr!(
-            "Leave it empty to use the downloads folder next to this app."
-        ))
-        .size(13)
-        .style(style::muted_text),
+        text(hint).size(13).style(style::muted_text),
     ]
     .spacing(8)
     .into()

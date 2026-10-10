@@ -51,22 +51,39 @@ impl Component {
     }
 }
 
-/// Where everything lives. Portable: all of it sits next to the executable.
+/// Where everything lives: the settings, the history, the queue and `bin/`.
 #[derive(Debug, Clone)]
 pub struct Paths {
+    /// The executable's folder for a portable copy, or the user's data
+    /// folder for an installed one.
     pub app_dir: PathBuf,
     pub bin_dir: PathBuf,
+    /// Installed by a package (Flatpak, RPM...) into a folder the app can't
+    /// write to, so it keeps its files in the user's data folder.
+    pub installed: bool,
 }
 
 impl Paths {
+    /// A portable copy: everything next to the executable.
     pub fn new(app_dir: PathBuf) -> Self {
         let bin_dir = app_dir.join("bin");
-        Paths { app_dir, bin_dir }
+        Paths {
+            app_dir,
+            bin_dir,
+            installed: false,
+        }
     }
 
-    /// The directory of the running executable, symlinks resolved.
-    /// `YTP_APP_DIR` overrides it, which is only meant for development
-    /// (`cargo run` would otherwise use `target/debug/`).
+    fn installed(data_dir: PathBuf) -> Self {
+        Paths {
+            installed: true,
+            ..Paths::new(data_dir)
+        }
+    }
+
+    /// Portable when the executable's folder (symlinks resolved) can be
+    /// written to, installed otherwise. `YTP_APP_DIR` picks the folder
+    /// instead, for development (`cargo run` would use `target/debug/`).
     pub fn for_current_exe() -> io::Result<Self> {
         if let Some(dir) = std::env::var_os("YTP_APP_DIR") {
             return Ok(Paths::new(PathBuf::from(dir)));
@@ -75,7 +92,14 @@ impl Paths {
         let dir = exe
             .parent()
             .ok_or_else(|| io::Error::other("executable has no parent directory"))?;
-        Ok(Paths::new(dir.to_path_buf()))
+        if writable(dir).is_ok() {
+            return Ok(Paths::new(dir.to_path_buf()));
+        }
+        let data = user_data_dir()
+            .ok_or_else(|| io::Error::other("no folder for the user's data"))?
+            .join("MimirDLP");
+        fs::create_dir_all(&data)?;
+        Ok(Paths::installed(data))
     }
 
     pub fn tool(&self, name: &str) -> PathBuf {
@@ -357,16 +381,28 @@ pub(crate) fn hex(bytes: &[u8]) -> String {
     bytes.iter().map(|b| format!("{b:02x}")).collect()
 }
 
-/// Whether the application folder can be written to, which everything
-/// portable depends on (`bin/`, the settings, the history). It can't in
-/// `C:\Program Files` without administrator rights, or on a read-only
-/// mount, and the only fix is moving the folder.
+/// Whether the application folder can be written to, which `bin/`, the
+/// settings and the history depend on. A portable copy that isn't
+/// writable becomes an installed one (see [`Paths::for_current_exe`]), so
+/// this only fails when even the user's data folder can't be written.
 pub fn app_dir_writable(paths: &Paths) -> io::Result<()> {
-    let probe = paths
-        .app_dir
-        .join(format!(".write-test-{}", std::process::id()));
+    writable(&paths.app_dir)
+}
+
+fn writable(dir: &Path) -> io::Result<()> {
+    let probe = dir.join(format!(".write-test-{}", std::process::id()));
     fs::write(&probe, b"")?;
     fs::remove_file(probe)
+}
+
+/// `%LOCALAPPDATA%` on Windows; `$XDG_DATA_HOME` or `~/.local/share`
+/// elsewhere (inside a Flatpak that is the app's own folder).
+fn user_data_dir() -> Option<PathBuf> {
+    if cfg!(windows) {
+        std::env::var_os("LOCALAPPDATA").map(PathBuf::from)
+    } else {
+        crate::desktop::data_home()
+    }
 }
 
 /// Removes leftovers of an interrupted run (partial downloads, half-written

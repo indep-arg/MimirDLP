@@ -135,9 +135,11 @@ impl App {
         // for the half second the first inspection takes.
         let tools_present = crate::provision::all_present(&paths);
         // A menu entry the user added follows the folder if it was moved.
-        // Release builds only: a development build must not repoint it.
+        // Release builds only: a development build must not repoint it. An
+        // installed copy's entry belongs to its package.
         if cfg!(target_os = "linux")
             && !cfg!(debug_assertions)
+            && !paths.installed
             && let (Some(data), Ok(exe)) = (crate::desktop::data_home(), std::env::current_exe())
         {
             let _ = crate::desktop::refresh(&data, &exe);

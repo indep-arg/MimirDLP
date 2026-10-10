@@ -1,0 +1,39 @@
+{
+    "version": "0.2.0",
+    "description": "Download videos and music from YouTube and most other sites, with a simple window instead of a command line.",
+    "homepage": "https://github.com/indep-arg/MimirDLP",
+    "license": "MIT",
+    "notes": "The first launch downloads yt-dlp, FFmpeg and Deno (about 200 MB) into the app's folder.",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/indep-arg/MimirDLP/releases/download/v0.2.0/mimirdlp-0.2.0-windows-x86_64.zip",
+            "hash": "50405e7d638052b17ff9e91ade957c8a8779c3d26c97ef5caa10342aa4fbc363",
+            "extract_dir": "mimirdlp-0.2.0-windows-x86_64"
+        }
+    },
+    "shortcuts": [
+        [
+            "mimirdlp.exe",
+            "MimirDLP"
+        ]
+    ],
+    "persist": [
+        "bin",
+        "downloads",
+        "mimirdlp.config",
+        "mimirdlp.queue",
+        "download_archive.txt"
+    ],
+    "checkver": "github",
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/indep-arg/MimirDLP/releases/download/v$version/mimirdlp-$version-windows-x86_64.zip",
+                "extract_dir": "mimirdlp-$version-windows-x86_64"
+            }
+        },
+        "hash": {
+            "url": "$url.sha256"
+        }
+    }
+}

@@ -322,14 +322,18 @@ impl Setup {
     }
 
     pub fn view(&self) -> Element<'_, Message> {
-        let header = column![
-            text(tr!(
+        let where_kept = if self.paths.installed {
+            tr!(
+                "yt-dlp, FFmpeg and Deno are kept in {folder}, and updated from here.",
+                folder = self.paths.bin_dir.display()
+            )
+        } else {
+            tr!(
                 "yt-dlp, FFmpeg and Deno are kept in the bin folder next to this app. \
                  Nothing is installed on your system."
-            ))
-            .style(style::muted_text),
-        ]
-        .spacing(4);
+            )
+        };
+        let header = text(where_kept).style(style::muted_text);
 
         let components = Column::with_children(
             Component::ALL

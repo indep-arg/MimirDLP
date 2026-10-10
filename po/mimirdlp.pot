@@ -862,11 +862,15 @@ msgid "Verbose log (for troubleshooting)"
 msgstr ""
 
 #: src/gui/settings.rs
-msgid "Choose..."
+msgid "Leave it empty to use your Downloads folder."
 msgstr ""
 
 #: src/gui/settings.rs
 msgid "Leave it empty to use the downloads folder next to this app."
+msgstr ""
+
+#: src/gui/settings.rs
+msgid "Choose..."
 msgstr ""
 
 #: src/gui/setup.rs
@@ -910,6 +914,11 @@ msgstr ""
 #: src/gui/setup.rs
 #, python-brace-format
 msgid "Binaries located in: {folder}"
+msgstr ""
+
+#: src/gui/setup.rs
+#, python-brace-format
+msgid "yt-dlp, FFmpeg and Deno are kept in {folder}, and updated from here."
 msgstr ""
 
 #: src/gui/setup.rs

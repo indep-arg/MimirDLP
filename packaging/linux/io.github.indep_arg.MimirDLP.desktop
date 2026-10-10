@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=MimirDLP
+GenericName=Video Downloader
+Comment=Download videos and music with yt-dlp
+Exec=mimirdlp
+Icon=io.github.indep_arg.MimirDLP
+Terminal=false
+Categories=AudioVideo;Video;
+Keywords=yt-dlp;youtube;video;audio;download;
+StartupWMClass=io.github.indep_arg.MimirDLP

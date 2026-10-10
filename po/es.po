@@ -863,12 +863,16 @@ msgid "Verbose log (for troubleshooting)"
 msgstr "Registro detallado (para resolver problemas)"
 
 #: src/gui/settings.rs
-msgid "Choose..."
-msgstr "Elegir..."
+msgid "Leave it empty to use your Downloads folder."
+msgstr "Déjalo vacío para usar tu carpeta Descargas."
 
 #: src/gui/settings.rs
 msgid "Leave it empty to use the downloads folder next to this app."
 msgstr "Déjalo vacío para usar la carpeta downloads junto a esta aplicación."
+
+#: src/gui/settings.rs
+msgid "Choose..."
+msgstr "Elegir..."
 
 #: src/gui/setup.rs
 #, python-brace-format
@@ -912,6 +916,11 @@ msgstr "Reinstalación completa terminada"
 #, python-brace-format
 msgid "Binaries located in: {folder}"
 msgstr "Programas ubicados en: {folder}"
+
+#: src/gui/setup.rs
+#, python-brace-format
+msgid "yt-dlp, FFmpeg and Deno are kept in {folder}, and updated from here."
+msgstr "yt-dlp, FFmpeg y Deno se guardan en {folder} y se actualizan desde aquí."
 
 #: src/gui/setup.rs
 msgid "yt-dlp, FFmpeg and Deno are kept in the bin folder next to this app. Nothing is installed on your system."
