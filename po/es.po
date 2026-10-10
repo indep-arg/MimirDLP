@@ -61,20 +61,8 @@ msgid "MP3 (most compatible)"
 msgstr "MP3 (el más compatible)"
 
 #: src/config.rs
-msgid "AAC"
-msgstr "AAC"
-
-#: src/config.rs
-msgid "M4A"
-msgstr "M4A"
-
-#: src/config.rs
 msgid "Opus (smallest)"
 msgstr "Opus (el más pequeño)"
-
-#: src/config.rs
-msgid "Vorbis"
-msgstr "Vorbis"
 
 #: src/config.rs
 msgid "FLAC (lossless)"
@@ -179,38 +167,6 @@ msgstr "Oscuro"
 #: src/config.rs
 msgid "Don't use cookies"
 msgstr "No usar cookies"
-
-#: src/config.rs
-msgid "Firefox"
-msgstr "Firefox"
-
-#: src/config.rs
-msgid "Chrome"
-msgstr "Chrome"
-
-#: src/config.rs
-msgid "Chromium"
-msgstr "Chromium"
-
-#: src/config.rs
-msgid "Edge"
-msgstr "Edge"
-
-#: src/config.rs
-msgid "Brave"
-msgstr "Brave"
-
-#: src/config.rs
-msgid "Opera"
-msgstr "Opera"
-
-#: src/config.rs
-msgid "Vivaldi"
-msgstr "Vivaldi"
-
-#: src/config.rs
-msgid "Whale"
-msgstr "Whale"
 
 #: src/config.rs
 msgid "Follow the link"
@@ -690,10 +646,6 @@ msgstr "todos menos el chat en vivo"
 #: src/gui/settings.rs
 msgid "Include auto-generated subtitles"
 msgstr "Incluir subtítulos generados automáticamente"
-
-#: src/gui/settings.rs
-msgid "SponsorBlock"
-msgstr "SponsorBlock"
 
 #: src/gui/settings.rs
 msgid "Segments"
@@ -1201,3 +1153,39 @@ msgstr "Aplicando SponsorBlock..."
 #: src/runner.rs
 msgid "Moving the file into place..."
 msgstr "Moviendo el archivo a su lugar..."
+
+#~ msgid "AAC"
+#~ msgstr "AAC"
+
+#~ msgid "M4A"
+#~ msgstr "M4A"
+
+#~ msgid "Vorbis"
+#~ msgstr "Vorbis"
+
+#~ msgid "Firefox"
+#~ msgstr "Firefox"
+
+#~ msgid "Chrome"
+#~ msgstr "Chrome"
+
+#~ msgid "Chromium"
+#~ msgstr "Chromium"
+
+#~ msgid "Edge"
+#~ msgstr "Edge"
+
+#~ msgid "Brave"
+#~ msgstr "Brave"
+
+#~ msgid "Opera"
+#~ msgstr "Opera"
+
+#~ msgid "Vivaldi"
+#~ msgstr "Vivaldi"
+
+#~ msgid "Whale"
+#~ msgstr "Whale"
+
+#~ msgid "SponsorBlock"
+#~ msgstr "SponsorBlock"
