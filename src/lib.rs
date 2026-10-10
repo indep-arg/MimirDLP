@@ -1,0 +1,14 @@
+//! MimirDLP: a portable graphical front end for yt-dlp.
+
+pub mod config;
+pub mod engine;
+pub mod gui;
+pub mod i18n;
+pub mod log;
+pub mod metadata;
+pub mod process;
+pub mod provision;
+pub mod runner;
+
+#[cfg(test)]
+pub(crate) mod testing;

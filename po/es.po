@@ -1,0 +1,1211 @@
+# Spanish translation of MimirDLP.
+msgid ""
+msgstr ""
+"Project-Id-Version: MimirDLP\n"
+"Language: es\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: src/config.rs
+#: src/gui/settings.rs
+msgid "Video and audio"
+msgstr "Video y audio"
+
+#: src/config.rs
+#: src/gui/settings.rs
+msgid "Audio only"
+msgstr "Solo audio"
+
+#: src/config.rs
+msgid "Best quality (video plus audio)"
+msgstr "Mejor calidad (video más audio)"
+
+#: src/config.rs
+msgid "Best single file (faster, no merging)"
+msgstr "Mejor archivo único (más rápido, sin unir)"
+
+#: src/config.rs
+msgid "Video only, without audio"
+msgstr "Solo video, sin audio"
+
+#: src/config.rs
+msgid "A format string of my own"
+msgstr "Una cadena de formato propia"
+
+#: src/config.rs
+msgid "Best available"
+msgstr "Máxima disponible"
+
+#: src/config.rs
+msgid "Up to 2160p (4K)"
+msgstr "Hasta 2160p (4K)"
+
+#: src/config.rs
+msgid "Up to 1440p"
+msgstr "Hasta 1440p"
+
+#: src/config.rs
+msgid "Up to 1080p"
+msgstr "Hasta 1080p"
+
+#: src/config.rs
+msgid "Up to 720p"
+msgstr "Hasta 720p"
+
+#: src/config.rs
+msgid "Up to 480p"
+msgstr "Hasta 480p"
+
+#: src/config.rs
+msgid "MP3 (most compatible)"
+msgstr "MP3 (el más compatible)"
+
+#: src/config.rs
+msgid "AAC"
+msgstr "AAC"
+
+#: src/config.rs
+msgid "M4A"
+msgstr "M4A"
+
+#: src/config.rs
+msgid "Opus (smallest)"
+msgstr "Opus (el más pequeño)"
+
+#: src/config.rs
+msgid "Vorbis"
+msgstr "Vorbis"
+
+#: src/config.rs
+msgid "FLAC (lossless)"
+msgstr "FLAC (sin pérdida)"
+
+#: src/config.rs
+msgid "ALAC (lossless)"
+msgstr "ALAC (sin pérdida)"
+
+#: src/config.rs
+msgid "WAV (uncompressed)"
+msgstr "WAV (sin comprimir)"
+
+#: src/config.rs
+msgid "MKV (recommended)"
+msgstr "MKV (recomendado)"
+
+#: src/config.rs
+msgid "MP4 (most compatible)"
+msgstr "MP4 (el más compatible)"
+
+#: src/config.rs
+msgid "Leave it alone"
+msgstr "Dejarlo como está"
+
+#: src/config.rs
+msgid "Rewrap (fast, keeps the codecs)"
+msgstr "Reempaquetar (rápido, mantiene los códecs)"
+
+#: src/config.rs
+msgid "Re-encode (slow, always works)"
+msgstr "Recodificar (lento, siempre funciona)"
+
+#: src/config.rs
+msgid "As JPG (recommended)"
+msgstr "Como JPG (recomendado)"
+
+#: src/config.rs
+msgid "As it comes"
+msgstr "Tal como viene"
+
+#: src/config.rs
+msgid "As PNG"
+msgstr "Como PNG"
+
+#: src/config.rs
+msgid "Don't download"
+msgstr "No descargar"
+
+#: src/config.rs
+msgid "Save as a subtitle file"
+msgstr "Guardar como archivo de subtítulos"
+
+#: src/config.rs
+msgid "Embed in the video"
+msgstr "Incrustar en el video"
+
+#: src/config.rs
+msgid "Save and embed"
+msgstr "Guardar e incrustar"
+
+#: src/config.rs
+msgid "Off"
+msgstr "Desactivado"
+
+#: src/config.rs
+msgid "Mark as chapters"
+msgstr "Marcar como capítulos"
+
+#: src/config.rs
+msgid "Cut out of the file"
+msgstr "Recortar del archivo"
+
+#: src/config.rs
+msgid "Sponsors only"
+msgstr "Solo patrocinios"
+
+#: src/config.rs
+msgid "Sponsors, self-promotion, interaction"
+msgstr "Patrocinios, autopromoción, interacción"
+
+#: src/config.rs
+msgid "Everything SponsorBlock covers"
+msgstr "Todo lo que cubre SponsorBlock"
+
+#: src/config.rs
+msgid "A list of my own"
+msgstr "Una lista propia"
+
+#: src/config.rs
+msgid "Follow system"
+msgstr "Según el sistema"
+
+#: src/config.rs
+#: src/gui/mod.rs
+msgid "Light"
+msgstr "Claro"
+
+#: src/config.rs
+#: src/gui/mod.rs
+msgid "Dark"
+msgstr "Oscuro"
+
+#: src/config.rs
+msgid "Don't use cookies"
+msgstr "No usar cookies"
+
+#: src/config.rs
+msgid "Firefox"
+msgstr "Firefox"
+
+#: src/config.rs
+msgid "Chrome"
+msgstr "Chrome"
+
+#: src/config.rs
+msgid "Chromium"
+msgstr "Chromium"
+
+#: src/config.rs
+msgid "Edge"
+msgstr "Edge"
+
+#: src/config.rs
+msgid "Brave"
+msgstr "Brave"
+
+#: src/config.rs
+msgid "Opera"
+msgstr "Opera"
+
+#: src/config.rs
+msgid "Vivaldi"
+msgstr "Vivaldi"
+
+#: src/config.rs
+msgid "Whale"
+msgstr "Whale"
+
+#: src/config.rs
+msgid "Follow the link"
+msgstr "Según el enlace"
+
+#: src/config.rs
+msgid "Just this video"
+msgstr "Solo este video"
+
+#: src/config.rs
+msgid "The whole playlist"
+msgstr "La lista completa"
+
+#: src/config.rs
+msgid "Title [ID].ext"
+msgstr "Título [ID].ext"
+
+#: src/config.rs
+msgid "Title.ext"
+msgstr "Título.ext"
+
+#: src/config.rs
+msgid "ID.ext"
+msgstr "ID.ext"
+
+#: src/config.rs
+msgid "Title - Channel [ID].ext"
+msgstr "Título - Canal [ID].ext"
+
+#: src/config.rs
+msgid "A template of my own"
+msgstr "Una plantilla propia"
+
+#: src/config.rs
+msgid "The speed limit should look like 500K or 4.2M, or be empty."
+msgstr "El límite de velocidad debe tener la forma 500K o 4.2M, o quedar vacío."
+
+#: src/config.rs
+msgid "Concurrent fragments should be a whole number of 1 or more."
+msgstr "Las partes simultáneas deben ser un número entero de 1 o más."
+
+#: src/config.rs
+msgid "The sleep between requests should be a number such as 0, 1.5 or 2."
+msgstr "La pausa entre solicitudes debe ser un número como 0, 1.5 o 2."
+
+#: src/config.rs
+msgid "The wait for a stream should be seconds or a range, such as 60 or 60-3600."
+msgstr "La espera de una transmisión debe ser en segundos o un rango, como 60 o 60-3600."
+
+#: src/config.rs
+msgid "The download limit should be a whole number, or empty."
+msgstr "El límite de descargas debe ser un número entero, o quedar vacío."
+
+#: src/config.rs
+msgid "Playlist items should look like 1-5, 8 or 2,4,6."
+msgstr "Los elementos de la lista deben tener la forma 1-5, 8 o 2,4,6."
+
+#: src/config.rs
+msgid "The container to convert to should be a name such as mp4 or mkv."
+msgstr "El contenedor de destino debe ser un nombre como mp4 o mkv."
+
+#: src/config.rs
+msgid "The custom format string can't be empty."
+msgstr "La cadena de formato propia no puede quedar vacía."
+
+#: src/config.rs
+msgid "The custom name template can't be empty."
+msgstr "La plantilla de nombre propia no puede quedar vacía."
+
+#: src/config.rs
+msgid "Pick at least one SponsorBlock category."
+msgstr "Elige al menos una categoría de SponsorBlock."
+
+#: src/config.rs
+msgid "There is an empty category in the SponsorBlock list."
+msgstr "Hay una categoría vacía en la lista de SponsorBlock."
+
+#: src/config.rs
+#, python-brace-format
+msgid "Unknown SponsorBlock category: {bare}"
+msgstr "Categoría de SponsorBlock desconocida: {bare}"
+
+#: src/config.rs
+#, python-brace-format
+msgid "'{bare}' can only be marked, not removed."
+msgstr "«{bare}» solo se puede marcar, no recortar."
+
+#: src/gui/download.rs
+msgid "Stopping the download..."
+msgstr "Deteniendo la descarga..."
+
+#: src/gui/download.rs
+msgid "The output folder doesn't exist yet."
+msgstr "La carpeta de destino todavía no existe."
+
+#: src/gui/download.rs
+#, python-brace-format
+msgid "Could not open the folder: {e}"
+msgstr "No se pudo abrir la carpeta: {e}"
+
+#: src/gui/download.rs
+msgid "That doesn't look like a link (it should start with http)."
+msgstr "Eso no parece un enlace (debería empezar con http)."
+
+#: src/gui/download.rs
+msgid "Paste a link first."
+msgstr "Primero pega un enlace."
+
+#: src/gui/download.rs
+msgid "That link is already in the queue."
+msgstr "Ese enlace ya está en la cola."
+
+#: src/gui/download.rs
+#, python-brace-format
+msgid "{n} of those links is already in the queue."
+msgid_plural "{n} of those links are already in the queue."
+msgstr[0] "{n} de esos enlaces ya está en la cola."
+msgstr[1] "{n} de esos enlaces ya están en la cola."
+
+#: src/gui/download.rs
+#, python-brace-format
+msgid "Restored {n} link from the last session."
+msgid_plural "Restored {n} links from the last session."
+msgstr[0] "Se recuperó {n} enlace de la sesión anterior."
+msgstr[1] "Se recuperaron {n} enlaces de la sesión anterior."
+
+#: src/gui/download.rs
+#, python-brace-format
+msgid "Could not save the queue: {e}"
+msgstr "No se pudo guardar la cola: {e}"
+
+#: src/gui/download.rs
+msgid "Add at least one link first."
+msgstr "Primero agrega al menos un enlace."
+
+#: src/gui/download.rs
+#, python-brace-format
+msgid "Saving into: {folder}"
+msgstr "Guardando en: {folder}"
+
+#: src/gui/download.rs
+#, python-brace-format
+msgid "No thumbnail: a .{ext} file can't hold one."
+msgstr "Sin miniatura: un archivo .{ext} no puede llevarla."
+
+#: src/gui/download.rs
+#, python-brace-format
+msgid "Saved: {path}"
+msgstr "Guardado: {path}"
+
+#: src/gui/download.rs
+msgid "Finished, with nothing new to download"
+msgstr "Terminado, no había nada nuevo que descargar"
+
+#: src/gui/download.rs
+msgid "Download completed"
+msgstr "Descarga completada"
+
+#: src/gui/download.rs
+#, python-brace-format
+msgid "Download completed ({n} file)"
+msgid_plural "Download completed ({n} files)"
+msgstr[0] "Descarga completada ({n} archivo)"
+msgstr[1] "Descarga completada ({n} archivos)"
+
+#: src/gui/download.rs
+msgid "Stopped as configured (the limit or the history said so)"
+msgstr "Detenido según lo configurado (por el límite o el historial)"
+
+#: src/gui/download.rs
+msgid "Download cancelled. A partial file was kept, so starting again resumes it."
+msgstr "Descarga cancelada. Se conservó el archivo parcial, así que al volver a empezar continúa donde quedó."
+
+#: src/gui/download.rs
+msgid "Paste a video or playlist link..."
+msgstr "Pega el enlace de un video o una lista..."
+
+#: src/gui/download.rs
+msgid "Add"
+msgstr "Agregar"
+
+#: src/gui/download.rs
+msgid "Download a video"
+msgstr "Descarga un video"
+
+#: src/gui/download.rs
+msgid "Paste a link from YouTube or almost any other site above."
+msgstr "Pega arriba un enlace de YouTube o de casi cualquier otro sitio."
+
+#: src/gui/download.rs
+msgid "Nothing yet. Every step of the download will be listed here."
+msgstr "Nada todavía. Cada paso de la descarga aparecerá aquí."
+
+#: src/gui/download.rs
+#, python-brace-format
+msgid "Downloading queue: {done} of {total} done"
+msgstr "Descargando la cola: {done} de {total} terminados"
+
+#: src/gui/download.rs
+msgid "All done."
+msgstr "Todo listo."
+
+#: src/gui/download.rs
+#, python-brace-format
+msgid "Ready: {done} of {total} done"
+msgstr "En espera: {done} de {total} terminados"
+
+#: src/gui/download.rs
+msgid "Stop"
+msgstr "Detener"
+
+#: src/gui/download.rs
+msgid "Download"
+msgstr "Descargar"
+
+#: src/gui/download.rs
+msgid "Open folder"
+msgstr "Abrir carpeta"
+
+#: src/gui/download.rs
+msgid "Hide activity"
+msgstr "Ocultar actividad"
+
+#: src/gui/download.rs
+msgid "Show activity"
+msgstr "Mostrar actividad"
+
+#: src/gui/download.rs
+msgid "Clear finished"
+msgstr "Quitar terminados"
+
+#: src/gui/download.rs
+#: src/gui/setup.rs
+msgid "Working..."
+msgstr "Trabajando..."
+
+#: src/gui/download.rs
+msgid "Looking up this link..."
+msgstr "Consultando este enlace..."
+
+#: src/gui/download.rs
+#, python-brace-format
+msgid "Could not look this link up ({e})"
+msgstr "No se pudo consultar este enlace ({e})"
+
+#: src/gui/download.rs
+#, python-brace-format
+msgid "Playlist, {n} video"
+msgid_plural "Playlist, {n} videos"
+msgstr[0] "Lista, {n} video"
+msgstr[1] "Lista, {n} videos"
+
+#: src/gui/download.rs
+msgid "Playlist"
+msgstr "Lista"
+
+#: src/gui/download.rs
+#, python-brace-format
+msgid "{kind}, {quality}"
+msgstr "{kind}, {quality}"
+
+#: src/gui/download.rs
+msgid "Queued"
+msgstr "En cola"
+
+#: src/gui/download.rs
+msgid "Completed"
+msgstr "Completado"
+
+#: src/gui/download.rs
+#, python-brace-format
+msgid "Failed: {reason}"
+msgstr "Falló: {reason}"
+
+#: src/gui/download.rs
+msgid "Retry"
+msgstr "Reintentar"
+
+#: src/gui/download.rs
+msgid "Remove"
+msgstr "Quitar"
+
+#: src/gui/download.rs
+msgid "the lookup was interrupted"
+msgstr "la consulta se interrumpió"
+
+#: src/gui/download.rs
+msgid "the thumbnail fetch was interrupted"
+msgstr "la descarga de la miniatura se interrumpió"
+
+#: src/gui/download.rs
+#, python-brace-format
+msgid "at {speed} MB/s"
+msgstr "a {speed} MB/s"
+
+#: src/gui/download.rs
+#, python-brace-format
+msgid "{time} left"
+msgstr "quedan {time}"
+
+#: src/gui/download.rs
+msgid "Processing"
+msgstr "Procesando"
+
+#: src/gui/download.rs
+msgid "Downloading"
+msgstr "Descargando"
+
+#: src/gui/mod.rs
+#, python-brace-format
+msgid "Could not find the folder this app is in: {e}"
+msgstr "No se encontró la carpeta donde está esta aplicación: {e}"
+
+#: src/gui/mod.rs
+msgid "Setup"
+msgstr "Instalación"
+
+#: src/gui/mod.rs
+msgid "Settings"
+msgstr "Ajustes"
+
+#: src/gui/mod.rs
+msgid "System"
+msgstr "Sistema"
+
+#: src/gui/mod.rs
+msgid "Setup and updates"
+msgstr "Instalación y actualizaciones"
+
+#: src/gui/mod.rs
+msgid "System language"
+msgstr "Idioma del sistema"
+
+#: src/gui/mod.rs
+#, python-brace-format
+msgid "yt-dlp is {n} day old. Sites change often; if a download fails, update it first."
+msgid_plural "yt-dlp is {n} days old. Sites change often; if a download fails, update it first."
+msgstr[0] "yt-dlp tiene {n} día de antigüedad. Los sitios cambian a menudo; si una descarga falla, actualízalo primero."
+msgstr[1] "yt-dlp tiene {n} días de antigüedad. Los sitios cambian a menudo; si una descarga falla, actualízalo primero."
+
+#: src/gui/mod.rs
+#: src/gui/setup.rs
+msgid "Check for updates"
+msgstr "Buscar actualizaciones"
+
+#: src/gui/settings.rs
+#, python-brace-format
+msgid "Could not save the settings: {e}"
+msgstr "No se pudieron guardar los ajustes: {e}"
+
+#: src/gui/settings.rs
+#, python-brace-format
+msgid "History cleared ({n} entry)."
+msgid_plural "History cleared ({n} entries)."
+msgstr[0] "Historial borrado ({n} entrada)."
+msgstr[1] "Historial borrado ({n} entradas)."
+
+#: src/gui/settings.rs
+msgid "There is no history file yet."
+msgstr "Todavía no hay archivo de historial."
+
+#: src/gui/settings.rs
+#, python-brace-format
+msgid "Could not clear the history: {e}"
+msgstr "No se pudo borrar el historial: {e}"
+
+#: src/gui/settings.rs
+msgid "Where to save downloads"
+msgstr "Dónde guardar las descargas"
+
+#: src/gui/settings.rs
+msgid "Hide advanced options"
+msgstr "Ocultar opciones avanzadas"
+
+#: src/gui/settings.rs
+msgid "Advanced options"
+msgstr "Opciones avanzadas"
+
+#: src/gui/settings.rs
+msgid "Signing in, playlists, history, file names, speed limits"
+msgstr "Inicio de sesión, listas, historial, nombres de archivo, límites de velocidad"
+
+#: src/gui/settings.rs
+msgid "These apply to every link you queue from now on. Links already in the queue keep what they were queued with."
+msgstr "Se aplican a cada enlace que agregues a partir de ahora. Los enlaces que ya están en la cola conservan los ajustes con los que se agregaron."
+
+#: src/gui/settings.rs
+msgid "What to download"
+msgstr "Qué descargar"
+
+#: src/gui/settings.rs
+msgid "Where to save"
+msgstr "Dónde guardar"
+
+#: src/gui/settings.rs
+msgid "Extras"
+msgstr "Extras"
+
+#: src/gui/settings.rs
+msgid "Signing in"
+msgstr "Inicio de sesión"
+
+#: src/gui/settings.rs
+msgid "Automation and naming"
+msgstr "Automatización y nombres"
+
+#: src/gui/settings.rs
+msgid "Network and other"
+msgstr "Red y otros"
+
+#: src/gui/settings.rs
+msgid "Format"
+msgstr "Formato"
+
+#: src/gui/settings.rs
+msgid "Format string"
+msgstr "Cadena de formato"
+
+#: src/gui/settings.rs
+msgid "Quality"
+msgstr "Calidad"
+
+#: src/gui/settings.rs
+msgid "Container"
+msgstr "Contenedor"
+
+#: src/gui/settings.rs
+msgid "Convert the container"
+msgstr "Convertir el contenedor"
+
+#: src/gui/settings.rs
+msgid "Convert to"
+msgstr "Convertir a"
+
+#: src/gui/settings.rs
+msgid "Convert it to another format"
+msgstr "Convertirlo a otro formato"
+
+#: src/gui/settings.rs
+msgid "Audio format"
+msgstr "Formato de audio"
+
+#: src/gui/settings.rs
+msgid "Audio quality (0 best, 10 smallest)"
+msgstr "Calidad de audio (0 la mejor, 10 la más pequeña)"
+
+#: src/gui/settings.rs
+msgid "The audio is kept exactly as the site serves it."
+msgstr "El audio se guarda tal como lo entrega el sitio."
+
+#: src/gui/settings.rs
+msgid "Embed the thumbnail"
+msgstr "Incrustar la miniatura"
+
+#: src/gui/settings.rs
+msgid "Thumbnail format"
+msgstr "Formato de la miniatura"
+
+#: src/gui/settings.rs
+msgid "Embed title, artist and date"
+msgstr "Incrustar título, artista y fecha"
+
+#: src/gui/settings.rs
+msgid "Embed chapters"
+msgstr "Incrustar capítulos"
+
+#: src/gui/settings.rs
+msgid "Subtitles"
+msgstr "Subtítulos"
+
+#: src/gui/settings.rs
+msgid "Languages"
+msgstr "Idiomas"
+
+#: src/gui/settings.rs
+msgid "all but live chat"
+msgstr "todos menos el chat en vivo"
+
+#: src/gui/settings.rs
+msgid "Include auto-generated subtitles"
+msgstr "Incluir subtítulos generados automáticamente"
+
+#: src/gui/settings.rs
+msgid "SponsorBlock"
+msgstr "SponsorBlock"
+
+#: src/gui/settings.rs
+msgid "Segments"
+msgstr "Segmentos"
+
+#: src/gui/settings.rs
+msgid "Categories"
+msgstr "Categorías"
+
+#: src/gui/settings.rs
+msgid "Cut exactly at keyframes (re-encodes, much slower)"
+msgstr "Cortar justo en los fotogramas clave (recodifica, mucho más lento)"
+
+#: src/gui/settings.rs
+msgid "Playlists"
+msgstr "Listas"
+
+#: src/gui/settings.rs
+msgid "Items (empty for all)"
+msgstr "Elementos (vacío para todos)"
+
+#: src/gui/settings.rs
+msgid "Start from the end of the playlist"
+msgstr "Empezar por el final de la lista"
+
+#: src/gui/settings.rs
+msgid "One folder per playlist, numbered"
+msgstr "Una carpeta por lista, numerada"
+
+#: src/gui/settings.rs
+msgid "Keep a history and skip what was downloaded before"
+msgstr "Llevar un historial y saltar lo que ya se descargó"
+
+#: src/gui/settings.rs
+msgid "History file"
+msgstr "Archivo de historial"
+
+#: src/gui/settings.rs
+msgid "Stop as soon as a video is already in the history"
+msgstr "Detenerse en cuanto un video ya esté en el historial"
+
+#: src/gui/settings.rs
+msgid "Stop after this many files"
+msgstr "Detenerse tras esta cantidad de archivos"
+
+#: src/gui/settings.rs
+msgid "no limit"
+msgstr "sin límite"
+
+#: src/gui/settings.rs
+msgid "File names"
+msgstr "Nombres de archivo"
+
+#: src/gui/settings.rs
+msgid "Template"
+msgstr "Plantilla"
+
+#: src/gui/settings.rs
+msgid "Plain ASCII file names"
+msgstr "Nombres de archivo solo en ASCII"
+
+#: src/gui/settings.rs
+msgid "This deletes the history file for good."
+msgstr "Esto borra el archivo de historial para siempre."
+
+#: src/gui/settings.rs
+#: src/gui/setup.rs
+msgid "Cancel"
+msgstr "Cancelar"
+
+#: src/gui/settings.rs
+msgid "Clear"
+msgstr "Borrar"
+
+#: src/gui/settings.rs
+#, python-brace-format
+msgid "{n} video in the history"
+msgid_plural "{n} videos in the history"
+msgstr[0] "{n} video en el historial"
+msgstr[1] "{n} videos en el historial"
+
+#: src/gui/settings.rs
+msgid "The history file doesn't exist yet."
+msgstr "El archivo de historial todavía no existe."
+
+#: src/gui/settings.rs
+msgid "Hide entries"
+msgstr "Ocultar entradas"
+
+#: src/gui/settings.rs
+msgid "View entries"
+msgstr "Ver entradas"
+
+#: src/gui/settings.rs
+msgid "Clear history"
+msgstr "Borrar historial"
+
+#: src/gui/settings.rs
+msgid "The history is empty."
+msgstr "El historial está vacío."
+
+#: src/gui/settings.rs
+msgid "Use cookies from"
+msgstr "Usar las cookies de"
+
+#: src/gui/settings.rs
+msgid "Profile (empty for the last used)"
+msgstr "Perfil (vacío para el último usado)"
+
+#: src/gui/settings.rs
+msgid "default"
+msgstr "predeterminado"
+
+#: src/gui/settings.rs
+msgid "Only for videos that need you signed in. Firefox works best: Chrome, Edge and other Chromium browsers may have to be closed first, and recent versions on Windows can't be read at all."
+msgstr "Solo para videos que requieren iniciar sesión. Firefox es el que mejor funciona: Chrome, Edge y otros navegadores basados en Chromium pueden necesitar cerrarse antes, y sus versiones recientes en Windows directamente no se pueden leer."
+
+#: src/gui/settings.rs
+msgid "Speed limit"
+msgstr "Límite de velocidad"
+
+#: src/gui/settings.rs
+msgid "Parts downloaded at once"
+msgstr "Partes descargadas a la vez"
+
+#: src/gui/settings.rs
+msgid "Seconds between requests"
+msgstr "Segundos entre solicitudes"
+
+#: src/gui/settings.rs
+msgid "Record live streams from the start"
+msgstr "Grabar las transmisiones en vivo desde el principio"
+
+#: src/gui/settings.rs
+msgid "Wait for a scheduled stream (seconds)"
+msgstr "Esperar una transmisión programada (segundos)"
+
+#: src/gui/settings.rs
+msgid "Keep the original upload date on the file"
+msgstr "Conservar en el archivo la fecha de publicación original"
+
+#: src/gui/settings.rs
+msgid "Keep going when one video of a playlist fails"
+msgstr "Seguir cuando falla un video de una lista"
+
+#: src/gui/settings.rs
+msgid "Verbose log (for troubleshooting)"
+msgstr "Registro detallado (para resolver problemas)"
+
+#: src/gui/settings.rs
+msgid "Choose..."
+msgstr "Elegir..."
+
+#: src/gui/settings.rs
+msgid "Leave it empty to use the downloads folder next to this app."
+msgstr "Déjalo vacío para usar la carpeta downloads junto a esta aplicación."
+
+#: src/gui/setup.rs
+#, python-brace-format
+msgid "This folder can't be written to: {folder} ({e})."
+msgstr "No se puede escribir en esta carpeta: {folder} ({e})."
+
+#: src/gui/setup.rs
+msgid "MimirDLP keeps its tools, settings and history next to itself. Move its folder somewhere you can write to (not Program Files), such as your user folder or a USB stick."
+msgstr "MimirDLP guarda sus herramientas, ajustes e historial junto a sí misma. Mueve su carpeta a un lugar donde puedas escribir (no Program Files), como tu carpeta de usuario o una memoria USB."
+
+#: src/gui/setup.rs
+msgid "Checking for updates... (requires internet)"
+msgstr "Buscando actualizaciones... (requiere internet)"
+
+#: src/gui/setup.rs
+#, python-brace-format
+msgid "Could not check {component} for updates: {reason}"
+msgstr "No se pudo buscar actualizaciones de {component}: {reason}"
+
+#: src/gui/setup.rs
+msgid "Some components are missing, installing them now"
+msgstr "Faltan algunos componentes, instalándolos ahora"
+
+#: src/gui/setup.rs
+msgid "Some components are missing or broken"
+msgstr "Algunos componentes faltan o están dañados"
+
+#: src/gui/setup.rs
+msgid "Installation completed"
+msgstr "Instalación completada"
+
+#: src/gui/setup.rs
+msgid "Update completed"
+msgstr "Actualización completada"
+
+#: src/gui/setup.rs
+msgid "Full reinstallation completed"
+msgstr "Reinstalación completa terminada"
+
+#: src/gui/setup.rs
+#, python-brace-format
+msgid "Binaries located in: {folder}"
+msgstr "Programas ubicados en: {folder}"
+
+#: src/gui/setup.rs
+msgid "yt-dlp, FFmpeg and Deno are kept in the bin folder next to this app. Nothing is installed on your system."
+msgstr "yt-dlp, FFmpeg y Deno se guardan en la carpeta bin junto a esta aplicación. No se instala nada en tu sistema."
+
+#: src/gui/setup.rs
+msgid "Components"
+msgstr "Componentes"
+
+#: src/gui/setup.rs
+msgid "Activity"
+msgstr "Actividad"
+
+#: src/gui/setup.rs
+msgid "Nothing yet. Each download and check will be listed here."
+msgstr "Nada todavía. Cada descarga y comprobación aparecerá aquí."
+
+#: src/gui/setup.rs
+msgid "This will re-download and reinstall ALL components."
+msgstr "Esto volverá a descargar y reinstalar TODOS los componentes."
+
+#: src/gui/setup.rs
+msgid "Reinstall"
+msgstr "Reinstalar"
+
+#: src/gui/setup.rs
+msgid "Install missing components"
+msgstr "Instalar los componentes que faltan"
+
+#: src/gui/setup.rs
+msgid "Update outdated components"
+msgstr "Actualizar los componentes desactualizados"
+
+#: src/gui/setup.rs
+msgid "Reinstall all"
+msgstr "Reinstalar todo"
+
+#: src/gui/setup.rs
+msgid "Looking at what is installed..."
+msgstr "Revisando lo que está instalado..."
+
+#: src/gui/setup.rs
+msgid "Checking for updates..."
+msgstr "Buscando actualizaciones..."
+
+#: src/gui/setup.rs
+msgid "Checking..."
+msgstr "Comprobando..."
+
+#: src/gui/setup.rs
+msgid "Not installed"
+msgstr "No instalado"
+
+#: src/gui/setup.rs
+msgid "Installed but not responding"
+msgstr "Instalado, pero no responde"
+
+#: src/gui/setup.rs
+#, python-brace-format
+msgid "Version {version} ({n} day old, check for updates)"
+msgid_plural "Version {version} ({n} days old, check for updates)"
+msgstr[0] "Versión {version} (de hace {n} día, busca actualizaciones)"
+msgstr[1] "Versión {version} (de hace {n} días, busca actualizaciones)"
+
+#: src/gui/setup.rs
+#, python-brace-format
+msgid "Version {version} (installed)"
+msgstr "Versión {version} (instalada)"
+
+#: src/gui/setup.rs
+#, python-brace-format
+msgid "Version {version} (up to date)"
+msgstr "Versión {version} (al día)"
+
+#: src/gui/setup.rs
+#, python-brace-format
+msgid "Version {version} (update available)"
+msgstr "Versión {version} (hay una actualización)"
+
+#: src/gui/setup.rs
+#, python-brace-format
+msgid "Version {version} (installed before update tracking, reinstall to enable it)"
+msgstr "Versión {version} (instalada antes del control de actualizaciones, reinstala para activarlo)"
+
+#: src/gui/setup.rs
+#, python-brace-format
+msgid "Version {version} (update check failed)"
+msgstr "Versión {version} (falló la búsqueda de actualizaciones)"
+
+#: src/metadata.rs
+msgid "Timed out looking up this link."
+msgstr "Se agotó el tiempo al consultar este enlace."
+
+#: src/metadata.rs
+#: src/runner.rs
+#, python-brace-format
+msgid "Could not start {tool}: {e}"
+msgstr "No se pudo iniciar {tool}: {e}"
+
+#: src/metadata.rs
+msgid "yt-dlp could not look up this link."
+msgstr "yt-dlp no pudo consultar este enlace."
+
+#: src/metadata.rs
+msgid "yt-dlp returned no information for this link."
+msgstr "yt-dlp no devolvió información sobre este enlace."
+
+#: src/metadata.rs
+#, python-brace-format
+msgid "Could not read yt-dlp's output: {e}"
+msgstr "No se pudo leer la respuesta de yt-dlp: {e}"
+
+#: src/provision/archive.rs
+#, python-brace-format
+msgid "The archive didn't contain {files} (unexpected layout)."
+msgstr "El archivo comprimido no contenía {files} (estructura inesperada)."
+
+#: src/provision/archive.rs
+#, python-brace-format
+msgid "Could not install {name}: {e}"
+msgstr "No se pudo instalar {name}: {e}"
+
+#: src/provision/archive.rs
+#, python-brace-format
+msgid "Could not read the archive: {e}"
+msgstr "No se pudo leer el archivo comprimido: {e}"
+
+#: src/provision/download.rs
+#, python-brace-format
+msgid "Download failed ({e}), retrying... (attempt {n}/{attempts})"
+msgstr "La descarga falló ({e}), reintentando... (intento {n}/{attempts})"
+
+#: src/provision/download.rs
+#, python-brace-format
+msgid "Failed to download {name} after {attempts} attempts ({e})"
+msgstr "No se pudo descargar {name} tras {attempts} intentos ({e})"
+
+#: src/provision/download.rs
+msgid "Please check your internet connection and try again."
+msgstr "Revisa tu conexión a internet y vuelve a intentarlo."
+
+#: src/provision/download.rs
+#, python-brace-format
+msgid "no data received for {seconds} seconds"
+msgstr "no se recibieron datos durante {seconds} segundos"
+
+#: src/provision/download.rs
+msgid "the download stopped unexpectedly"
+msgstr "la descarga se detuvo inesperadamente"
+
+#: src/provision/download.rs
+msgid "the file is unexpectedly large"
+msgstr "el archivo es inesperadamente grande"
+
+#: src/provision/mod.rs
+msgid "This platform isn't supported (only Linux and Windows on x86_64)."
+msgstr "Esta plataforma no es compatible (solo Linux y Windows en x86_64)."
+
+#: src/provision/mod.rs
+#, python-brace-format
+msgid "Could not get the signature: {e}"
+msgstr "No se pudo obtener la firma: {e}"
+
+#: src/provision/mod.rs
+#, python-brace-format
+msgid "Cannot create directory: {dir} ({e})"
+msgstr "No se puede crear la carpeta: {dir} ({e})"
+
+#: src/provision/mod.rs
+#, python-brace-format
+msgid "Checking who signed {file}..."
+msgstr "Comprobando quién firmó {file}..."
+
+#: src/provision/mod.rs
+#, python-brace-format
+msgid "Signed by the expected key ({key})"
+msgstr "Firmado con la clave esperada ({key})"
+
+#: src/provision/mod.rs
+#, python-brace-format
+msgid "Checking SHA256 for {file}..."
+msgstr "Comprobando el SHA256 de {file}..."
+
+#: src/provision/mod.rs
+msgid "A newer release was published during the download; its checksum matches."
+msgstr "Se publicó una versión más nueva durante la descarga; su suma de verificación coincide."
+
+#: src/provision/mod.rs
+#, python-brace-format
+msgid "Hash mismatch for {file}!"
+msgstr "¡El hash de {file} no coincide!"
+
+#: src/provision/mod.rs
+#, python-brace-format
+msgid "Expected: {expected}"
+msgstr "Esperado: {expected}"
+
+#: src/provision/mod.rs
+#, python-brace-format
+msgid "Actual:   {actual}"
+msgstr "Obtenido: {actual}"
+
+#: src/provision/mod.rs
+#, python-brace-format
+msgid "The download of {file} didn't match its published checksum."
+msgstr "La descarga de {file} no coincide con su suma de verificación publicada."
+
+#: src/provision/mod.rs
+msgid "Hash verification passed"
+msgstr "Verificación del hash correcta"
+
+#: src/provision/mod.rs
+msgid "Extracting..."
+msgstr "Extrayendo..."
+
+#: src/provision/mod.rs
+#, python-brace-format
+msgid "{component} installed successfully"
+msgstr "{component} se instaló correctamente"
+
+#: src/provision/platform.rs
+#, python-brace-format
+msgid "Could not find the checksum for {asset}."
+msgstr "No se encontró la suma de verificación de {asset}."
+
+#: src/provision/signature.rs
+#, python-brace-format
+msgid "the signature can't be read ({e})"
+msgstr "no se puede leer la firma ({e})"
+
+#: src/provision/signature.rs
+msgid "the checksum file is not signed by the expected key"
+msgstr "el archivo de sumas de verificación no está firmado con la clave esperada"
+
+#: src/provision/signature.rs
+#, python-brace-format
+msgid "the signing key can't be read ({e})"
+msgstr "no se puede leer la clave de firma ({e})"
+
+#: src/provision/signature.rs
+#, python-brace-format
+msgid "the signing key is {fingerprint}, not {expected}"
+msgstr "la clave de firma es {fingerprint}, no {expected}"
+
+#: src/provision/signature.rs
+#, python-brace-format
+msgid "the signing key is not valid ({e})"
+msgstr "la clave de firma no es válida ({e})"
+
+#: src/provision/signature.rs
+#, python-brace-format
+msgid "Refusing to trust the checksums: {reason}."
+msgstr "No se confía en las sumas de verificación: {reason}."
+
+#: src/runner.rs
+msgid "yt-dlp could not be started. Reinstall it from Setup."
+msgstr "No se pudo iniciar yt-dlp. Reinstálalo desde Instalación."
+
+#: src/runner.rs
+#, python-brace-format
+msgid "yt-dlp exited with code {code}."
+msgstr "yt-dlp terminó con el código {code}."
+
+#: src/runner.rs
+msgid "yt-dlp stopped unexpectedly."
+msgstr "yt-dlp se detuvo inesperadamente."
+
+#: src/runner.rs
+msgid "Extracting audio..."
+msgstr "Extrayendo el audio..."
+
+#: src/runner.rs
+msgid "Rewrapping the container..."
+msgstr "Reempaquetando el contenedor..."
+
+#: src/runner.rs
+msgid "Re-encoding the video..."
+msgstr "Recodificando el video..."
+
+#: src/runner.rs
+msgid "Merging video and audio..."
+msgstr "Uniendo video y audio..."
+
+#: src/runner.rs
+msgid "Converting the thumbnail..."
+msgstr "Convirtiendo la miniatura..."
+
+#: src/runner.rs
+msgid "Embedding the thumbnail..."
+msgstr "Incrustando la miniatura..."
+
+#: src/runner.rs
+msgid "Embedding metadata..."
+msgstr "Incrustando los metadatos..."
+
+#: src/runner.rs
+msgid "Embedding subtitles..."
+msgstr "Incrustando los subtítulos..."
+
+#: src/runner.rs
+msgid "Looking up SponsorBlock segments..."
+msgstr "Consultando los segmentos de SponsorBlock..."
+
+#: src/runner.rs
+msgid "Applying SponsorBlock..."
+msgstr "Aplicando SponsorBlock..."
+
+#: src/runner.rs
+msgid "Moving the file into place..."
+msgstr "Moviendo el archivo a su lugar..."
