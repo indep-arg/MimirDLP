@@ -6,7 +6,7 @@ Files for installing MimirDLP through package managers. The app itself is the sa
 
 `scoop/mimirdlp.json` is the manifest. It persists `bin`, `downloads` and the settings, history and queue files, so updates keep the tools and the user's videos.
 
-Scoop reads manifests from a bucket, a repository of its own:
+Scoop reads manifests from a bucket, a repository of its own: [indep-arg/scoop-bucket](https://github.com/indep-arg/scoop-bucket), made like this:
 
 1. Create `indep-arg/scoop-bucket` from [ScoopInstaller/BucketTemplate](https://github.com/ScoopInstaller/BucketTemplate) ("Use this template").
 2. Put `mimirdlp.json` in its `bucket/` folder.

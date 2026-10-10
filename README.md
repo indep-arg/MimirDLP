@@ -24,6 +24,13 @@ Download videos and music from YouTube and most other sites, with a simple windo
 
 On the release page, take the `.zip` for Windows (10 or later) or the `.tar.gz` for Linux (a recent distribution, such as Ubuntu 24.04 or later). There's no installer: extract it anywhere and run `mimirdlp`. Everything it needs stays in that folder (or in your user folder, if it's somewhere it can't write to, like `Program Files`).
 
+On Windows you can also install it with [Scoop](https://scoop.sh):
+
+```
+scoop bucket add mimirdlp https://github.com/indep-arg/scoop-bucket
+scoop install mimirdlp
+```
+
 ## How to use it
 
 1. Open MimirDLP. The first time, it downloads the tools it needs by itself (about 200 MB).
