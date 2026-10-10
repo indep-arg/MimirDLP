@@ -35,7 +35,11 @@ fn the_template_lists_every_text_in_the_source() {
         fs::write(POT, &expected).unwrap();
         return;
     }
-    let current = fs::read_to_string(POT).unwrap_or_default();
+    // A Windows checkout may have turned LF into CRLF (.gitattributes keeps
+    // po/ as LF, but a clone with other settings shouldn't fail here).
+    let current = fs::read_to_string(POT)
+        .unwrap_or_default()
+        .replace("\r\n", "\n");
     assert!(
         current == expected,
         "{POT} is out of date. Regenerate it with:\n\
@@ -158,7 +162,9 @@ fn extract() -> Vec<Message> {
     let mut messages: Vec<Message> = Vec::new();
     for path in files {
         let name = path.display().to_string().replace('\\', "/");
-        let source = fs::read_to_string(&path).unwrap();
+        // CRLF from a Windows checkout would leave a \r in texts that are
+        // continued over several lines with a trailing backslash.
+        let source = fs::read_to_string(&path).unwrap().replace("\r\n", "\n");
         let tokens = TokenStream::from_str(&source)
             .unwrap_or_else(|e| panic!("{name} does not tokenize: {e}"));
         let mut found = Vec::new();
