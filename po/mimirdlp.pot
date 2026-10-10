@@ -60,19 +60,7 @@ msgid "MP3 (most compatible)"
 msgstr ""
 
 #: src/config.rs
-msgid "AAC"
-msgstr ""
-
-#: src/config.rs
-msgid "M4A"
-msgstr ""
-
-#: src/config.rs
 msgid "Opus (smallest)"
-msgstr ""
-
-#: src/config.rs
-msgid "Vorbis"
 msgstr ""
 
 #: src/config.rs
@@ -177,38 +165,6 @@ msgstr ""
 
 #: src/config.rs
 msgid "Don't use cookies"
-msgstr ""
-
-#: src/config.rs
-msgid "Firefox"
-msgstr ""
-
-#: src/config.rs
-msgid "Chrome"
-msgstr ""
-
-#: src/config.rs
-msgid "Chromium"
-msgstr ""
-
-#: src/config.rs
-msgid "Edge"
-msgstr ""
-
-#: src/config.rs
-msgid "Brave"
-msgstr ""
-
-#: src/config.rs
-msgid "Opera"
-msgstr ""
-
-#: src/config.rs
-msgid "Vivaldi"
-msgstr ""
-
-#: src/config.rs
-msgid "Whale"
 msgstr ""
 
 #: src/config.rs
@@ -688,10 +644,6 @@ msgstr ""
 
 #: src/gui/settings.rs
 msgid "Include auto-generated subtitles"
-msgstr ""
-
-#: src/gui/settings.rs
-msgid "SponsorBlock"
 msgstr ""
 
 #: src/gui/settings.rs
