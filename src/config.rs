@@ -706,11 +706,7 @@ impl Settings {
         if let Some(parent) = file.parent() {
             fs::create_dir_all(parent)?;
         }
-        // Written through a temporary file so an interrupted save can't
-        // leave half a line behind.
-        let tmp = file.with_extension("tmp");
-        fs::write(&tmp, self.serialize())?;
-        fs::rename(&tmp, &file)
+        write_file(&file, &self.serialize())
     }
 
     fn file(paths: &Paths) -> PathBuf {
@@ -858,14 +854,16 @@ pub struct SavedItem {
 const ITEM_MARK: &str = "[item]";
 
 /// Writes the queue next to the application, one `[item]` block per link
-/// in the settings file's own `key=value` format. An empty queue removes
-/// the file.
+/// in the settings file's own `key=value` format. An empty queue empties
+/// the file, if there is one.
 pub fn save_queue(paths: &Paths, items: &[SavedItem]) -> std::io::Result<()> {
     let file = paths.app_dir.join(QUEUE_NAME);
     if items.is_empty() {
-        return match fs::remove_file(&file) {
-            Err(e) if e.kind() != std::io::ErrorKind::NotFound => Err(e),
-            _ => Ok(()),
+        // Emptied rather than removed, for the same reason as `write_file`.
+        return if file.exists() {
+            fs::write(&file, "")
+        } else {
+            Ok(())
         };
     }
     let mut text = String::new();
@@ -878,9 +876,22 @@ pub fn save_queue(paths: &Paths, items: &[SavedItem]) -> std::io::Result<()> {
         }
         text += &item.settings.serialize();
     }
-    let tmp = paths.app_dir.join(format!("{QUEUE_NAME}.tmp"));
+    write_file(&file, &text)
+}
+
+/// A new file is written through a temporary one and renamed into place,
+/// so an interrupted save can't leave half of it. An existing file is
+/// rewritten in place instead: Scoop keeps these files in a folder of its
+/// own and hard links them into the app's, and a rename would replace the
+/// link with a file Scoop doesn't know, losing the settings on the next
+/// update.
+pub fn write_file(file: &std::path::Path, text: &str) -> std::io::Result<()> {
+    if file.exists() {
+        return fs::write(file, text);
+    }
+    let tmp = file.with_extension("tmp");
     fs::write(&tmp, text)?;
-    fs::rename(&tmp, &file)
+    fs::rename(&tmp, file)
 }
 
 /// The queue as it was last saved. A block without a link is skipped.
@@ -1114,6 +1125,50 @@ mod tests {
         // "$HOME/" means the folder is turned off.
         write("XDG_DOWNLOAD_DIR=\"$HOME/\"\n");
         assert_eq!(xdg_download_dir(&dir, home), None);
+        fs::remove_dir_all(dir).unwrap();
+    }
+
+    /// Scoop hard links the settings, the queue and the history into the
+    /// app's folder; saving must write through the link.
+    #[cfg(unix)]
+    #[test]
+    fn saving_keeps_a_hard_linked_file_linked() {
+        let dir = tempdir();
+        let paths = Paths::new(dir.clone());
+        let kept = dir.join("persist.config");
+        fs::write(&kept, "").unwrap();
+        fs::hard_link(&kept, dir.join(FILE_NAME)).unwrap();
+        let settings = Settings {
+            output_dir: "/videos".into(),
+            ..Settings::default()
+        };
+        settings.save(&paths).unwrap();
+        assert!(
+            fs::read_to_string(&kept)
+                .unwrap()
+                .contains("output_dir=/videos")
+        );
+
+        let kept_queue = dir.join("persist.queue");
+        fs::write(&kept_queue, "").unwrap();
+        fs::hard_link(&kept_queue, dir.join(QUEUE_NAME)).unwrap();
+        let item = SavedItem {
+            url: "https://example.com/a".into(),
+            settings,
+            failed: None,
+        };
+        save_queue(&paths, &[item]).unwrap();
+        assert!(
+            fs::read_to_string(&kept_queue)
+                .unwrap()
+                .contains("url=https://example.com/a")
+        );
+        save_queue(&paths, &[]).unwrap();
+        assert_eq!(
+            fs::read_to_string(&kept_queue).unwrap(),
+            "",
+            "emptied, not unlinked"
+        );
         fs::remove_dir_all(dir).unwrap();
     }
 
@@ -1690,10 +1745,9 @@ youtube b
             loaded[1].failed.as_deref(),
             Some("Video unavailable second line")
         );
-        // Nothing left to keep: no file left behind either.
+        // Nothing left to keep: the file is emptied (see `write_file`).
         save_queue(&paths, &[]).unwrap();
         assert!(load_queue(&paths).is_empty());
-        assert!(!dir.join(QUEUE_NAME).exists());
         fs::remove_dir_all(dir).unwrap();
     }
 

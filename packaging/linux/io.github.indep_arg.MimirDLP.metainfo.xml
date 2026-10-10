@@ -57,6 +57,11 @@
     <internet>always</internet>
   </requires>
   <releases>
+    <release version="0.3.0" date="2026-10-10">
+      <description>
+        <p>Installed somewhere it can't write to, MimirDLP keeps its files in your user folder and saves to your Downloads folder. Settings now survive updates through Scoop.</p>
+      </description>
+    </release>
     <release version="0.2.0" date="2026-10-10">
       <description>
         <p>A link you copy now shows up in the box when you switch to MimirDLP, ready to add.</p>

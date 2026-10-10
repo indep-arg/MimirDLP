@@ -273,7 +273,14 @@ impl SettingsPage {
                 self.clearing_history = false;
                 let entries = self.settings.history_count(&self.paths).unwrap_or(0);
                 let path = self.settings.archive_path(&self.paths);
-                let note = match std::fs::remove_file(&path) {
+                // Emptied rather than removed, so a file Scoop keeps for
+                // the app (hard linked) is cleared too.
+                let cleared = if path.exists() {
+                    std::fs::write(&path, "")
+                } else {
+                    Err(std::io::ErrorKind::NotFound.into())
+                };
+                let note = match cleared {
                     Ok(()) => (
                         Level::Ok,
                         tr!("History cleared ({n} entry)."
@@ -957,7 +964,7 @@ mod tests {
         assert!(history.exists());
         let _ = page.update(Message::ClearHistory);
         let note = page.update(Message::ConfirmClearHistory).unwrap();
-        assert!(!history.exists());
+        assert_eq!(std::fs::read_to_string(&history).unwrap(), "", "emptied");
         assert!(note.1.contains("(2 entries)"), "{note:?}");
         std::fs::remove_dir_all(dir).unwrap();
     }
