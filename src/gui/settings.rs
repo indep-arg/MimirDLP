@@ -47,6 +47,8 @@ pub enum Message {
     ToggleHistoryList,
     /// Shows or hides the sections most people never need.
     ToggleAdvanced,
+    /// Linux: adds or removes the entry in the desktop's application menu.
+    DesktopEntry(bool),
     /// Opens the system's folder dialog; handled by [`SettingsPage::choose_folder`].
     ChooseFolder,
     /// What the dialog returned; `None` when it was cancelled.
@@ -148,6 +150,9 @@ pub struct SettingsPage {
     /// The less common sections are folded away until asked for. Not
     /// saved: every launch starts with the short page.
     show_advanced: bool,
+    /// Linux: the application menu has an entry for MimirDLP (see
+    /// `crate::desktop`). Read from disk, not saved in the settings.
+    desktop_entry: bool,
 }
 
 impl SettingsPage {
@@ -159,6 +164,8 @@ impl SettingsPage {
             history_list: None,
             clearing_history: false,
             show_advanced: false,
+            desktop_entry: crate::desktop::data_home()
+                .is_some_and(|data| crate::desktop::installed(&data)),
         };
         page.refresh_history();
         page
@@ -172,6 +179,29 @@ impl SettingsPage {
     pub fn set_theme(&mut self, pref: ThemePref) -> Option<Note> {
         self.settings.theme = pref;
         self.save()
+    }
+
+    fn set_desktop_entry(&mut self, wanted: bool) -> Option<Note> {
+        let Some(data) = crate::desktop::data_home() else {
+            return Some((Level::Warn, tr!("Could not find the home folder.")));
+        };
+        let result = if wanted {
+            std::env::current_exe().and_then(|exe| crate::desktop::install(&data, &exe))
+        } else {
+            crate::desktop::remove(&data)
+        };
+        self.desktop_entry = crate::desktop::installed(&data);
+        match result {
+            Ok(()) if wanted => Some((Level::Ok, tr!("MimirDLP is now in the applications menu."))),
+            Ok(()) => Some((
+                Level::Info,
+                tr!("MimirDLP was removed from the applications menu."),
+            )),
+            Err(e) => Some((
+                Level::Warn,
+                tr!("Could not change the applications menu: {e}", e),
+            )),
+        }
     }
 
     /// Shows the interface in another language at once, and keeps it.
@@ -268,6 +298,7 @@ impl SettingsPage {
                 self.show_advanced = !self.show_advanced;
                 return None;
             }
+            Message::DesktopEntry(wanted) => return self.set_desktop_entry(wanted),
             Message::ToggleHistoryList => {
                 self.history_list = if self.history_list.is_some() {
                     None
@@ -312,8 +343,26 @@ impl SettingsPage {
                 confirming_clear: self.clearing_history,
             },
             self.show_advanced,
+            self.desktop_entry,
         )
     }
+}
+
+fn desktop_section<'a>(installed: bool) -> Element<'a, Message> {
+    column![
+        switch(installed)
+            .label(tr!("Show MimirDLP in the applications menu"))
+            .on_toggle(Message::DesktopEntry),
+        text(tr!(
+            "Adds a launcher and the icon to your user folder, so MimirDLP can be started from the menu and shows its icon in the taskbar. Turning it off removes them."
+        ))
+        .size(13)
+        .style(|t: &Theme| text::Style {
+            color: Some(style::muted(t)),
+        }),
+    ]
+    .spacing(8)
+    .into()
 }
 
 /// The row that folds the less common sections in and out, like an
@@ -401,6 +450,7 @@ fn view<'a>(
     paths: &'a Paths,
     history: History<'a>,
     show_advanced: bool,
+    desktop_entry: bool,
 ) -> Element<'a, Message> {
     let page = column![
         text(tr!("These apply to every link you queue from now on. Links already in the queue keep what they were queued with.")).style(|t: &Theme| {
@@ -411,9 +461,15 @@ fn view<'a>(
         card(tr!("What to download"), format_section(settings)),
         card(tr!("Where to save"), destination_section(settings, paths)),
         card(tr!("Extras"), extras_section(settings)),
-        advanced_toggle(show_advanced),
     ]
     .spacing(20);
+    // Only Linux desktops build their menus from .desktop files.
+    let page = if cfg!(target_os = "linux") {
+        page.push(card(tr!("Desktop"), desktop_section(desktop_entry)))
+    } else {
+        page
+    };
+    let page = page.push(advanced_toggle(show_advanced));
     if !show_advanced {
         return page.into();
     }

@@ -35,9 +35,27 @@ pub fn run() -> iced::Result {
             // Closing is handled in `update`, so typed settings are saved
             // and a running download is stopped first.
             exit_on_close_request: false,
+            platform_specific: platform_window(),
             ..window::Settings::default()
         })
         .run()
+}
+
+/// On Wayland a program can't hand its window an icon: the desktop finds it
+/// through the window's application id, in a `.desktop` file of that name
+/// (`crate::desktop`, the opt-in menu entry). X11 takes the icon from
+/// `window::Settings::icon`.
+#[cfg(target_os = "linux")]
+fn platform_window() -> window::settings::PlatformSpecific {
+    window::settings::PlatformSpecific {
+        application_id: crate::desktop::APP_ID.to_string(),
+        ..Default::default()
+    }
+}
+
+#[cfg(not(target_os = "linux"))]
+fn platform_window() -> window::settings::PlatformSpecific {
+    window::settings::PlatformSpecific::default()
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -82,6 +100,13 @@ enum App {
         /// The app opens on Setup and moves on to Download by itself once
         /// everything is installed, unless the user went somewhere first.
         leave_setup_when_ready: bool,
+        /// The app opened on Download because every tool's file is there,
+        /// before the first inspection said whether they run. A broken one
+        /// sends it to Setup instead, once that inspection ends.
+        confirming_tools: bool,
+        /// Download was pressed while that inspection still ran; it starts
+        /// as soon as the tools are known to work.
+        start_when_ready: bool,
         /// Unknown until the startup query resolves; treated as dark, this
         /// app's original and only appearance before this existed.
         system_theme: ThemeMode,
@@ -100,6 +125,18 @@ impl App {
                 return (App::Broken(reason), Task::none());
             }
         };
+        // With everything already in bin/, Download is where the app ends
+        // up, so it opens there: showing Setup for the half second the
+        // first inspection takes was a visible flash on every launch.
+        let tools_present = crate::provision::all_present(&paths);
+        // A menu entry the user added follows the folder if it was moved.
+        // Release builds only: a development build must not repoint it.
+        if cfg!(target_os = "linux")
+            && !cfg!(debug_assertions)
+            && let (Some(data), Ok(exe)) = (crate::desktop::data_home(), std::env::current_exe())
+        {
+            let _ = crate::desktop::refresh(&data, &exe);
+        }
         let saved = Settings::load(&paths);
         // Before anything is shown or logged, so all of it is translated.
         crate::i18n::apply(&saved.language);
@@ -125,6 +162,8 @@ impl App {
             tasks.push(Task::done(Message::Download(download::Message::Start)));
             tasks.push(dev_stop());
             Page::Download
+        } else if tools_present {
+            Page::Download
         } else {
             Page::Setup
         };
@@ -138,6 +177,8 @@ impl App {
             settings: Box::new(settings),
             menu_open: dev_menu(),
             leave_setup_when_ready,
+            confirming_tools: page == Page::Download,
+            start_when_ready: false,
             system_theme: ThemeMode::None,
             snapshot_due: false,
         };
@@ -190,6 +231,7 @@ impl App {
                     settings,
                     menu_open,
                     leave_setup_when_ready,
+                    confirming_tools,
                     ..
                 },
                 Message::Navigate(target),
@@ -198,7 +240,7 @@ impl App {
                 *leave_setup_when_ready = false;
                 // The same rules the header bar's buttons follow.
                 let allowed = match target {
-                    Page::Download => setup.ready() && !setup.busy(),
+                    Page::Download => (setup.ready() && !setup.busy()) || *confirming_tools,
                     Page::Setup => !download.uses_tools(),
                     Page::Settings => true,
                 };
@@ -235,25 +277,58 @@ impl App {
                     page,
                     setup,
                     leave_setup_when_ready,
+                    confirming_tools,
+                    start_when_ready,
                     ..
                 },
                 Message::Setup(message),
             ) => {
                 let task = setup.update(message).map(Message::Setup);
-                if *leave_setup_when_ready && setup.ready() && !setup.busy() {
+                if setup.busy() {
+                    return task;
+                }
+                if *confirming_tools {
+                    *confirming_tools = false;
+                    if !setup.ready() && *page == Page::Download {
+                        // A file is there but doesn't run: Setup repairs
+                        // it by itself, then comes back here.
+                        *page = Page::Setup;
+                        *leave_setup_when_ready = true;
+                    }
+                }
+                if *leave_setup_when_ready && setup.ready() {
                     *leave_setup_when_ready = false;
                     if *page == Page::Setup {
                         *page = Page::Download;
+                    }
+                }
+                if *start_when_ready {
+                    *start_when_ready = false;
+                    if setup.ready() {
+                        return Task::batch([
+                            task,
+                            Task::done(Message::Download(download::Message::Start)),
+                        ]);
                     }
                 }
                 task
             }
             (
                 App::Running {
-                    download, settings, ..
+                    download,
+                    settings,
+                    setup,
+                    start_when_ready,
+                    ..
                 },
                 Message::Download(message),
             ) => {
+                // The tools must be known to work before yt-dlp is started.
+                // Pressed during the first inspection, the start waits for it.
+                if matches!(message, download::Message::Start) && !setup.ready() {
+                    *start_when_ready = setup.busy();
+                    return Task::none();
+                }
                 // A download starts with what the Settings page says now,
                 // typed values included, so write them first.
                 if matches!(message, download::Message::Start)
@@ -318,7 +393,7 @@ impl App {
     }
 
     fn view(&self) -> Element<'_, Message> {
-        let (page, setup, download, settings, menu_open) = match self {
+        let (page, setup, download, settings, menu_open, confirming_tools) = match self {
             App::Broken(reason) => {
                 return container(text(reason).style(text::danger))
                     .padding(24)
@@ -330,10 +405,19 @@ impl App {
                 download,
                 settings,
                 menu_open,
+                confirming_tools,
                 ..
-            } => (*page, setup, download, settings, *menu_open),
+            } => (
+                *page,
+                setup,
+                download,
+                settings,
+                *menu_open,
+                *confirming_tools,
+            ),
         };
-        let can_download = setup.ready() && !setup.busy();
+        // The same rule `Message::Navigate` follows.
+        let can_download = (setup.ready() && !setup.busy()) || confirming_tools;
         let can_setup = !download.uses_tools();
 
         let content = match page {

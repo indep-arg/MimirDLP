@@ -244,7 +244,7 @@ impl Setup {
                 if self.auto_install && self.needs_install() {
                     self.log.push((
                         Level::Info,
-                        tr!("Some components are missing, installing them now"),
+                        tr!("Some components are missing or broken, installing them now"),
                     ));
                     return Task::done(Message::InstallMissing);
                 }

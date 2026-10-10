@@ -510,6 +510,23 @@ msgid "Check for updates"
 msgstr ""
 
 #: src/gui/settings.rs
+msgid "Could not find the home folder."
+msgstr ""
+
+#: src/gui/settings.rs
+msgid "MimirDLP is now in the applications menu."
+msgstr ""
+
+#: src/gui/settings.rs
+msgid "MimirDLP was removed from the applications menu."
+msgstr ""
+
+#: src/gui/settings.rs
+#, python-brace-format
+msgid "Could not change the applications menu: {e}"
+msgstr ""
+
+#: src/gui/settings.rs
 #, python-brace-format
 msgid "Could not save the settings: {e}"
 msgstr ""
@@ -532,6 +549,14 @@ msgstr ""
 
 #: src/gui/settings.rs
 msgid "Where to save downloads"
+msgstr ""
+
+#: src/gui/settings.rs
+msgid "Show MimirDLP in the applications menu"
+msgstr ""
+
+#: src/gui/settings.rs
+msgid "Adds a launcher and the icon to your user folder, so MimirDLP can be started from the menu and shows its icon in the taskbar. Turning it off removes them."
 msgstr ""
 
 #: src/gui/settings.rs
@@ -560,6 +585,10 @@ msgstr ""
 
 #: src/gui/settings.rs
 msgid "Extras"
+msgstr ""
+
+#: src/gui/settings.rs
+msgid "Desktop"
 msgstr ""
 
 #: src/gui/settings.rs
@@ -820,7 +849,7 @@ msgid "Could not check {component} for updates: {reason}"
 msgstr ""
 
 #: src/gui/setup.rs
-msgid "Some components are missing, installing them now"
+msgid "Some components are missing or broken, installing them now"
 msgstr ""
 
 #: src/gui/setup.rs

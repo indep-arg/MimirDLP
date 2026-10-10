@@ -511,6 +511,23 @@ msgid "Check for updates"
 msgstr "Buscar actualizaciones"
 
 #: src/gui/settings.rs
+msgid "Could not find the home folder."
+msgstr "No se encontró la carpeta personal."
+
+#: src/gui/settings.rs
+msgid "MimirDLP is now in the applications menu."
+msgstr "MimirDLP ya está en el menú de aplicaciones."
+
+#: src/gui/settings.rs
+msgid "MimirDLP was removed from the applications menu."
+msgstr "MimirDLP se quitó del menú de aplicaciones."
+
+#: src/gui/settings.rs
+#, python-brace-format
+msgid "Could not change the applications menu: {e}"
+msgstr "No se pudo cambiar el menú de aplicaciones: {e}"
+
+#: src/gui/settings.rs
 #, python-brace-format
 msgid "Could not save the settings: {e}"
 msgstr "No se pudieron guardar los ajustes: {e}"
@@ -534,6 +551,14 @@ msgstr "No se pudo borrar el historial: {e}"
 #: src/gui/settings.rs
 msgid "Where to save downloads"
 msgstr "Dónde guardar las descargas"
+
+#: src/gui/settings.rs
+msgid "Show MimirDLP in the applications menu"
+msgstr "Mostrar MimirDLP en el menú de aplicaciones"
+
+#: src/gui/settings.rs
+msgid "Adds a launcher and the icon to your user folder, so MimirDLP can be started from the menu and shows its icon in the taskbar. Turning it off removes them."
+msgstr "Agrega un acceso y el icono en tu carpeta de usuario, para abrir MimirDLP desde el menú y que se vea su icono en la barra de tareas. Al desactivarlo se quitan."
 
 #: src/gui/settings.rs
 msgid "Hide advanced options"
@@ -562,6 +587,10 @@ msgstr "Dónde guardar"
 #: src/gui/settings.rs
 msgid "Extras"
 msgstr "Extras"
+
+#: src/gui/settings.rs
+msgid "Desktop"
+msgstr "Escritorio"
 
 #: src/gui/settings.rs
 msgid "Signing in"
@@ -821,8 +850,8 @@ msgid "Could not check {component} for updates: {reason}"
 msgstr "No se pudo buscar actualizaciones de {component}: {reason}"
 
 #: src/gui/setup.rs
-msgid "Some components are missing, installing them now"
-msgstr "Faltan algunos componentes, instalándolos ahora"
+msgid "Some components are missing or broken, installing them now"
+msgstr "Faltan componentes o alguno está dañado, instalándolos ahora"
 
 #: src/gui/setup.rs
 msgid "Some components are missing or broken"

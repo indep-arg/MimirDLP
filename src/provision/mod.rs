@@ -173,6 +173,16 @@ pub enum Status {
 }
 
 /// What is installed, based on actually running the binaries.
+/// Every component's files are in `bin/`. Says nothing about whether they
+/// run (that takes [`inspect`], about half a second for yt-dlp, which
+/// unpacks itself first); it is what the window opens on before that.
+pub fn all_present(paths: &Paths) -> bool {
+    Component::ALL
+        .iter()
+        .flat_map(|c| c.binaries().iter())
+        .all(|name| paths.tool(name).is_file())
+}
+
 pub fn inspect(component: Component, paths: &Paths) -> Status {
     for name in component.binaries() {
         if !paths.tool(name).is_file() {

@@ -67,6 +67,7 @@ One caveat that comes from yt-dlp itself: if the SponsorBlock server can't be re
 
 ## Things worth knowing
 
+- On Linux, Settings has a switch to show MimirDLP in the applications menu. It is off by default, since the app installs nothing on its own; turned on, it writes a launcher and the icon to `~/.local/share` (which is also what lets KDE and GNOME show the icon in the taskbar on Wayland), and turning it off removes them. If you move the app's folder, the launcher follows it the next time you open the app.
 - Settings and the download history live next to the application (`mimirdlp.config`, `download_archive.txt`), not in `~/.config` or `%APPDATA%`, so the whole folder stays portable. A relative output folder or history file name is next to the application too.
 - Subtitles in "all" languages leave out YouTube's live chat replay, which isn't subtitles at all. Many YouTube videos only have the auto-generated kind; there's a toggle for those. Subtitles are saved in whatever format the site serves (usually `.vtt`).
 - Converting the container comes in two flavours. Remux just rewraps the existing streams, which is nearly instant but fails if the codecs don't fit the target container. Re-encode always works but is slow and costs some quality.
