@@ -51,7 +51,7 @@ Come back any time through the ☰ menu, **Setup and updates**, to check for upd
 
 ## Downloading
 
-Works on YouTube, Twitch, and pretty much anywhere else yt-dlp does, which by now is most of the internet. On the Download screen, paste a link (or several, separated by spaces or new lines). Each one is looked up right away and added to the queue as a card, where you can pick its format and quality until it starts.
+Works on YouTube, Twitch, and pretty much anywhere else yt-dlp does, which by now is most of the internet. On the Download screen, paste a link (or several, separated by spaces or new lines) with Ctrl+V. A link you copied elsewhere shows up in the empty box by itself when you switch to MimirDLP, ready for Add; it is never queued without you pressing Add, and one you clear isn't put back. Each one is looked up right away and added to the queue as a card, where you can pick its format and quality until it starts.
 
 Press Download and they run one at a time, each with its own progress bar. A finished card gets its own "Open folder" straight to that file. Stop really stops, including the FFmpeg that yt-dlp may have started, and the partial file is kept so starting again resumes it. Closing the window does the same.
 

@@ -17,16 +17,17 @@ Download videos and music from YouTube and most other sites, with a simple windo
 
 ## Download
 
-| Windows | Linux |
-|---|---|
-| [`mimirdlp-<version>-windows-x86_64.zip`](https://github.com/indep-arg/MimirDLP/releases/latest) | [`mimirdlp-<version>-linux-x86_64.tar.gz`](https://github.com/indep-arg/MimirDLP/releases/latest) |
+<p align="center">
+  <a href="https://github.com/indep-arg/MimirDLP/releases/latest"><img src="https://img.shields.io/badge/Download_for-Windows-3584e4?style=for-the-badge" alt="Download for Windows"/></a>
+  <a href="https://github.com/indep-arg/MimirDLP/releases/latest"><img src="https://img.shields.io/badge/Download_for-Linux-3584e4?style=for-the-badge" alt="Download for Linux"/></a>
+</p>
 
-No installer: extract it anywhere (not `Program Files`) and run `mimirdlp`. Everything it needs stays in that folder.
+On the release page, take the `.zip` for Windows (10 or later) or the `.tar.gz` for Linux (a recent distribution, such as Ubuntu 24.04 or later). There's no installer: extract it anywhere you can write to (not `Program Files`) and run `mimirdlp`. Everything it needs stays in that folder.
 
 ## How to use it
 
 1. Open MimirDLP. The first time, it downloads the tools it needs by itself (about 200 MB).
-2. Paste a link and pick video or audio and the quality.
+2. Copy a link and switch to MimirDLP: it shows up in the box by itself (or paste it with Ctrl+V). Press **Add**, then pick video or audio and the quality.
 3. Press **Download**.
 
 Subtitles, SponsorBlock, playlists and signed-in downloads are in **Settings**, in the ☰ menu. It runs on [yt-dlp](https://github.com/yt-dlp/yt-dlp), so it works wherever yt-dlp does.

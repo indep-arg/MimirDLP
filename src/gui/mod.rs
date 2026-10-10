@@ -87,6 +87,8 @@ enum Message {
     OpenLink(&'static str),
     LinkOpened(&'static str, Result<(), String>),
     CloseRequested,
+    /// The window got the focus: a link copied meanwhile may be offered.
+    Focused,
     /// Debug builds only, see [`dev_snapshot`].
     SnapshotDue,
     SnapshotFrame,
@@ -228,6 +230,15 @@ impl App {
                 *menu_open = false;
                 Task::none()
             }
+            (App::Running { download, .. }, Message::Focused) => {
+                if download.wants_clipboard() {
+                    iced::clipboard::read()
+                        .map(|text| Message::Download(download::Message::Clipboard(text)))
+                } else {
+                    Task::none()
+                }
+            }
+            (App::Broken(_), Message::Focused) => Task::none(),
             (App::Running { .. }, Message::OpenLink(url)) => {
                 open::open(url).map(move |result| Message::LinkOpened(url, result))
             }
@@ -497,14 +508,19 @@ impl App {
         match self {
             App::Running { snapshot_due, .. } => {
                 let theme = iced::system::theme_changes().map(Message::SystemTheme);
+                let focus = iced::event::listen_with(|event, _, _| match event {
+                    iced::Event::Window(window::Event::Focused) => Some(Message::Focused),
+                    _ => None,
+                });
                 if *snapshot_due {
                     Subscription::batch([
                         close,
                         theme,
+                        focus,
                         window::frames().map(|_| Message::SnapshotFrame),
                     ])
                 } else {
-                    Subscription::batch([close, theme])
+                    Subscription::batch([close, theme, focus])
                 }
             }
             App::Broken(_) => close,

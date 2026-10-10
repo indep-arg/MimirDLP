@@ -41,6 +41,8 @@ const MAX_LOG: usize = 2000;
 pub enum Message {
     UrlInput(String),
     AddUrl,
+    /// The clipboard, read when the window got the focus.
+    Clipboard(Option<String>),
     RemoveItem(u64),
     RetryItem(u64),
     ClearFinished,
@@ -111,6 +113,9 @@ pub struct Download {
     /// must not replace underneath it (Windows refuses to).
     lookups: usize,
     show_log: bool,
+    /// The clipboard text last put into the link field, so a link the
+    /// user cleared isn't put back every time the window gets the focus.
+    offered: Option<String>,
 }
 
 impl Download {
@@ -130,7 +135,13 @@ impl Download {
             repeats: 0,
             lookups: 0,
             show_log: false,
+            offered: None,
         }
+    }
+
+    /// The link field is empty, so a copied link may be offered in it.
+    pub fn wants_clipboard(&self) -> bool {
+        self.url_input.trim().is_empty()
     }
 
     pub fn running(&self) -> bool {
@@ -183,6 +194,7 @@ impl Download {
     fn apply(&mut self, message: Message, settings: &Settings) -> Task<Message> {
         match message {
             Message::UrlInput(value) => self.url_input = value,
+            Message::Clipboard(text) => self.offer(text.as_deref().unwrap_or_default()),
             Message::AddUrl => return self.add_url(settings),
             Message::RemoveItem(id) => {
                 self.items
@@ -295,6 +307,26 @@ impl Download {
         self.items
             .iter_mut()
             .find(|i| i.id == id && i.status == ItemStatus::Queued)
+    }
+
+    /// A link copied somewhere else is put into the empty link field, ready
+    /// for Add: it is never queued by itself. Only links (one, or several
+    /// separated by spaces or line breaks), not ones already in the queue,
+    /// and not the same text twice.
+    fn offer(&mut self, text: &str) {
+        let text = text.trim();
+        let links: Vec<&str> = text.split_whitespace().collect();
+        if !self.wants_clipboard()
+            || links.is_empty()
+            || !links.iter().all(|l| valid_url(l))
+            || links.iter().all(|l| self.items.iter().any(|i| i.url == *l))
+            || self.offered.as_deref() == Some(text)
+        {
+            return;
+        }
+        self.offered = Some(text.to_string());
+        self.url_input = text.to_string();
+        self.problem = None;
     }
 
     /// Validates and queues what was pasted (one link, or several
@@ -1138,6 +1170,45 @@ mod tests {
         assert_eq!(screen.items[0].status, ItemStatus::Queued);
         assert_eq!(screen.items[0].meta, MetaState::Fetching);
         assert_eq!(screen.url_input, "", "the input clears once queued");
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn a_copied_link_is_offered_in_the_empty_field_but_never_queued() {
+        let dir = tempdir();
+        let mut screen = Download::new(Paths::new(dir.clone()));
+        let settings = Settings::default();
+        let link = "https://example.com/video";
+        let clipboard = |text: &str| Message::Clipboard(Some(text.into()));
+
+        // Not a link: left alone.
+        let _ = screen.update(clipboard("some copied words"), &settings);
+        assert_eq!(screen.url_input, "");
+        // A link: offered, not queued.
+        let _ = screen.update(clipboard(&format!("  {link}\n")), &settings);
+        assert_eq!(screen.url_input, link);
+        assert!(screen.items.is_empty());
+        // Cleared by the user: not put back for the same clipboard.
+        let _ = screen.update(Message::UrlInput(String::new()), &settings);
+        let _ = screen.update(clipboard(link), &settings);
+        assert_eq!(screen.url_input, "");
+        // Something typed is never replaced.
+        let _ = screen.update(
+            Message::UrlInput("https://typed.example/x".into()),
+            &settings,
+        );
+        let _ = screen.update(clipboard("https://example.com/other"), &settings);
+        assert_eq!(screen.url_input, "https://typed.example/x");
+        // Already in the queue: not offered again.
+        let _ = screen.update(Message::AddUrl, &settings);
+        let _ = screen.update(clipboard("https://typed.example/x"), &settings);
+        assert_eq!(screen.url_input, "");
+        // Several links at once, as pasting them would.
+        let _ = screen.update(
+            clipboard("https://a.example/1 https://b.example/2"),
+            &settings,
+        );
+        assert_eq!(screen.url_input, "https://a.example/1 https://b.example/2");
         std::fs::remove_dir_all(dir).unwrap();
     }
 
