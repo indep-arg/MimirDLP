@@ -1,8 +1,12 @@
 name: CI
 
-# Runs on every push and pull request.
+# Runs on every push to main and on every pull request. Other branches are
+# checked through their pull request only: Weblate and Dependabot push
+# branches into this repository, and a push trigger there ran each check
+# twice.
 on:
   push:
+    branches: [main]
   pull_request:
 
 permissions:
