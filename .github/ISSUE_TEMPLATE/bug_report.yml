@@ -1,0 +1,47 @@
+name: Bug report
+description: Something doesn't work as it should.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time. Before reporting, open ☰ > Setup and updates and press "Check for updates": an old yt-dlp is the most common reason a site stops working.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: input
+    id: link
+    attributes:
+      label: Link
+      description: The link that fails, if it can be shared.
+  - type: input
+    id: version
+    attributes:
+      label: MimirDLP version
+      description: The release you downloaded, for example 0.1.0.
+    validations:
+      required: true
+  - type: input
+    id: ytdlp
+    attributes:
+      label: yt-dlp version
+      description: Shown in ☰ > Setup and updates.
+  - type: dropdown
+    id: os
+    attributes:
+      label: System
+      options:
+        - Windows
+        - Linux
+    validations:
+      required: true
+  - type: textarea
+    id: log
+    attributes:
+      label: Activity log
+      description: Turn on Settings > Advanced options > Verbose log, try again, then copy what "Show activity" lists on the Download screen.
+      render: text

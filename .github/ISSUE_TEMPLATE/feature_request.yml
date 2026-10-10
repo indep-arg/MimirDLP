@@ -1,0 +1,11 @@
+name: Feature request
+description: An idea to make MimirDLP better.
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: What you would like
+      description: What you want to do, and why it matters to you.
+    validations:
+      required: true
