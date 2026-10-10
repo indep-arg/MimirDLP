@@ -400,7 +400,7 @@ msgstr "Mostrar actividad"
 
 #: src/gui/download.rs
 msgid "Clear finished"
-msgstr "Quitar terminados"
+msgstr "Limpiar lista"
 
 #: src/gui/download.rs src/gui/setup.rs
 msgid "Working..."
@@ -434,6 +434,10 @@ msgstr "{kind}, {quality}"
 #: src/gui/download.rs
 msgid "Queued"
 msgstr "En cola"
+
+#: src/gui/download.rs
+msgid "Nothing new to download"
+msgstr "Nada nuevo para descargar"
 
 #: src/gui/download.rs
 msgid "Completed"

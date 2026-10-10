@@ -435,6 +435,10 @@ msgid "Queued"
 msgstr ""
 
 #: src/gui/download.rs
+msgid "Nothing new to download"
+msgstr ""
+
+#: src/gui/download.rs
 msgid "Completed"
 msgstr ""
 

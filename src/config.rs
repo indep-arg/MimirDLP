@@ -885,11 +885,14 @@ pub fn save_queue(paths: &Paths, items: &[SavedItem]) -> std::io::Result<()> {
 /// own and hard links them into the app's, and a rename would replace the
 /// link with a file Scoop doesn't know, losing the settings on the next
 /// update.
-pub fn write_file(file: &std::path::Path, text: &str) -> std::io::Result<()> {
+fn write_file(file: &std::path::Path, text: &str) -> std::io::Result<()> {
     if file.exists() {
         return fs::write(file, text);
     }
-    let tmp = file.with_extension("tmp");
+    // `mimirdlp.config.tmp`, not `mimirdlp.tmp`: each file its own.
+    let mut tmp = file.as_os_str().to_owned();
+    tmp.push(".tmp");
+    let tmp = PathBuf::from(tmp);
     fs::write(&tmp, text)?;
     fs::rename(&tmp, file)
 }

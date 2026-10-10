@@ -804,20 +804,22 @@ fn item_card(item: &QueueItem) -> Element<'_, Message> {
     let status_row: Element<'_, Message> = match &item.status {
         ItemStatus::Queued => text(tr!("Queued")).size(13).style(style::muted_text).into(),
         ItemStatus::Downloading(progress) => progress_view(*progress),
-        ItemStatus::Completed { path } => {
-            let mut row = row![text(tr!("Completed")).size(13).style(text::success)]
-                .spacing(10)
-                .align_y(Alignment::Center);
-            if let Some(path) = path {
-                row = row.push(
-                    button(text(tr!("Open folder")).size(13))
-                        .padding([4, 12])
-                        .style(style::pill_secondary)
-                        .on_press(Message::OpenItemFolder(path.clone())),
-                );
-            }
-            row.into()
-        }
+        // No file: yt-dlp skipped it (already in the history, or the file
+        // is already there).
+        ItemStatus::Completed { path: None } => text(tr!("Nothing new to download"))
+            .size(13)
+            .style(style::muted_text)
+            .into(),
+        ItemStatus::Completed { path: Some(path) } => row![
+            text(tr!("Completed")).size(13).style(text::success),
+            button(text(tr!("Open folder")).size(13))
+                .padding([4, 12])
+                .style(style::pill_secondary)
+                .on_press(Message::OpenItemFolder(path.clone())),
+        ]
+        .spacing(10)
+        .align_y(Alignment::Center)
+        .into(),
         ItemStatus::Failed(reason) => row![
             text(tr!("Failed: {reason}", reason))
                 .size(13)
