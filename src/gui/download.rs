@@ -52,6 +52,8 @@ pub enum Message {
     Stop,
     OpenFolder,
     OpenItemFolder(String),
+    /// What opening a folder came to.
+    FolderOpened(Result<(), String>),
     /// Shows or hides the activity log, which is folded away by default.
     ToggleLog,
     Report(Event),
@@ -250,12 +252,15 @@ impl Download {
                 let dir = settings.output_dir(&self.paths);
                 if !dir.is_dir() {
                     self.note((Level::Info, tr!("The output folder doesn't exist yet.")));
-                } else if let Err(e) = open(&dir) {
-                    self.note((Level::Warn, tr!("Could not open the folder: {e}", e)));
+                } else {
+                    return super::open::open(dir).map(Message::FolderOpened);
                 }
             }
             Message::OpenItemFolder(path) => {
-                if let Err(e) = reveal_file(Path::new(&path)) {
+                return super::open::reveal(Path::new(&path)).map(Message::FolderOpened);
+            }
+            Message::FolderOpened(result) => {
+                if let Err(e) = result {
                     self.note((Level::Warn, tr!("Could not open the folder: {e}", e)));
                 }
             }
@@ -895,40 +900,6 @@ fn fetch_thumbnail(url: String) -> impl Future<Output = Result<Vec<u8>, String>>
         rx.await
             .unwrap_or_else(|_| Err(tr!("the thumbnail fetch was interrupted")))
     }
-}
-
-/// Opens a folder in the system's file manager, or a web address in the
-/// browser. `explorer.exe` on Windows is known to return a non-zero exit
-/// status even on success, so only the spawn itself is checked, never the
-/// exit code.
-#[cfg(windows)]
-pub(super) fn open(target: impl AsRef<std::ffi::OsStr>) -> std::io::Result<()> {
-    std::process::Command::new("explorer").arg(target).spawn()?;
-    Ok(())
-}
-
-/// Waited for on a thread of its own: a child that is never waited for
-/// stays behind as a zombie until the app exits, one per click.
-#[cfg(unix)]
-pub(super) fn open(target: impl AsRef<std::ffi::OsStr>) -> std::io::Result<()> {
-    let mut child = std::process::Command::new("xdg-open").arg(target).spawn()?;
-    thread::spawn(move || child.wait());
-    Ok(())
-}
-
-/// Opens the folder containing `path`, highlighting that file specifically
-/// where the platform supports it.
-#[cfg(windows)]
-fn reveal_file(path: &Path) -> std::io::Result<()> {
-    let mut arg = std::ffi::OsString::from("/select,");
-    arg.push(path);
-    std::process::Command::new("explorer").arg(arg).spawn()?;
-    Ok(())
-}
-
-#[cfg(unix)]
-fn reveal_file(path: &Path) -> std::io::Result<()> {
-    open(path.parent().unwrap_or(path))
 }
 
 /// A live stream fetches video and audio at the same time, so yt-dlp

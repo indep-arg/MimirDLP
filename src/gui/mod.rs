@@ -3,6 +3,7 @@
 
 mod download;
 mod log;
+mod open;
 mod settings;
 mod setup;
 mod style;
@@ -84,6 +85,7 @@ enum Message {
     CheckYtDlp,
     /// A web address from the About page, opened in the browser.
     OpenLink(&'static str),
+    LinkOpened(&'static str, Result<(), String>),
     CloseRequested,
     /// Debug builds only, see [`dev_snapshot`].
     SnapshotDue,
@@ -226,13 +228,15 @@ impl App {
                 *menu_open = false;
                 Task::none()
             }
-            (App::Running { download, .. }, Message::OpenLink(url)) => {
-                if let Err(e) = download::open(url) {
-                    download.log((
-                        crate::log::Level::Warn,
-                        tr!("Could not open {url}: {e}", url, e),
-                    ));
-                }
+            (App::Running { .. }, Message::OpenLink(url)) => {
+                open::open(url).map(move |result| Message::LinkOpened(url, result))
+            }
+            (_, Message::LinkOpened(_, Ok(()))) => Task::none(),
+            (App::Running { download, .. }, Message::LinkOpened(url, Err(e))) => {
+                download.log((
+                    crate::log::Level::Warn,
+                    tr!("Could not open {url}: {e}", url, e),
+                ));
                 Task::none()
             }
             (
@@ -620,6 +624,12 @@ fn main_menu<'a>(can_setup: bool, settings: &Settings) -> Element<'a, Message> {
     .into()
 }
 
+/// Made once: a handle made in `view` is a new image on every redraw, and
+/// the logo blinked while it was loaded again.
+static LOGO: std::sync::LazyLock<image::Handle> = std::sync::LazyLock::new(|| {
+    image::Handle::from_bytes(include_bytes!("../../branding/icon.png").as_slice())
+});
+
 const REPOSITORY: &str = "https://github.com/indep-arg/MimirDLP";
 const REPORT: &str = "https://github.com/indep-arg/MimirDLP/issues/new/choose";
 const TRANSLATE: &str = "https://hosted.weblate.org/engage/mimirdlp/";
@@ -652,11 +662,9 @@ fn about<'a>(ytdlp: Option<&str>) -> Element<'a, Message> {
         info = info.push(muted(tr!("Using yt-dlp {version}", version)));
     }
     let content = column![
-        image(image::Handle::from_bytes(
-            include_bytes!("../../branding/icon.png").as_slice()
-        ))
-        .width(Length::Fixed(96.0))
-        .height(Length::Fixed(96.0)),
+        image(LOGO.clone())
+            .width(Length::Fixed(96.0))
+            .height(Length::Fixed(96.0)),
         text("MimirDLP").size(26).font(Font {
             weight: font::Weight::Bold,
             ..Font::DEFAULT

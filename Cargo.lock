@@ -2754,6 +2754,8 @@ dependencies = [
  "tar",
  "tr",
  "ureq",
+ "wayland-client",
+ "wayland-protocols",
  "winresource",
  "zip",
 ]
