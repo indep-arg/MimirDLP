@@ -22,14 +22,14 @@ body:
     id: version
     attributes:
       label: MimirDLP version
-      description: The release you downloaded, for example 0.1.0.
+      description: Shown in ☰ > About MimirDLP, for example 0.1.0.
     validations:
       required: true
   - type: input
     id: ytdlp
     attributes:
       label: yt-dlp version
-      description: Shown in ☰ > Setup and updates.
+      description: Shown in ☰ > About MimirDLP too.
   - type: dropdown
     id: os
     attributes:
