@@ -918,6 +918,9 @@ pub fn default_output_dir(paths: &Paths) -> PathBuf {
     let Some(home) = home_dir().map(PathBuf::from) else {
         return paths.app_dir.join("downloads");
     };
+    if cfg!(windows) {
+        return home.join("Downloads");
+    }
     let config = std::env::var_os("XDG_CONFIG_HOME")
         .map(PathBuf::from)
         .filter(|dir| dir.is_absolute())
@@ -1090,6 +1093,8 @@ mod tests {
         Paths::new(PathBuf::from("/app"))
     }
 
+    // `user-dirs.dirs` is a Linux file, and its paths are Unix ones.
+    #[cfg(unix)]
     #[test]
     fn the_downloads_folder_comes_from_user_dirs_in_any_language() {
         let dir = tempdir();
