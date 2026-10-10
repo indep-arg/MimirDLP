@@ -7,13 +7,11 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: src/config.rs
-#: src/gui/settings.rs
+#: src/config.rs src/gui/settings.rs
 msgid "Video and audio"
 msgstr ""
 
-#: src/config.rs
-#: src/gui/settings.rs
+#: src/config.rs src/gui/settings.rs
 msgid "Audio only"
 msgstr ""
 
@@ -169,13 +167,11 @@ msgstr ""
 msgid "Follow system"
 msgstr ""
 
-#: src/config.rs
-#: src/gui/mod.rs
+#: src/config.rs src/gui/mod.rs
 msgid "Light"
 msgstr ""
 
-#: src/config.rs
-#: src/gui/mod.rs
+#: src/config.rs src/gui/mod.rs
 msgid "Dark"
 msgstr ""
 
@@ -445,8 +441,7 @@ msgstr ""
 msgid "Clear finished"
 msgstr ""
 
-#: src/gui/download.rs
-#: src/gui/setup.rs
+#: src/gui/download.rs src/gui/setup.rs
 msgid "Working..."
 msgstr ""
 
@@ -554,8 +549,7 @@ msgid_plural "yt-dlp is {n} days old. Sites change often; if a download fails, u
 msgstr[0] ""
 msgstr[1] ""
 
-#: src/gui/mod.rs
-#: src/gui/setup.rs
+#: src/gui/mod.rs src/gui/setup.rs
 msgid "Check for updates"
 msgstr ""
 
@@ -764,8 +758,7 @@ msgstr ""
 msgid "This deletes the history file for good."
 msgstr ""
 
-#: src/gui/settings.rs
-#: src/gui/setup.rs
+#: src/gui/settings.rs src/gui/setup.rs
 msgid "Cancel"
 msgstr ""
 
@@ -991,8 +984,7 @@ msgstr ""
 msgid "Timed out looking up this link."
 msgstr ""
 
-#: src/metadata.rs
-#: src/runner.rs
+#: src/metadata.rs src/runner.rs
 #, python-brace-format
 msgid "Could not start {tool}: {e}"
 msgstr ""
