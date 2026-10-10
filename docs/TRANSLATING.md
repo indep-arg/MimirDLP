@@ -1,6 +1,8 @@
 # Translating MimirDLP
 
-MimirDLP is translated the way most GNOME apps are: with gettext `.po` files.
+MimirDLP is translated the way most GNOME apps are: with gettext `.po` files, on [Weblate](https://hosted.weblate.org/engage/mimirdlp/).
+
+The easiest way to help is there: sign in, pick your language (or start a new one) and translate in the browser. Weblate sends the changes to this repository as pull requests. Everything below is only needed to work with the files directly.
 
 - `po/mimirdlp.pot` lists every text in the interface, in English. It is generated from the source code; don't edit it by hand.
 - Each language has its own file, `po/<code>.po` (for example `po/es.po`), with the English text (`msgid`) and its translation (`msgstr`).

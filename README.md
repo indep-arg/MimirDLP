@@ -9,6 +9,7 @@ Download videos and music from YouTube and most other sites, with a simple windo
 ![Latest release](https://img.shields.io/github/v/release/indep-arg/MimirDLP?label=release&color=3584e4)
 ![Platform: Windows | Linux](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-3584e4)
 ![License: MIT](https://img.shields.io/github/license/indep-arg/MimirDLP?color=3584e4)
+[![Translation status](https://hosted.weblate.org/widget/mimirdlp/svg-badge.svg)](https://hosted.weblate.org/engage/mimirdlp/)
 
 <img src="screenshots/download.png" alt="MimirDLP downloading a video" width="100%"/>
 
@@ -36,7 +37,7 @@ Open ☰, **Setup and updates**, and check for updates first: an old yt-dlp is t
 
 ## Languages
 
-English and Spanish so far, following your system's language (or pick one in the ☰ menu). Want MimirDLP in your language? See [translating](docs/TRANSLATING.md).
+English and Spanish so far, following your system's language (or pick one in the ☰ menu). Translations are done on [Weblate](https://hosted.weblate.org/engage/mimirdlp/): anyone can help there, no programming needed. More in [translating](docs/TRANSLATING.md).
 
 ## License
 
