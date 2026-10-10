@@ -22,7 +22,7 @@ Download videos and music from YouTube and most other sites, with a simple windo
   <a href="https://github.com/indep-arg/MimirDLP/releases/latest"><img src="https://img.shields.io/badge/Download_for-Linux-3584e4?style=for-the-badge" alt="Download for Linux"/></a>
 </p>
 
-On the release page, take the `.zip` for Windows (10 or later) or the `.tar.gz` for Linux (a recent distribution, such as Ubuntu 24.04 or later). There's no installer: extract it anywhere you can write to (not `Program Files`) and run `mimirdlp`. Everything it needs stays in that folder.
+On the release page, take the `.zip` for Windows (10 or later) or the `.tar.gz` for Linux (a recent distribution, such as Ubuntu 24.04 or later). There's no installer: extract it anywhere and run `mimirdlp`. Everything it needs stays in that folder (or in your user folder, if it's somewhere it can't write to, like `Program Files`).
 
 ## How to use it
 

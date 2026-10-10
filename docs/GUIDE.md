@@ -39,7 +39,7 @@ Grab the latest build for your platform from the [Releases page](https://github.
 
 Both come with a `.sha256` file, so you can check the download wasn't corrupted or tampered with before running it. Extract the archive anywhere you can write to and run `mimirdlp` (or `mimirdlp.exe` on Windows). There's no installer, and the whole folder is portable, so it works just as well from a USB stick as from your user folder.
 
-Not from `Program Files`, though: the app keeps its tools, settings and history in its own folder, and Windows doesn't let a normal user write there (the Setup screen says so if that's where it is).
+In a folder you can't write to, such as `Program Files`, it still works: it keeps its tools, settings and history in your user folder instead (see below).
 
 The Linux build needs a recent distribution (glibc 2.39 or newer, for example Ubuntu 24.04).
 
@@ -67,9 +67,9 @@ One caveat that comes from yt-dlp itself: if the SponsorBlock server can't be re
 
 ## Things worth knowing
 
-- Installed through a package manager in a folder it can't write to, MimirDLP keeps its tools, settings and history in your user's data folder instead (`~/.local/share/MimirDLP` on Linux, `%LOCALAPPDATA%\MimirDLP` on Windows) and saves to your Downloads folder. The portable copy works as always.
+- In a folder it can't write to (`Program Files`, or installed through a package manager), MimirDLP keeps its tools, settings and history in your user's data folder instead (`~/.local/share/MimirDLP` on Linux, `%LOCALAPPDATA%\MimirDLP` on Windows) and saves to your Downloads folder. The portable copy works as always.
 - On Linux, Settings has a switch to show MimirDLP in the applications menu. It is off by default, since the app installs nothing on its own; turned on, it writes a launcher and the icon to `~/.local/share` (which is also what lets KDE and GNOME show the icon in the taskbar on Wayland), and turning it off removes them. If you move the app's folder, the launcher follows it the next time you open the app; another copy that is still in place keeps it.
-- Settings and the download history live next to the application (`mimirdlp.config`, `download_archive.txt`), not in `~/.config` or `%APPDATA%`, so the whole folder stays portable. A relative output folder or history file name is next to the application too.
+- Settings and the download history live next to the application (`mimirdlp.config`, `download_archive.txt`), not in `~/.config` or `%APPDATA%`, so the whole folder stays portable (unless it can't write there, as above). A relative output folder or history file name is next to the application too.
 - Subtitles in "all" languages leave out YouTube's live chat replay, which isn't subtitles at all. Many YouTube videos only have the auto-generated kind; there's a toggle for those. Subtitles are saved in whatever format the site serves (usually `.vtt`).
 - Converting the container comes in two flavours. Remux just rewraps the existing streams, which is nearly instant but fails if the codecs don't fit the target container. Re-encode always works but is slow and costs some quality.
 - Audio extraction is turned off when you pick a container conversion or a video format other than a custom string, and the other way around, since extracting audio throws away the video those would apply to.
