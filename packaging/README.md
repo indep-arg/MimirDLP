@@ -37,4 +37,23 @@ appstreamcli validate linux/io.github.indep_arg.MimirDLP.metainfo.xml
 
 ## Flathub
 
-Not done yet. Flathub builds everything the app runs from source, so the Flatpak would have to bring its own yt-dlp, FFmpeg and Deno rather than download them, and the app would need to use those.
+Not submitted yet. Flathub wants everything the app runs in the manifest, so the Flatpak brings its own yt-dlp and Deno and uses FFmpeg from the runtime, instead of downloading them at launch. The app already knows how to run that way; the manifest and the submission are written by the maintainer (Flathub doesn't accept AI-written manifests or submission pull requests).
+
+What the app expects from the Flatpak:
+
+- **App id `io.github.indep_arg.MimirDLP`.** The app switches to bundled tools only when `FLATPAK_ID` is exactly this id. Any other id (a portable copy started from another Flatpak's terminal, say) keeps the normal behaviour.
+- **The tools on `PATH`.** It looks up `yt-dlp`, `ffmpeg`, `ffprobe` and `deno` in each `PATH` folder in turn, which inside a Flatpak is `/app/bin`, then the runtime's `/usr/bin`. Whatever the package puts in `/app/bin` wins over the runtime's.
+- **yt-dlp:** the stable release from PyPI with its `default` extras, which bring `yt-dlp-ejs` (the scripts Deno runs for YouTube's challenges; the standalone binaries carry them inside, the bare Python package doesn't). Installed with `--no-dependencies`, as video-downloader does, it has to be listed separately. The command it calls is `yt-dlp`.
+- **Deno:** 2.3.0 or newer (yt-dlp's floor), as `deno`.
+- **FFmpeg:** the runtime's `ffmpeg` and `ffprobe` (GNOME 50: FFmpeg 7.1). The base runtime leaves out the H.264 and HEVC decoders; the `org.freedesktop.Platform.codecs-extra` extension adds them. Remuxing doesn't need them, re-encoding does.
+- **x86_64 only** to begin with.
+
+What it does in that mode (`Paths::bundled` in `src/provision/mod.rs`):
+
+- Settings, history and queue go to `$XDG_DATA_HOME/MimirDLP` (`~/.var/app/io.github.indep_arg.MimirDLP/data/MimirDLP`), downloads to the Downloads folder.
+- It never downloads, installs or updates a tool. The ☰ menu shows **Components** instead of "Setup and updates", with the versions and no buttons.
+- The "yt-dlp is old" notice waits 90 days instead of 14 (stable releases can be months apart) and says to update MimirDLP.
+- "Signing in" (cookies from a browser) is hidden and ignored, since the sandbox can't read the browsers' folders.
+- The menu-entry switch is hidden, as for any installed copy: the Flatpak brings its own `.desktop` (`linux/`).
+
+Permissions it uses: the network, the display (Wayland, with X11 as a fallback), the GPU (without it iced draws in software, slower) and the Downloads folder. The folder picker goes through the desktop portal.

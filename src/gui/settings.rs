@@ -370,21 +370,22 @@ fn desktop_section<'a>(installed: bool) -> Element<'a, Message> {
 
 /// The row that folds the less common sections in and out, like an
 /// Adwaita expander row.
-fn advanced_toggle<'a>(open: bool) -> Element<'a, Message> {
+fn advanced_toggle<'a>(open: bool, sign_in: bool) -> Element<'a, Message> {
     let (label, hint) = if open {
         (tr!("Hide advanced options"), "\u{2212}")
     } else {
         (tr!("Advanced options"), "+")
     };
+    let contents = if sign_in {
+        tr!("Signing in, playlists, history, file names, speed limits")
+    } else {
+        tr!("Playlists, history, file names, speed limits")
+    };
     button(
         row![
             column![
                 text(label),
-                text(tr!(
-                    "Signing in, playlists, history, file names, speed limits"
-                ))
-                .size(13)
-                .style(style::muted_text),
+                text(contents).size(13).style(style::muted_text),
             ]
             .spacing(2)
             .width(Length::Fill),
@@ -477,17 +478,24 @@ fn view<'a>(
     } else {
         page
     };
-    let page = page.push(advanced_toggle(show_advanced));
+    // Browser cookies are left out of the Flatpak: its sandbox can't read
+    // the browsers' folders (Settings::cookies ignores them there too).
+    let sign_in = !paths.bundled_tools();
+    let page = page.push(advanced_toggle(show_advanced, sign_in));
     if !show_advanced {
         return page.into();
     }
-    page.push(card(tr!("Signing in"), sign_in_section(settings)))
-        .push(card(
-            tr!("Automation and naming"),
-            automation_section(settings, history),
-        ))
-        .push(card(tr!("Network and other"), network_section(settings)))
-        .into()
+    let page = if sign_in {
+        page.push(card(tr!("Signing in"), sign_in_section(settings)))
+    } else {
+        page
+    };
+    page.push(card(
+        tr!("Automation and naming"),
+        automation_section(settings, history),
+    ))
+    .push(card(tr!("Network and other"), network_section(settings)))
+    .into()
 }
 
 fn format_section(settings: &Settings) -> Element<'_, Message> {

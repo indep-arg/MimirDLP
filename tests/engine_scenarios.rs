@@ -8,7 +8,7 @@ use std::path::Path;
 
 use mimirdlp::engine::{
     Archive, AudioExtraction, AudioFormat, ContainerConversion, Options, Outcome, Playlist,
-    SponsorBlock, Subtitles, ThumbnailFormat, build_args, classify_exit,
+    SponsorBlock, Subtitles, ThumbnailFormat, ToolPaths, build_args, classify_exit,
 };
 
 struct Scenario {
@@ -2086,14 +2086,14 @@ fn normalize_tool_path(arg: &str) -> String {
 
 #[test]
 fn every_scenario_produces_its_recorded_argv_and_exit() {
-    let bin_dir = Path::new("<SCRIPT_DIR>/bin");
+    let tools = ToolPaths::in_dir(Path::new("<SCRIPT_DIR>/bin"));
     let all = scenarios();
     let mut failures = Vec::new();
 
     for scenario in &all {
         let output_dir = scenario.output_dir.map(Path::new);
         let urls: Vec<String> = scenario.urls.iter().map(|u| u.to_string()).collect();
-        let actual: Vec<String> = build_args(&scenario.options, bin_dir, output_dir, &urls)
+        let actual: Vec<String> = build_args(&scenario.options, &tools, output_dir, &urls)
             .into_iter()
             .map(|a| normalize_tool_path(&a.to_string_lossy()))
             .collect();
@@ -2129,4 +2129,35 @@ fn every_scenario_produces_its_recorded_argv_and_exit() {
         all.len(),
         failures.join("\n")
     );
+}
+
+/// A Flatpak takes FFmpeg from its runtime and Deno from the package, so
+/// the two are no longer in one folder; each flag gets its own path and
+/// nothing else in the argv changes.
+#[test]
+fn tools_from_separate_folders_reach_their_own_flags() {
+    let tools = ToolPaths {
+        ffmpeg: "/usr/bin/ffmpeg".into(),
+        deno: "/app/bin/deno".into(),
+    };
+    let urls = ["https://example.com/video".to_string()];
+    let argv: Vec<String> = build_args(&Options::default(), &tools, None, &urls)
+        .into_iter()
+        .map(|a| a.to_string_lossy().into_owned())
+        .collect();
+    let after = |flag: &str| {
+        let at = argv.iter().position(|a| a == flag).unwrap();
+        argv[at + 1].clone()
+    };
+    assert_eq!(after("--ffmpeg-location"), "/usr/bin/ffmpeg");
+    assert_eq!(after("--js-runtimes"), "deno:/app/bin/deno");
+
+    let portable = ToolPaths::in_dir(Path::new("<SCRIPT_DIR>/bin"));
+    let same_dir: Vec<String> = build_args(&Options::default(), &portable, None, &urls)
+        .into_iter()
+        .map(|a| normalize_tool_path(&a.to_string_lossy()))
+        .collect();
+    let differing: Vec<_> = argv.iter().zip(&same_dir).filter(|(a, b)| a != b).collect();
+    assert_eq!(argv.len(), same_dir.len());
+    assert_eq!(differing.len(), 2, "only the two tool paths differ");
 }

@@ -681,13 +681,15 @@ impl Settings {
         o.restrict_filenames = self.restrict_filenames;
         o.preserve_mtime = self.preserve_mtime;
         o.ignore_errors = self.ignore_errors;
-        o.cookies_from_browser = self.cookies();
+        o.cookies_from_browser = self.cookies(paths);
         o
     }
 
     /// `--cookies-from-browser`'s value: `BROWSER` or `BROWSER:PROFILE`.
-    pub fn cookies(&self) -> Option<String> {
-        if self.cookies_browser == Browser::None {
+    /// Never in the Flatpak: its sandbox can't see the browsers' folders,
+    /// so Settings doesn't offer it there and a saved choice is ignored.
+    pub fn cookies(&self, paths: &Paths) -> Option<String> {
+        if self.cookies_browser == Browser::None || paths.bundled_tools() {
             return None;
         }
         let browser = self.cookies_browser.key();
@@ -1699,7 +1701,7 @@ youtube b
         let mut settings = Settings::default();
         assert_eq!(settings.to_options(&paths()).cookies_from_browser, None);
         settings.cookies_browser = Browser::Firefox;
-        assert_eq!(settings.cookies().as_deref(), Some("firefox"));
+        assert_eq!(settings.cookies(&paths()).as_deref(), Some("firefox"));
         settings.cookies_profile = " work ".into();
         assert_eq!(
             settings
@@ -1712,8 +1714,19 @@ youtube b
         let dir = tempdir();
         let p = Paths::new(dir.clone());
         settings.save(&p).unwrap();
-        assert_eq!(Settings::load(&p).cookies(), settings.cookies());
+        assert_eq!(Settings::load(&p).cookies(&p), settings.cookies(&p));
         fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn the_flatpak_never_reads_browser_cookies() {
+        let settings = Settings {
+            cookies_browser: Browser::Firefox,
+            ..Settings::default()
+        };
+        let flatpak = Paths::bundled("/data".into(), vec!["/app/bin".into()]);
+        assert_eq!(settings.cookies(&flatpak), None);
+        assert_eq!(settings.to_options(&flatpak).cookies_from_browser, None);
     }
 
     #[test]

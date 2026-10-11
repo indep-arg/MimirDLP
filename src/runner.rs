@@ -140,7 +140,7 @@ pub fn run(
     let mut args = presentation_args();
     args.extend(engine::build_args(
         options,
-        &paths.bin_dir,
+        &paths.engine_tools(),
         output_dir,
         urls,
     ));

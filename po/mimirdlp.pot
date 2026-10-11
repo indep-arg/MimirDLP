@@ -483,6 +483,10 @@ msgstr ""
 msgid "Could not open {url}: {e}"
 msgstr ""
 
+#: src/gui/mod.rs src/gui/setup.rs
+msgid "Components"
+msgstr ""
+
 #: src/gui/mod.rs
 msgid "Setup"
 msgstr ""
@@ -540,6 +544,13 @@ msgstr ""
 #: src/gui/mod.rs
 msgid "System language"
 msgstr ""
+
+#: src/gui/mod.rs
+#, python-brace-format
+msgid "yt-dlp is {n} day old. Sites change often; if a download fails, update MimirDLP from your software center or with flatpak update."
+msgid_plural "yt-dlp is {n} days old. Sites change often; if a download fails, update MimirDLP from your software center or with flatpak update."
+msgstr[0] ""
+msgstr[1] ""
 
 #: src/gui/mod.rs
 #, python-brace-format
@@ -612,6 +623,10 @@ msgstr ""
 
 #: src/gui/settings.rs
 msgid "Signing in, playlists, history, file names, speed limits"
+msgstr ""
+
+#: src/gui/settings.rs
+msgid "Playlists, history, file names, speed limits"
 msgstr ""
 
 #: src/gui/settings.rs
@@ -921,6 +936,10 @@ msgid "Binaries located in: {folder}"
 msgstr ""
 
 #: src/gui/setup.rs
+msgid "yt-dlp, FFmpeg and Deno come with this package and are updated together with MimirDLP, from your software center or with flatpak update."
+msgstr ""
+
+#: src/gui/setup.rs
 #, python-brace-format
 msgid "yt-dlp, FFmpeg and Deno are kept in {folder}, and updated from here."
 msgstr ""
@@ -930,15 +949,15 @@ msgid "yt-dlp, FFmpeg and Deno are kept in the bin folder next to this app. Noth
 msgstr ""
 
 #: src/gui/setup.rs
-msgid "Components"
-msgstr ""
-
-#: src/gui/setup.rs
 msgid "Activity"
 msgstr ""
 
 #: src/gui/setup.rs
 msgid "Nothing yet. Each download and check will be listed here."
+msgstr ""
+
+#: src/gui/setup.rs
+msgid "Looking at what is installed..."
 msgstr ""
 
 #: src/gui/setup.rs
@@ -962,10 +981,6 @@ msgid "Reinstall all"
 msgstr ""
 
 #: src/gui/setup.rs
-msgid "Looking at what is installed..."
-msgstr ""
-
-#: src/gui/setup.rs
 msgid "Checking for updates..."
 msgstr ""
 
@@ -974,11 +989,27 @@ msgid "Checking..."
 msgstr ""
 
 #: src/gui/setup.rs
+msgid "Not found in this package"
+msgstr ""
+
+#: src/gui/setup.rs
 msgid "Not installed"
 msgstr ""
 
 #: src/gui/setup.rs
 msgid "Installed but not responding"
+msgstr ""
+
+#: src/gui/setup.rs
+#, python-brace-format
+msgid "Version {version} ({n} day old, update MimirDLP)"
+msgid_plural "Version {version} ({n} days old, update MimirDLP)"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/gui/setup.rs
+#, python-brace-format
+msgid "Version {version} (included with MimirDLP)"
 msgstr ""
 
 #: src/gui/setup.rs

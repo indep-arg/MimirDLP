@@ -61,6 +61,20 @@ pub struct Paths {
     /// Installed by a package (Flatpak, RPM...) into a folder the app can't
     /// write to, so it keeps its files in the user's data folder.
     pub installed: bool,
+    /// Where yt-dlp, FFmpeg and Deno come from.
+    pub tools: Tools,
+}
+
+/// Where the tools come from.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Tools {
+    /// Downloaded into `bin/` and kept up to date by the app.
+    Provisioned,
+    /// Shipped with the package (the Flatpak) and found in these folders,
+    /// in this order: its `PATH`, which is `/app/bin` for yt-dlp and Deno
+    /// and the runtime's `/usr/bin` for FFmpeg. Nothing is ever installed
+    /// or updated by the app then; the package's updates bring new ones.
+    Bundled(Vec<PathBuf>),
 }
 
 impl Paths {
@@ -71,6 +85,7 @@ impl Paths {
             app_dir,
             bin_dir,
             installed: false,
+            tools: Tools::Provisioned,
         }
     }
 
@@ -81,12 +96,34 @@ impl Paths {
         }
     }
 
+    /// An installed copy whose tools came with its package.
+    pub fn bundled(data_dir: PathBuf, tool_dirs: Vec<PathBuf>) -> Self {
+        Paths {
+            tools: Tools::Bundled(tool_dirs),
+            ..Paths::installed(data_dir)
+        }
+    }
+
+    /// The tools came with the package, so there is nothing to install or
+    /// update from inside the app.
+    pub fn bundled_tools(&self) -> bool {
+        matches!(self.tools, Tools::Bundled(_))
+    }
+
     /// Portable when the executable's folder (symlinks resolved) can be
-    /// written to, installed otherwise. `YTP_APP_DIR` picks the folder
-    /// instead, for development (`cargo run` would use `target/debug/`).
+    /// written to, installed otherwise, and bundled inside MimirDLP's own
+    /// Flatpak. `YTP_APP_DIR` picks the folder instead, for development
+    /// (`cargo run` would use `target/debug/`).
     pub fn for_current_exe() -> io::Result<Self> {
         if let Some(dir) = std::env::var_os("YTP_APP_DIR") {
             return Ok(Paths::new(PathBuf::from(dir)));
+        }
+        if in_own_flatpak(std::env::var_os("FLATPAK_ID").as_deref()) {
+            let path = std::env::var_os("PATH").unwrap_or_default();
+            return Ok(Paths::bundled(
+                user_data_folder()?,
+                std::env::split_paths(&path).collect(),
+            ));
         }
         let exe = plain_path(std::env::current_exe()?.canonicalize()?);
         let dir = exe
@@ -95,16 +132,31 @@ impl Paths {
         if writable(dir).is_ok() {
             return Ok(Paths::new(dir.to_path_buf()));
         }
-        let data = user_data_dir()
-            .ok_or_else(|| io::Error::other("no folder for the user's data"))?
-            .join("MimirDLP");
-        fs::create_dir_all(&data)?;
-        Ok(Paths::installed(data))
+        Ok(Paths::installed(user_data_folder()?))
     }
 
+    /// Where a tool is: in `bin/`, or for bundled tools the first of the
+    /// package's folders that has it (the first folder when none does, so
+    /// it shows as missing).
     pub fn tool(&self, name: &str) -> PathBuf {
-        self.bin_dir
-            .join(format!("{name}{}", std::env::consts::EXE_SUFFIX))
+        let file = format!("{name}{}", std::env::consts::EXE_SUFFIX);
+        match &self.tools {
+            Tools::Provisioned => self.bin_dir.join(file),
+            Tools::Bundled(dirs) => dirs
+                .iter()
+                .map(|dir| dir.join(&file))
+                .find(|path| path.is_file())
+                .or_else(|| dirs.first().map(|dir| dir.join(&file)))
+                .unwrap_or_else(|| PathBuf::from(file)),
+        }
+    }
+
+    /// The tools yt-dlp is pointed at.
+    pub fn engine_tools(&self) -> crate::engine::ToolPaths {
+        crate::engine::ToolPaths {
+            ffmpeg: self.tool("ffmpeg"),
+            deno: self.tool("deno"),
+        }
     }
 
     fn state_file(&self) -> PathBuf {
@@ -251,6 +303,22 @@ pub fn parse_version(component: Component, output: &str) -> Option<String> {
 /// change their pages all the time and extractors follow within days.
 pub const YTDLP_STALE_DAYS: i64 = 14;
 
+/// The same for a yt-dlp that came with the package. That one is a stable
+/// release, and those come weeks or months apart (the longest gap since
+/// 2024 was 84 days, 2026.03.17 to 2026.06.09, on PyPI), so at 14 days the
+/// notice would show for weeks while nothing newer exists, and the user
+/// could do nothing about it. Past 90 days the package has fallen behind.
+pub const YTDLP_STALE_DAYS_BUNDLED: i64 = 90;
+
+/// After how many days this copy's yt-dlp counts as old.
+pub fn ytdlp_stale_days(paths: &Paths) -> i64 {
+    if paths.bundled_tools() {
+        YTDLP_STALE_DAYS_BUNDLED
+    } else {
+        YTDLP_STALE_DAYS
+    }
+}
+
 /// How old a yt-dlp build is, from its version, which is its build date
 /// (`2026.09.16` or a nightly's `2026.09.16.232951`). `None` for anything
 /// else rather than a guess.
@@ -393,6 +461,22 @@ fn writable(dir: &Path) -> io::Result<()> {
     let probe = dir.join(format!(".write-test-{}", std::process::id()));
     fs::write(&probe, b"")?;
     fs::remove_file(probe)
+}
+
+/// Running as MimirDLP's own Flatpak. Only its own id counts: a portable
+/// copy started from another Flatpak's terminal (an editor's, say) sees
+/// that app's `FLATPAK_ID` and must stay portable.
+fn in_own_flatpak(flatpak_id: Option<&std::ffi::OsStr>) -> bool {
+    flatpak_id.is_some_and(|id| id == crate::desktop::APP_ID)
+}
+
+/// `MimirDLP` in the user's data folder, created if needed.
+fn user_data_folder() -> io::Result<PathBuf> {
+    let data = user_data_dir()
+        .ok_or_else(|| io::Error::other("no folder for the user's data"))?
+        .join("MimirDLP");
+    fs::create_dir_all(&data)?;
+    Ok(data)
 }
 
 /// `%LOCALAPPDATA%` on Windows; `$XDG_DATA_HOME` or `~/.local/share`
@@ -564,6 +648,58 @@ mod tests {
     use super::*;
     use crate::testing::tempdir;
     use sha2::{Digest, Sha256};
+
+    #[test]
+    fn only_mimirdlps_own_flatpak_counts_as_bundled() {
+        use std::ffi::OsStr;
+        assert!(in_own_flatpak(Some(OsStr::new(crate::desktop::APP_ID))));
+        // A portable copy started from an editor's Flatpak terminal.
+        assert!(!in_own_flatpak(Some(OsStr::new("com.visualstudio.code"))));
+        assert!(!in_own_flatpak(None));
+    }
+
+    #[test]
+    fn bundled_tools_are_taken_from_the_first_folder_that_has_them() {
+        let root = tempdir();
+        let (app, usr) = (root.join("app/bin"), root.join("usr/bin"));
+        for dir in [&app, &usr] {
+            fs::create_dir_all(dir).unwrap();
+        }
+        let exe = |dir: &Path, name: &str| {
+            let file = dir.join(format!("{name}{}", std::env::consts::EXE_SUFFIX));
+            fs::write(&file, b"").unwrap();
+            file
+        };
+        let ytdlp = exe(&app, "yt-dlp");
+        let deno = exe(&app, "deno");
+        let ffmpeg = exe(&usr, "ffmpeg");
+        exe(&usr, "deno");
+
+        let paths = Paths::bundled(root.join("data"), vec![app.clone(), usr.clone()]);
+        assert!(paths.installed && paths.bundled_tools());
+        assert_eq!(paths.tool("yt-dlp"), ytdlp);
+        assert_eq!(paths.tool("deno"), deno, "the package's own comes first");
+        assert_eq!(
+            paths.tool("ffmpeg"),
+            ffmpeg,
+            "the runtime's when the package has none"
+        );
+        let tools = paths.engine_tools();
+        assert_eq!((tools.ffmpeg, tools.deno), (ffmpeg, deno));
+        // Missing everywhere: a path that isn't there, so it shows as missing.
+        assert!(!paths.tool("ffprobe").exists());
+        assert!(!all_present(&paths));
+        exe(&usr, "ffprobe");
+        assert!(all_present(&paths));
+
+        let portable = Paths::new(root.join("portable"));
+        assert!(!portable.bundled_tools());
+        assert_eq!(
+            portable.engine_tools(),
+            crate::engine::ToolPaths::in_dir(&portable.bin_dir)
+        );
+        fs::remove_dir_all(root).unwrap();
+    }
 
     #[test]
     fn versions_are_parsed_from_each_tools_own_output() {
