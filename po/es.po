@@ -237,6 +237,10 @@ msgid "The custom name template can't be empty."
 msgstr "La plantilla de nombre propia no puede quedar vacía."
 
 #: src/config.rs
+msgid "With auto-generated subtitles, write each language code, such as en or en,es: YouTube offers a machine translation into every language, and asking for all of them gets the download blocked."
+msgstr "Con subtítulos automáticos, escribe el código de cada idioma, como en o en,es: YouTube ofrece una traducción automática a cada idioma, y pedirlas todas hace que bloquee la descarga."
+
+#: src/config.rs
 msgid "Pick at least one SponsorBlock category."
 msgstr "Elige al menos una categoría de SponsorBlock."
 
@@ -1265,10 +1269,6 @@ msgstr "Aplicando SponsorBlock..."
 #: src/runner.rs
 msgid "Moving the file into place..."
 msgstr "Moviendo el archivo a su lugar..."
-
-#: src/config.rs
-msgid "With auto-generated subtitles, write each language code, such as en or en,es: YouTube offers a machine translation into every language, and asking for all of them gets the download blocked."
-msgstr "Con subtítulos automáticos, escribe el código de cada idioma, como en o en,es: YouTube ofrece una traducción automática a cada idioma, y pedirlas todas hace que bloquee la descarga."
 
 #~ msgid "the thumbnail fetch was interrupted"
 #~ msgstr "la descarga de la miniatura se interrumpió"
