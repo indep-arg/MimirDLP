@@ -622,7 +622,7 @@ fn scenarios() -> Vec<Scenario> {
         Scenario {
             name: "format_premerged",
             options: Options {
-                format: "best".into(),
+                format: "best/bestvideo*+bestaudio".into(),
                 ..Options::default()
             },
             output_dir: None,
@@ -641,7 +641,7 @@ fn scenarios() -> Vec<Scenario> {
                 "--js-runtimes",
                 "deno:<SCRIPT_DIR>/bin/deno",
                 "-f",
-                "best",
+                "best/bestvideo*+bestaudio",
                 "--embed-thumbnail",
                 "--convert-thumbnails",
                 "jpg",

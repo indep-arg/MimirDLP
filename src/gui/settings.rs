@@ -639,6 +639,9 @@ fn extras_section(settings: &Settings) -> Element<'_, Message> {
                     .label(tr!("Include auto-generated subtitles"))
                     .on_toggle(|v| Message::Toggle(Flag::AutoSubs, v)),
             );
+        if let Some(problem) = settings.auto_subs_problem() {
+            body = body.push(text(problem).size(13).style(text::warning));
+        }
     }
     body = body.push(choice(
         // A name, the same in every language.

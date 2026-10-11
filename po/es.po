@@ -21,8 +21,8 @@ msgid "Best quality (video plus audio)"
 msgstr "Mejor calidad (video más audio)"
 
 #: src/config.rs
-msgid "Best single file (faster, no merging)"
-msgstr "Mejor archivo único (más rápido, sin unir)"
+msgid "Best single file (merged if the site has none)"
+msgstr "Mejor archivo único (se une si el sitio no lo tiene)"
 
 #: src/config.rs
 msgid "Video only, without audio"
@@ -1265,6 +1265,10 @@ msgstr "Aplicando SponsorBlock..."
 #: src/runner.rs
 msgid "Moving the file into place..."
 msgstr "Moviendo el archivo a su lugar..."
+
+#: src/config.rs
+msgid "With auto-generated subtitles, write each language code, such as en or en,es: YouTube offers a machine translation into every language, and asking for all of them gets the download blocked."
+msgstr "Con subtítulos automáticos, escribe el código de cada idioma, como en o en,es: YouTube ofrece una traducción automática a cada idioma, y pedirlas todas hace que bloquee la descarga."
 
 #~ msgid "the thumbnail fetch was interrupted"
 #~ msgstr "la descarga de la miniatura se interrumpió"

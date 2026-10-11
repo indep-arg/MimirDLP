@@ -79,7 +79,7 @@ pub enum VideoFormat {
 }
 keyed!(VideoFormat {
     Best => "best", "Best quality (video plus audio)",
-    PreMerged => "premerged", "Best single file (faster, no merging)",
+    PreMerged => "premerged", "Best single file (merged if the site has none)",
     VideoOnly => "videoonly", "Video only, without audio",
     Custom => "custom", "A format string of my own",
 });
@@ -567,7 +567,28 @@ impl Settings {
         if self.template == Template::Custom && self.custom_template.trim().is_empty() {
             problems.push(tr!("The custom name template can't be empty."));
         }
+        if let Some(problem) = self.auto_subs_problem() {
+            problems.push(problem);
+        }
         problems
+    }
+
+    /// Auto-generated subtitles need each language written out. YouTube
+    /// offers every subtitle track machine translated into every language
+    /// (7492 automatic tracks on an 80 second video, 2026-10-11): `en.*`
+    /// matches some 50 of them and the default "all" every one, and YouTube
+    /// answers that many requests with HTTP 429, so the video itself never
+    /// downloads.
+    pub fn auto_subs_problem(&self) -> Option<String> {
+        (self.subs != Subs::Off && self.auto_subs && !valid_auto_sub_langs(&self.sub_langs)).then(
+            || {
+                tr!(
+                    "With auto-generated subtitles, write each language code, such as en or en,es: \
+                     YouTube offers a machine translation into every language, and asking for all \
+                     of them gets the download blocked."
+                )
+            },
+        )
     }
 
     /// The single place where the screen's model becomes engine options.
@@ -577,7 +598,12 @@ impl Settings {
             Kind::VideoAudio => {
                 o.format = match self.video_format {
                     VideoFormat::Best => o.format,
-                    VideoFormat::PreMerged => "best".into(),
+                    // YouTube doesn't always serve a single file with both
+                    // (on 2026-10-11 the same videos had none in one run
+                    // and format 18 in a later one), and a bare `best`
+                    // then fails with "Requested format is not
+                    // available": merge the best pair instead.
+                    VideoFormat::PreMerged => "best/bestvideo*+bestaudio".into(),
                     VideoFormat::VideoOnly => "bestvideo".into(),
                     // problems() refuses an empty one, so this is only a
                     // guard against ever handing yt-dlp nothing at all.
@@ -1041,6 +1067,28 @@ pub const CONTAINERS: &[&str] = &[
     "mp3", "ogg", "opus", "vorbis", "wav",
 ];
 
+/// Subtitle languages that name each one: codes such as `en`, `pt-BR` or
+/// `zh-Hans`, and exclusions starting with `-`. Not empty (that means
+/// "all"), not `all`, and no pattern such as `en.*`.
+pub fn valid_auto_sub_langs(value: &str) -> bool {
+    let mut named = false;
+    for entry in value.split(',').map(str::trim) {
+        if entry.starts_with('-') {
+            continue;
+        }
+        if entry.is_empty()
+            || entry.eq_ignore_ascii_case("all")
+            || !entry
+                .chars()
+                .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_')
+        {
+            return false;
+        }
+        named = true;
+    }
+    named
+}
+
 /// A container yt-dlp can convert to, in any case (`MP4` is fine).
 pub fn valid_container(value: &str) -> bool {
     CONTAINERS.contains(&value.trim().to_ascii_lowercase().as_str())
@@ -1261,7 +1309,10 @@ mod tests {
         let mut settings = Settings::default();
         assert_eq!(settings.to_options(&paths()).format, default_format);
         settings.video_format = VideoFormat::PreMerged;
-        assert_eq!(settings.to_options(&paths()).format, "best");
+        assert_eq!(
+            settings.to_options(&paths()).format,
+            "best/bestvideo*+bestaudio"
+        );
         settings.video_format = VideoFormat::VideoOnly;
         assert_eq!(settings.to_options(&paths()).format, "bestvideo");
         settings.video_format = VideoFormat::Custom;
@@ -1801,5 +1852,50 @@ youtube b
         assert!(valid_container("mp4") && !valid_container("") && !valid_container("MP4!"));
         assert!(valid_url("https://www.youtube.com/watch?v=abc"));
         assert!(!valid_url("youtube.com/watch?v=abc") && !valid_url("https://"));
+    }
+
+    #[test]
+    fn auto_generated_subtitles_need_each_language_written_out() {
+        for good in ["en", "en,es", " en , pt-BR ", "zh-Hans", "en,-live_chat"] {
+            assert!(valid_auto_sub_langs(good), "{good}");
+        }
+        for bad in [
+            "",
+            " ",
+            "all",
+            "ALL",
+            "en.*",
+            "all,-live_chat",
+            "en,",
+            ".*",
+            "-live_chat",
+        ] {
+            assert!(!valid_auto_sub_langs(bad), "{bad}");
+        }
+
+        let mut settings = Settings {
+            subs: Subs::Embed,
+            auto_subs: true,
+            ..Settings::default()
+        };
+        // The default "all" is what asked YouTube for thousands of tracks.
+        assert!(settings.auto_subs_problem().is_some());
+        assert!(!settings.problems().is_empty());
+        settings.sub_langs = "en.*".into();
+        assert!(settings.auto_subs_problem().is_some());
+        settings.sub_langs = "en".into();
+        assert_eq!(settings.auto_subs_problem(), None);
+        assert!(settings.problems().is_empty(), "{:?}", settings.problems());
+
+        // Without auto-generated ones, patterns and "all" stay as they were.
+        settings.auto_subs = false;
+        settings.sub_langs = "en.*".into();
+        assert_eq!(settings.auto_subs_problem(), None);
+        settings.sub_langs = String::new();
+        assert_eq!(settings.auto_subs_problem(), None);
+        // Nor does it matter while subtitles are off.
+        settings.auto_subs = true;
+        settings.subs = Subs::Off;
+        assert_eq!(settings.auto_subs_problem(), None);
     }
 }

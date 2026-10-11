@@ -20,7 +20,7 @@ msgid "Best quality (video plus audio)"
 msgstr ""
 
 #: src/config.rs
-msgid "Best single file (faster, no merging)"
+msgid "Best single file (merged if the site has none)"
 msgstr ""
 
 #: src/config.rs
@@ -233,6 +233,10 @@ msgstr ""
 
 #: src/config.rs
 msgid "The custom name template can't be empty."
+msgstr ""
+
+#: src/config.rs
+msgid "With auto-generated subtitles, write each language code, such as en or en,es: YouTube offers a machine translation into every language, and asking for all of them gets the download blocked."
 msgstr ""
 
 #: src/config.rs

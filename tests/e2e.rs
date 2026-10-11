@@ -18,7 +18,9 @@
 use std::path::{Path, PathBuf};
 use std::sync::{Mutex, OnceLock};
 
-use mimirdlp::config::{Audio, Container, Kind, Quality, Segments, Settings, Sponsor, VideoFormat};
+use mimirdlp::config::{
+    Audio, Container, Kind, Quality, Segments, Settings, Sponsor, Subs, VideoFormat,
+};
 use mimirdlp::metadata::{self, Lookup};
 use mimirdlp::provision::{self, Component, Paths, Status};
 use mimirdlp::runner::{self, Cancel, Event, Finish};
@@ -353,6 +355,45 @@ fn a_webm_result_follows_the_chosen_mp4_container() {
     let p = probe(&file);
     assert_eq!(extension(&file), "mp4", "{p:?}");
     assert!(p.has("video") && p.has_cover(), "{p:?}");
+}
+
+/// YouTube doesn't always serve a single file with video and audio (on
+/// 2026-10-11 these videos had none in one run and format 18 in a later
+/// one), and a bare `-f best` then failed with "Requested format is not
+/// available". "Best single file" now merges the best pair when there is
+/// none. Which case YouTube gives can't be chosen from here, so this only
+/// checks the result has both; the format string itself is pinned by
+/// `the_format_base_follows_the_chosen_video_format`.
+#[test]
+#[ignore = "downloads from YouTube"]
+fn best_single_file_still_gives_video_and_audio_on_youtube() {
+    let settings = Settings {
+        video_format: VideoFormat::PreMerged,
+        ..small()
+    };
+    let (_dir, file) = download(&settings, ZOO);
+    let p = probe(&file);
+    assert!(p.has("video") && p.has("audio"), "{p:?}");
+}
+
+/// With auto-generated subtitles a language written out gets just that
+/// track. A pattern or "all" asked for YouTube's machine translations too,
+/// thousands of them, and the 429 that followed stopped the download;
+/// `Settings::problems` refuses those now.
+#[test]
+#[ignore = "downloads from YouTube"]
+fn auto_generated_subtitles_in_one_language_are_embedded() {
+    let settings = Settings {
+        subs: Subs::Embed,
+        sub_langs: "en".into(),
+        auto_subs: true,
+        ..small()
+    };
+    assert!(settings.problems().is_empty(), "{:?}", settings.problems());
+    let (_dir, file) = download(&settings, CHAPTERS);
+    let p = probe(&file);
+    let subtitles = p.streams.iter().filter(|(t, ..)| t == "subtitle").count();
+    assert_eq!(subtitles, 1, "{p:?}");
 }
 
 #[test]
