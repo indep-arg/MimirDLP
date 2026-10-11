@@ -45,7 +45,6 @@ body:
       label: How it was installed
       options:
         - Portable (.zip or .tar.gz from the release page)
-        - Scoop
         - winget
         - Flatpak
     validations:

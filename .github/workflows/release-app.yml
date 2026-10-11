@@ -1,8 +1,9 @@
 name: Release app
 
 # Publishes the Linux and Windows binaries of the application whenever a
-# "vX.Y.Z" tag is pushed (plain semantic versioning, the form Flathub, AUR
-# and Scoop tooling expect to find in a repository's tags).
+# "vX.Y.Z" tag is pushed (plain semantic versioning, the form packaging
+# tools such as Flathub's update checker expect to find in a repository's
+# tags).
 on:
   push:
     tags:
