@@ -6,7 +6,7 @@
 
 Download videos and music from YouTube and most other sites, with a simple window instead of a command line.
 
-![Latest release](https://img.shields.io/github/v/release/indep-arg/MimirDLP?label=release&color=3584e4)
+[![Latest release](https://img.shields.io/github/v/release/indep-arg/MimirDLP?label=release&color=3584e4&cacheSeconds=3600)](https://github.com/indep-arg/MimirDLP/releases/latest)
 ![Platform: Windows | Linux](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-3584e4)
 ![License: MIT](https://img.shields.io/github/license/indep-arg/MimirDLP?color=3584e4)
 [![Translation status](https://hosted.weblate.org/widget/mimirdlp/svg-badge.svg)](https://hosted.weblate.org/engage/mimirdlp/)
@@ -23,13 +23,6 @@ Download videos and music from YouTube and most other sites, with a simple windo
 </p>
 
 On the release page, take the `.zip` for Windows (10 or later) or the `.tar.gz` for Linux (a recent distribution, such as Ubuntu 24.04 or later). There's no installer: extract it anywhere and run `mimirdlp`. Everything it needs stays in that folder (or in your user folder, if it's somewhere it can't write to, like `Program Files`).
-
-On Windows you can also install it with [Scoop](https://scoop.sh):
-
-```
-scoop bucket add mimirdlp https://github.com/indep-arg/scoop-bucket
-scoop install mimirdlp
-```
 
 ## How to use it
 

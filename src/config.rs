@@ -883,10 +883,10 @@ pub fn save_queue(paths: &Paths, items: &[SavedItem]) -> std::io::Result<()> {
 
 /// A new file is written through a temporary one and renamed into place,
 /// so an interrupted save can't leave half of it. An existing file is
-/// rewritten in place instead: Scoop keeps these files in a folder of its
-/// own and hard links them into the app's, and a rename would replace the
-/// link with a file Scoop doesn't know, losing the settings on the next
-/// update.
+/// rewritten in place instead, so a file hard linked into the app's folder
+/// from somewhere else stays linked: a rename would replace the link with
+/// a new file and the other copy would keep the old settings. (Scoop did
+/// exactly that while MimirDLP was offered there.)
 fn write_file(file: &std::path::Path, text: &str) -> std::io::Result<()> {
     if file.exists() {
         return fs::write(file, text);
@@ -1133,8 +1133,8 @@ mod tests {
         fs::remove_dir_all(dir).unwrap();
     }
 
-    /// Scoop hard links the settings, the queue and the history into the
-    /// app's folder; saving must write through the link.
+    /// A settings, queue or history file hard linked into the app's folder
+    /// must be written through the link.
     #[cfg(unix)]
     #[test]
     fn saving_keeps_a_hard_linked_file_linked() {

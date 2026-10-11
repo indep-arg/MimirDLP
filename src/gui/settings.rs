@@ -273,8 +273,8 @@ impl SettingsPage {
                 self.clearing_history = false;
                 let entries = self.settings.history_count(&self.paths).unwrap_or(0);
                 let path = self.settings.archive_path(&self.paths);
-                // Emptied rather than removed, so a file Scoop keeps for
-                // the app (hard linked) is cleared too.
+                // Emptied rather than removed, so a hard linked copy kept
+                // elsewhere is cleared too.
                 let cleared = if path.exists() {
                     std::fs::write(&path, "")
                 } else {

@@ -1,22 +1,6 @@
 # Packaging
 
-Files for installing MimirDLP through package managers. The app itself is the same everywhere: a portable copy keeps everything next to the executable, and a copy installed where it can't write (a Flatpak, or `Program Files`) keeps its files in the user's data folder instead (`~/.local/share/MimirDLP`, or `%LOCALAPPDATA%\MimirDLP` on Windows) and downloads to the user's Downloads folder.
-
-## Scoop (Windows)
-
-`scoop/mimirdlp.json` is the manifest. It persists `bin`, `downloads` and the settings, history and queue files, so updates keep the tools and the user's videos.
-
-Scoop reads manifests from a bucket, a repository of its own: [indep-arg/scoop-bucket](https://github.com/indep-arg/scoop-bucket), made like this:
-
-1. Create `indep-arg/scoop-bucket` from [ScoopInstaller/BucketTemplate](https://github.com/ScoopInstaller/BucketTemplate) ("Use this template").
-2. Put `mimirdlp.json` in its `bucket/` folder.
-
-Its scheduled workflow (Excavator) reads `checkver` and `autoupdate`, so new releases are picked up without touching the manifest again. People install with:
-
-```
-scoop bucket add mimirdlp https://github.com/indep-arg/scoop-bucket
-scoop install mimirdlp
-```
+Files for installing MimirDLP through package managers. The app itself is the same everywhere: a portable copy keeps everything next to the executable, and a copy installed where it can't write (a Flatpak, or `Program Files`) keeps its files in the user's data folder instead (`~/.local/share/MimirDLP`, `~/.var/app/io.github.indep_arg.MimirDLP/data/MimirDLP` inside the Flatpak, or `%LOCALAPPDATA%\MimirDLP` on Windows) and downloads to the user's Downloads folder.
 
 ## winget (Windows)
 
