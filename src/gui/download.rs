@@ -365,7 +365,7 @@ impl Download {
         let id = self.next_id;
         self.next_id += 1;
         let lookup = metadata::Lookup {
-            cookies: settings.cookies(),
+            cookies: settings.cookies(&self.paths),
             single_video: settings.playlist == crate::config::PlaylistChoice::Single,
         };
         self.items.push(QueueItem {

@@ -449,11 +449,10 @@ impl App {
             Page::Setup => setup.view().map(Message::Setup),
             Page::Download => {
                 let screen = download.view().map(Message::Download);
-                match setup
-                    .ytdlp_age()
-                    .filter(|age| *age > crate::provision::YTDLP_STALE_DAYS)
-                {
-                    Some(age) => column![stale_notice(age, can_setup), screen].into(),
+                match setup.ytdlp_age() {
+                    Some(age) => {
+                        column![stale_notice(age, can_setup, setup.bundled()), screen].into()
+                    }
                     None => screen,
                 }
             }
@@ -470,8 +469,11 @@ impl App {
             Page::About => about(setup.ytdlp_version()),
         };
 
-        let window =
-            column![header_bar(page, can_download, menu_open), content].height(Length::Fill);
+        let window = column![
+            header_bar(page, can_download, menu_open, setup.bundled()),
+            content
+        ]
+        .height(Length::Fill);
         if !menu_open {
             return window.into();
         }
@@ -483,9 +485,13 @@ impl App {
                 mouse_area(space().width(Length::Fill).height(Length::Fill))
                     .on_press(Message::CloseMenu)
             ),
-            container(opaque(main_menu(can_setup, settings.settings())))
-                .padding([HEADER_HEIGHT, 8.0])
-                .align_right(Length::Fill),
+            container(opaque(main_menu(
+                can_setup,
+                setup.bundled(),
+                settings.settings()
+            )))
+            .padding([HEADER_HEIGHT, 8.0])
+            .align_right(Length::Fill),
         ]
         .into()
     }
@@ -536,7 +542,13 @@ const HEADER_HEIGHT: f32 = 52.0;
 
 /// GNOME's header bar: a back button off the main screen, the title in the
 /// middle, and the menu that leads everywhere else.
-fn header_bar<'a>(page: Page, can_go_back: bool, menu_open: bool) -> Element<'a, Message> {
+/// With the tools bundled, Setup only lists them, so it is "Components".
+fn header_bar<'a>(
+    page: Page,
+    can_go_back: bool,
+    menu_open: bool,
+    bundled: bool,
+) -> Element<'a, Message> {
     let back: Element<'a, Message> = if page == Page::Download {
         space().into()
     } else {
@@ -548,6 +560,7 @@ fn header_bar<'a>(page: Page, can_go_back: bool, menu_open: bool) -> Element<'a,
     };
     let title = match page {
         Page::Download => "MimirDLP".to_string(),
+        Page::Setup if bundled => tr!("Components"),
         Page::Setup => tr!("Setup"),
         Page::Settings => tr!("Settings"),
         Page::About => tr!("About"),
@@ -591,7 +604,7 @@ fn menu_button<'a>(open: bool) -> Element<'a, Message> {
 
 /// The header bar's menu: the screens besides Download, the theme and the
 /// language.
-fn main_menu<'a>(can_setup: bool, settings: &Settings) -> Element<'a, Message> {
+fn main_menu<'a>(can_setup: bool, bundled: bool, settings: &Settings) -> Element<'a, Message> {
     let theme = settings.theme;
     let item = |label: String, message: Option<Message>| {
         button(text(label))
@@ -621,7 +634,11 @@ fn main_menu<'a>(can_setup: bool, settings: &Settings) -> Element<'a, Message> {
             rule::horizontal(1).style(style::separator),
             item(tr!("Settings"), Some(Message::Navigate(Page::Settings))),
             item(
-                tr!("Setup and updates"),
+                if bundled {
+                    tr!("Components")
+                } else {
+                    tr!("Setup and updates")
+                },
                 can_setup.then_some(Message::Navigate(Page::Setup))
             ),
             item(tr!("About MimirDLP"), Some(Message::Navigate(Page::About))),
@@ -727,28 +744,42 @@ fn language_picker<'a>(current: &str) -> Element<'a, Message> {
 }
 
 /// Sites change their pages all the time and yt-dlp follows within days,
-/// so an old one is the usual reason a download suddenly fails.
-fn stale_notice<'a>(age: i64, can_update: bool) -> Element<'a, Message> {
-    container(
-        row![
-            text(tr!(
-                "yt-dlp is {n} day old. Sites change often; if a download fails, update it first."
-                    | "yt-dlp is {n} days old. Sites change often; if a download fails, update it first."
+/// so an old one is the usual reason a download suddenly fails. A bundled
+/// one comes with the package, so the way out is updating MimirDLP itself,
+/// and there is no button for that here.
+fn stale_notice<'a>(age: i64, can_update: bool, bundled: bool) -> Element<'a, Message> {
+    let warning = if bundled {
+        tr!(
+            "yt-dlp is {n} day old. Sites change often; if a download fails, update MimirDLP from your software center or with flatpak update."
+                | "yt-dlp is {n} days old. Sites change often; if a download fails, update MimirDLP from your software center or with flatpak update."
                     % age
-            ))
+        )
+    } else {
+        tr!(
+            "yt-dlp is {n} day old. Sites change often; if a download fails, update it first."
+                | "yt-dlp is {n} days old. Sites change often; if a download fails, update it first."
+                    % age
+        )
+    };
+    let notice = row![
+        text(warning)
             .size(13)
             .style(text::warning)
-            .width(Length::Fill),
+            .width(Length::Fill)
+    ]
+    .spacing(12)
+    .align_y(Alignment::Center);
+    let notice = if bundled {
+        notice
+    } else {
+        notice.push(
             button(text(tr!("Check for updates")).size(13))
                 .padding([4, 14])
                 .style(style::pill_secondary)
                 .on_press_maybe(can_update.then_some(Message::CheckForUpdates)),
-        ]
-        .spacing(12)
-        .align_y(Alignment::Center),
-    )
-    .padding([10, 24])
-    .into()
+        )
+    };
+    container(notice).padding([10, 24]).into()
 }
 
 /// A titled card, the building block of every screen.

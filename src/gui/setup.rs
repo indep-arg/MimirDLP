@@ -75,7 +75,8 @@ pub struct Setup {
     pending: Option<Message>,
     /// Install what is missing as soon as the first inspection ends, so a
     /// first launch needs no button press. Off when the folder can't be
-    /// written to, and in debug builds with `YTP_DEV_ACTION=none`.
+    /// written to, when the tools came with the package, and in debug
+    /// builds with `YTP_DEV_ACTION=none`.
     auto_install: bool,
 }
 
@@ -88,8 +89,8 @@ impl Setup {
             confirm_reinstall: false,
             log: Vec::new(),
             transfer: None,
-            pending: dev_action(),
-            auto_install: !dev_no_auto_install(),
+            pending: dev_action().filter(|_| !paths.bundled_tools()),
+            auto_install: !dev_no_auto_install() && !paths.bundled_tools(),
         };
         let task = in_thread(move |send| {
             if let Err(e) = provision::app_dir_writable(&paths) {
@@ -136,6 +137,12 @@ impl Setup {
         self.job.is_some()
     }
 
+    /// The tools came with the package (the Flatpak): this screen only
+    /// shows them, and they are updated with MimirDLP.
+    pub fn bundled(&self) -> bool {
+        self.paths.bundled_tools()
+    }
+
     /// The installed yt-dlp's version, once it answered.
     pub fn ytdlp_version(&self) -> Option<&str> {
         match &self.rows[index(Component::YtDlp)].status {
@@ -144,8 +151,9 @@ impl Setup {
         }
     }
 
-    /// How many days old the installed yt-dlp is, when that can be told
-    /// and is worth saying: not once a check found nothing newer.
+    /// How many days old the installed yt-dlp is, when it is old enough to
+    /// say so ([`provision::ytdlp_stale_days`]): not once a check found
+    /// nothing newer.
     pub fn ytdlp_age(&self) -> Option<i64> {
         let row = &self.rows[index(Component::YtDlp)];
         if row.update == Some(UpdateCheck::Current) {
@@ -154,13 +162,16 @@ impl Setup {
         match &row.status {
             Some(Status::Installed { version }) => {
                 provision::ytdlp_age_days(version, provision::today())
+                    .filter(|age| *age > provision::ytdlp_stale_days(&self.paths))
             }
             _ => None,
         }
     }
 
     pub fn update(&mut self, message: Message) -> Task<Message> {
-        if self.busy() && !matches!(message, Message::Report(_)) {
+        // Nothing is installed or updated from here when the package
+        // brought the tools: only reports (the inspection) get through.
+        if (self.busy() || self.bundled()) && !matches!(message, Message::Report(_)) {
             return Task::none();
         }
         match message {
@@ -322,7 +333,12 @@ impl Setup {
     }
 
     pub fn view(&self) -> Element<'_, Message> {
-        let where_kept = if self.paths.installed {
+        let where_kept = if self.bundled() {
+            tr!(
+                "yt-dlp, FFmpeg and Deno come with this package and are updated \
+                 together with MimirDLP, from your software center or with flatpak update."
+            )
+        } else if self.paths.installed {
             tr!(
                 "yt-dlp, FFmpeg and Deno are kept in {folder}, and updated from here.",
                 folder = self.paths.bin_dir.display()
@@ -335,12 +351,11 @@ impl Setup {
         };
         let header = text(where_kept).style(style::muted_text);
 
-        let components = Column::with_children(
-            Component::ALL
-                .into_iter()
-                .map(|component| component_row(component, &self.rows[index(component)])),
-        )
-        .spacing(12);
+        let components =
+            Column::with_children(Component::ALL.into_iter().map(|component| {
+                component_row(component, &self.rows[index(component)], &self.paths)
+            }))
+            .spacing(12);
 
         let mut page = column![
             header,
@@ -371,7 +386,14 @@ impl Setup {
     }
 
     /// The contextual actions available, given what is installed right now.
+    /// None for tools that came with the package, only what is going on.
     fn actions(&self) -> Element<'_, Message> {
+        if self.bundled() {
+            let busy = self
+                .job
+                .map(|_| text(tr!("Looking at what is installed...")).style(style::muted_text));
+            return row![].push(busy).into();
+        }
         if self.confirm_reinstall {
             return row![
                 text(tr!("This will re-download and reinstall ALL components."))
@@ -470,7 +492,7 @@ fn in_thread(job: impl FnOnce(&dyn Fn(Report)) + Send + 'static) -> Task<Message
 }
 
 /// One line of the component list.
-fn component_row(component: Component, row: &Row) -> Element<'static, Message> {
+fn component_row(component: Component, row: &Row, paths: &Paths) -> Element<'static, Message> {
     #[derive(Clone, Copy)]
     enum Tone {
         Good,
@@ -483,14 +505,28 @@ fn component_row(component: Component, row: &Row) -> Element<'static, Message> {
     let stale_age = match &row.status {
         Some(Status::Installed { version }) if component == Component::YtDlp => {
             provision::ytdlp_age_days(version, provision::today())
-                .filter(|age| *age > provision::YTDLP_STALE_DAYS)
+                .filter(|age| *age > provision::ytdlp_stale_days(paths))
         }
         _ => None,
     };
+    let bundled = paths.bundled_tools();
     let (tone, detail) = match (&row.status, &row.update, stale_age) {
         (None, ..) => (Tone::Neutral, tr!("Checking...")),
+        (Some(Status::Missing), ..) if bundled => (Tone::Bad, tr!("Not found in this package")),
         (Some(Status::Missing), ..) => (Tone::Bad, tr!("Not installed")),
         (Some(Status::Broken), ..) => (Tone::Bad, tr!("Installed but not responding")),
+        (Some(Status::Installed { version }), _, Some(age)) if bundled => (
+            Tone::Warn,
+            tr!(
+                "Version {version} ({n} day old, update MimirDLP)"
+                    | "Version {version} ({n} days old, update MimirDLP)" % age,
+                version
+            ),
+        ),
+        (Some(Status::Installed { version }), ..) if bundled => (
+            Tone::Good,
+            tr!("Version {version} (included with MimirDLP)", version),
+        ),
         (Some(Status::Installed { version }), None, Some(age)) => (
             Tone::Warn,
             tr!(
@@ -663,6 +699,58 @@ mod tests {
         }
         complete.job = Some(Job::Inspecting);
         assert!(!installs_by_itself(complete));
+    }
+
+    #[test]
+    fn bundled_tools_are_only_shown_never_installed_or_updated() {
+        let mut setup = with_ytdlp("2026.09.16", None);
+        setup.paths = Paths::bundled("/data".into(), vec!["/app/bin".into()]);
+        setup.auto_install = false;
+        setup.rows[index(Component::Ffmpeg)].status = Some(Status::Missing);
+        for message in [
+            Message::InstallMissing,
+            Message::CheckUpdates,
+            Message::UpdateOutdated,
+            Message::ConfirmReinstall,
+        ] {
+            let _ = setup.update(message);
+            assert!(!setup.busy(), "nothing may start");
+        }
+        let _ = setup.update(Message::AskReinstall);
+        assert!(!setup.confirm_reinstall);
+
+        let (fresh, _) = Setup::new(Paths::bundled("/data".into(), vec![]));
+        assert!(!fresh.auto_install && fresh.pending.is_none());
+    }
+
+    #[test]
+    fn a_bundled_yt_dlp_counts_as_old_later() {
+        let days_ago = |n: i64| {
+            let (y, m, d) = civil(provision::today() - n);
+            format!("{y}.{m:02}.{d:02}")
+        };
+        let mut portable = with_ytdlp(&days_ago(30), None);
+        assert_eq!(portable.ytdlp_age(), Some(30));
+        portable.paths = Paths::bundled("/data".into(), vec![]);
+        assert_eq!(portable.ytdlp_age(), None, "a stable release a month old");
+        let bundled_old = Setup {
+            paths: Paths::bundled("/data".into(), vec![]),
+            ..with_ytdlp(&days_ago(100), None)
+        };
+        assert_eq!(bundled_old.ytdlp_age(), Some(100));
+    }
+
+    /// The calendar date of a day number (Hinnant's `civil_from_days`).
+    fn civil(days: i64) -> (i64, i64, i64) {
+        let z = days + 719_468;
+        let era = z.div_euclid(146_097);
+        let doe = z - era * 146_097;
+        let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365;
+        let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+        let mp = (5 * doy + 2) / 153;
+        let d = doy - (153 * mp + 2) / 5 + 1;
+        let m = if mp < 10 { mp + 3 } else { mp - 9 };
+        (yoe + era * 400 + i64::from(m <= 2), m, d)
     }
 
     #[test]

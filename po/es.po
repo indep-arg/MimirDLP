@@ -34,7 +34,7 @@ msgstr "Una cadena de formato propia"
 
 #: src/config.rs
 msgid "Best available"
-msgstr "Máxima disponible"
+msgstr "Máx. calidad disponible"
 
 #: src/config.rs
 msgid "Up to 2160p (4K)"
@@ -358,7 +358,7 @@ msgstr "Descarga un video"
 
 #: src/gui/download.rs
 msgid "Paste a link from YouTube or almost any other site above."
-msgstr "Pega arriba un enlace de YouTube o de casi cualquier otro sitio."
+msgstr "Pega arriba un enlace de YouTube o de otro sitio compatible."
 
 #: src/gui/download.rs
 msgid "Nothing yet. Every step of the download will be listed here."
@@ -1234,6 +1234,37 @@ msgstr "Aplicando SponsorBlock..."
 #: src/runner.rs
 msgid "Moving the file into place..."
 msgstr "Moviendo el archivo a su lugar..."
+
+#: src/gui/mod.rs
+#, python-brace-format
+msgid "yt-dlp is {n} day old. Sites change often; if a download fails, update MimirDLP from your software center or with flatpak update."
+msgid_plural "yt-dlp is {n} days old. Sites change often; if a download fails, update MimirDLP from your software center or with flatpak update."
+msgstr[0] "yt-dlp tiene {n} día de antigüedad. Los sitios cambian a menudo; si una descarga falla, actualiza MimirDLP desde tu tienda de software o con flatpak update."
+msgstr[1] "yt-dlp tiene {n} días de antigüedad. Los sitios cambian a menudo; si una descarga falla, actualiza MimirDLP desde tu tienda de software o con flatpak update."
+
+#: src/gui/settings.rs
+msgid "Playlists, history, file names, speed limits"
+msgstr "Listas, historial, nombres de archivo, límites de velocidad"
+
+#: src/gui/setup.rs
+msgid "yt-dlp, FFmpeg and Deno come with this package and are updated together with MimirDLP, from your software center or with flatpak update."
+msgstr "yt-dlp, FFmpeg y Deno vienen con este paquete y se actualizan junto con MimirDLP, desde tu tienda de software o con flatpak update."
+
+#: src/gui/setup.rs
+msgid "Not found in this package"
+msgstr "No se encuentra en este paquete"
+
+#: src/gui/setup.rs
+#, python-brace-format
+msgid "Version {version} ({n} day old, update MimirDLP)"
+msgid_plural "Version {version} ({n} days old, update MimirDLP)"
+msgstr[0] "Versión {version} (de hace {n} día, actualiza MimirDLP)"
+msgstr[1] "Versión {version} (de hace {n} días, actualiza MimirDLP)"
+
+#: src/gui/setup.rs
+#, python-brace-format
+msgid "Version {version} (included with MimirDLP)"
+msgstr "Versión {version} (incluida con MimirDLP)"
 
 #~ msgid "the thumbnail fetch was interrupted"
 #~ msgstr "la descarga de la miniatura se interrumpió"

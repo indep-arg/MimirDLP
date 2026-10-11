@@ -8,7 +8,7 @@
 use std::env::consts::EXE_SUFFIX;
 use std::ffi::OsString;
 use std::fmt;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AudioFormat {
@@ -262,14 +262,30 @@ pub fn chapters_wanted(o: &Options) -> bool {
 /// only this flag on the command line stops every one of them.
 pub const IGNORE_CONFIG: &str = "--ignore-config";
 
-fn tool_path(bin_dir: &Path, name: &str) -> OsString {
-    bin_dir.join(format!("{name}{EXE_SUFFIX}")).into_os_string()
+/// The tools yt-dlp is told to use. They sit together in `bin/` for a
+/// portable copy, but a Flatpak takes FFmpeg from its runtime (`/usr/bin`)
+/// and Deno from the package (`/app/bin`).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ToolPaths {
+    pub ffmpeg: PathBuf,
+    pub deno: PathBuf,
+}
+
+impl ToolPaths {
+    /// Both in one folder, the way the app installs them.
+    pub fn in_dir(bin_dir: &Path) -> Self {
+        let tool = |name: &str| bin_dir.join(format!("{name}{EXE_SUFFIX}"));
+        ToolPaths {
+            ffmpeg: tool("ffmpeg"),
+            deno: tool("deno"),
+        }
+    }
 }
 
 /// The arguments for yt-dlp, not including the program itself.
 pub fn build_args(
     o: &Options,
-    bin_dir: &Path,
+    tools: &ToolPaths,
     output_dir: Option<&Path>,
     urls: &[String],
 ) -> Vec<OsString> {
@@ -287,9 +303,9 @@ pub fn build_args(
     push("--concurrent-fragments");
     push(&o.concurrent_fragments.to_string());
     push("--ffmpeg-location");
-    a.push(tool_path(bin_dir, "ffmpeg"));
+    a.push(tools.ffmpeg.clone().into_os_string());
     let mut js_runtime = OsString::from("deno:");
-    js_runtime.push(tool_path(bin_dir, "deno"));
+    js_runtime.push(&tools.deno);
     a.push("--js-runtimes".into());
     a.push(js_runtime);
 

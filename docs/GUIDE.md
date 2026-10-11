@@ -4,6 +4,7 @@ Everything the [README](../README.md) leaves out. If you just want to download a
 
 - [Features](#features)
 - [Installing](#installing)
+- [The Flatpak](#the-flatpak)
 - [First launch](#first-launch)
 - [Downloading](#downloading)
 - [SponsorBlock](#sponsorblock)
@@ -23,7 +24,7 @@ In Norse mythology, Mimir guards a well of wisdom so deep that Odin gave up an e
 - **Subtitles, thumbnails, metadata, chapters**: embed what you want, skip what you don't.
 - **SponsorBlock**: mark sponsor segments as chapters, or cut them out of the file entirely.
 - **Playlists**: grab the whole thing, just one video from it, or a specific range.
-- **Signed-in downloads**: videos that need an account (age restricted, members only) can use your browser's cookies.
+- **Signed-in downloads**: videos that need an account (age restricted, members only) can use your browser's cookies (not in the Flatpak, see below).
 - **A history you control**: skip what you've already downloaded, stop as soon as something already in the history shows up, or just keep a plain download count.
 - **Light and dark themes**, following your system by default.
 - **Windows and Linux**, from the same codebase, both covered by the same tests.
@@ -41,11 +42,30 @@ Both come with a `.sha256` file, so you can check the download wasn't corrupted 
 
 In a folder you can't write to, such as `Program Files`, it still works: it keeps its tools, settings and history in your user folder instead (see below).
 
-The Linux build needs a recent distribution (glibc 2.39 or newer, for example Ubuntu 24.04).
+The Linux build needs a recent distribution on x86_64 (glibc 2.39 or newer: Ubuntu 24.04, Debian 13, Fedora 40 or later). It doesn't run on older ones, such as Ubuntu 22.04 or Debian 12.
+
+## The Flatpak
+
+A Flatpak of MimirDLP is in the works, for Flathub. It isn't published yet; this is how it differs from the portable build, so you can choose once it is.
+
+| | Portable (`.tar.gz`) | Flatpak |
+|---|---|---|
+| Runs on | x86_64 distributions with glibc 2.39 or newer | Any x86_64 distribution with Flatpak, old or new |
+| yt-dlp, FFmpeg, Deno | Downloaded by the app on first launch, into `bin/` next to it | Inside the package: nothing is downloaded at launch |
+| yt-dlp channel | Nightly, as yt-dlp recommends | Stable releases, which Flathub packages |
+| FFmpeg | FFmpeg-Builds (BtbN) | The one in the GNOME runtime |
+| Updates | Setup, "Check for updates", from inside the app | With the package: your software center, or `flatpak update` |
+| Settings, history, queue | Next to the app | `~/.var/app/io.github.indep_arg.MimirDLP/data/MimirDLP` |
+| Saves to | `downloads` next to the app | Your Downloads folder |
+| Browser cookies (signing in) | Yes | Not yet: the sandbox can't read the browsers' folders |
+
+In the Flatpak, the ☰ menu has **Components** instead of "Setup and updates": it lists the three tools and their versions, with nothing to install or update. The yt-dlp in the Flatpak only gets newer when the Flatpak does, and stable releases are sometimes weeks or months apart, so the "yt-dlp is old" reminder waits until it is 90 days old (two weeks in the portable build). If a site stops working before that, the portable build gets yt-dlp's fixes first.
 
 ## First launch
 
 On first launch MimirDLP opens on **Setup** and installs yt-dlp, FFmpeg and Deno by itself (about 200 MB). Every binary gets checksummed against what the upstream project publishes before it's allowed to run. Once everything is in place it moves on to the Download screen. If the install fails (no internet, say), "Install missing components" tries again.
+
+In the Flatpak there is nothing to install: the tools come with it (see [The Flatpak](#the-flatpak)).
 
 Come back any time through the ☰ menu, **Setup and updates**, to check for updates. If yt-dlp gets more than two weeks old, the Download screen reminds you, since an old yt-dlp is the usual reason a site suddenly stops working. It only re-downloads what's actually out of date, and yt-dlp comes from the nightly channel, since that's the one yt-dlp itself recommends for getting extractor fixes quickly.
 
@@ -81,7 +101,7 @@ One caveat that comes from yt-dlp itself: if the SponsorBlock server can't be re
 
 - **The app stays on Setup**: a component couldn't be installed. The activity log there says why; "Install missing components" tries again.
 - **A component shows "Installed but not responding"**: it downloaded but won't run (a corrupted download, or the wrong build for your machine). Use "Install missing components" again to replace it.
-- **A download just fails**: first make sure yt-dlp is up to date (☰, "Setup and updates", "Check for updates"). Then open Settings, "Advanced options", turn on Verbose, and read what yt-dlp actually says under "Show activity" on the Download screen. Half the time it's a region lock or a site that wants a login; for the latter, pick your browser in Settings, "Advanced options", "Signing in" (Firefox works best). Chromium browsers may need to be closed first, and recent ones on Windows can't be read at all.
+- **A download just fails**: first make sure yt-dlp is up to date (☰, "Setup and updates", "Check for updates"; in the Flatpak, update MimirDLP itself). Then open Settings, "Advanced options", turn on Verbose, and read what yt-dlp actually says under "Show activity" on the Download screen. Half the time it's a region lock or a site that wants a login; for the latter, pick your browser in Settings, "Advanced options", "Signing in" (Firefox works best; this isn't available in the Flatpak). Chromium browsers may need to be closed first, and recent ones on Windows can't be read at all.
 - **Windows SmartScreen warns on first run**: the app isn't code signed yet. Choose "More info", then "Run anyway".
 
 ## Building from source
