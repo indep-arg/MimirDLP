@@ -43,7 +43,7 @@ What the app expects from the Flatpak:
 
 - **App id `io.github.indep_arg.MimirDLP`.** The app switches to bundled tools only when `FLATPAK_ID` is exactly this id. Any other id (a portable copy started from another Flatpak's terminal, say) keeps the normal behaviour.
 - **The tools on `PATH`.** It looks up `yt-dlp`, `ffmpeg`, `ffprobe` and `deno` in each `PATH` folder in turn, which inside a Flatpak is `/app/bin`, then the runtime's `/usr/bin`. Whatever the package puts in `/app/bin` wins over the runtime's.
-- **yt-dlp:** the stable release from PyPI with its `default` extras, which bring `yt-dlp-ejs` (the scripts Deno runs for YouTube's challenges; the standalone binaries carry them inside, the bare Python package doesn't). Installed with `--no-dependencies`, as video-downloader does, it has to be listed separately. The command it calls is `yt-dlp`.
+- **yt-dlp:** the stable release from PyPI with the `default` and `curl-cffi` extras (`yt-dlp[default,curl-cffi]`). `default` brings `yt-dlp-ejs`, the scripts Deno runs for YouTube's challenges; `curl-cffi` lets yt-dlp impersonate a browser, which YouTube asks for. The standalone binaries carry both inside, the bare Python package neither. `flatpak-pip-generator` needs `--prefer-wheels=curl_cffi,cffi` for them: `curl_cffi`'s source package downloads a library while it builds, which a Flatpak build can't. The command it calls is `yt-dlp`.
 - **Deno:** 2.3.0 or newer (yt-dlp's floor), as `deno`.
 - **FFmpeg:** the runtime's `ffmpeg` and `ffprobe` (GNOME 50: FFmpeg 7.1). The base runtime leaves out the H.264 and HEVC decoders; the `org.freedesktop.Platform.codecs-extra` extension adds them. Remuxing doesn't need them, re-encoding does.
 - **x86_64 only** to begin with.
@@ -56,4 +56,4 @@ What it does in that mode (`Paths::bundled` in `src/provision/mod.rs`):
 - "Signing in" (cookies from a browser) is hidden and ignored, since the sandbox can't read the browsers' folders.
 - The menu-entry switch is hidden, as for any installed copy: the Flatpak brings its own `.desktop` (`linux/`).
 
-Permissions it uses: the network, the display (Wayland, with X11 as a fallback), the GPU (without it iced draws in software, slower) and the Downloads folder. The folder picker goes through the desktop portal.
+Permissions it uses: the network, the display (Wayland, with X11 as a fallback), the GPU (without it iced draws in software, slower) and the Downloads folder. The folder picker goes through the desktop portal: a folder outside Downloads comes back as a document portal path (`/run/user/1000/doc/<id>/<folder>`), which is what Settings then shows, and downloads into it work.

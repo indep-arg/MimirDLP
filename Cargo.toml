@@ -1,6 +1,6 @@
 [package]
 name = "mimirdlp"
-version = "0.3.0"
+version = "0.4.0"
 description = "A portable GUI around yt-dlp: Mimir's well of downloads."
 edition = "2024"
 # Tracks the current stable Rust, not an old floor. The application is

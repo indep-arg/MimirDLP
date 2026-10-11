@@ -57,6 +57,11 @@
     <internet>always</internet>
   </requires>
   <releases>
+    <release version="0.4.0" date="2026-10-11">
+      <description>
+        <p>Ready to run as a Flatpak, with yt-dlp, FFmpeg and Deno included in the package. Clearer wording in Spanish.</p>
+      </description>
+    </release>
     <release version="0.3.0" date="2026-10-10">
       <description>
         <p>Installed somewhere it can't write to, MimirDLP keeps its files in your user folder and saves to your Downloads folder. Settings now survive updates through Scoop.</p>
