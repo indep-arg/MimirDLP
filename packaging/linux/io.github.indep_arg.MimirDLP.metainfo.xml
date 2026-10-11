@@ -19,7 +19,7 @@
       <li>Videos that need an account, through your browser's cookies</li>
     </ul>
     <p>
-      The first launch downloads its own copies of yt-dlp, FFmpeg and Deno and checks every file, so it always uses a recent yt-dlp.
+      It comes with yt-dlp, FFmpeg and Deno included, so there is nothing else to install. Updating MimirDLP brings newer versions of them.
     </p>
   </description>
   <launchable type="desktop-id">io.github.indep_arg.MimirDLP.desktop</launchable>
