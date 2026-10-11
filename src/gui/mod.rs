@@ -559,7 +559,8 @@ fn header_bar<'a>(
             .into()
     };
     let title = match page {
-        Page::Download => "MimirDLP".to_string(),
+        // The window's own title bar already says it.
+        Page::Download => String::new(),
         Page::Setup if bundled => tr!("Components"),
         Page::Setup => tr!("Setup"),
         Page::Settings => tr!("Settings"),
