@@ -484,6 +484,10 @@ msgstr "No se encontró la carpeta donde está esta aplicación: {e}"
 msgid "Could not open {url}: {e}"
 msgstr "No se pudo abrir {url}: {e}"
 
+#: src/gui/mod.rs src/gui/setup.rs
+msgid "Components"
+msgstr "Componentes"
+
 #: src/gui/mod.rs
 msgid "Setup"
 msgstr "Instalación"
@@ -541,6 +545,13 @@ msgstr "Software libre con licencia MIT."
 #: src/gui/mod.rs
 msgid "System language"
 msgstr "Idioma del sistema"
+
+#: src/gui/mod.rs
+#, python-brace-format
+msgid "yt-dlp is {n} day old. Sites change often; if a download fails, update MimirDLP from your software center or with flatpak update."
+msgid_plural "yt-dlp is {n} days old. Sites change often; if a download fails, update MimirDLP from your software center or with flatpak update."
+msgstr[0] "yt-dlp tiene {n} día de antigüedad. Los sitios cambian a menudo; si una descarga falla, actualiza MimirDLP desde tu tienda de software o con flatpak update."
+msgstr[1] "yt-dlp tiene {n} días de antigüedad. Los sitios cambian a menudo; si una descarga falla, actualiza MimirDLP desde tu tienda de software o con flatpak update."
 
 #: src/gui/mod.rs
 #, python-brace-format
@@ -614,6 +625,10 @@ msgstr "Opciones avanzadas"
 #: src/gui/settings.rs
 msgid "Signing in, playlists, history, file names, speed limits"
 msgstr "Inicio de sesión, listas, historial, nombres de archivo, límites de velocidad"
+
+#: src/gui/settings.rs
+msgid "Playlists, history, file names, speed limits"
+msgstr "Listas, historial, nombres de archivo, límites de velocidad"
 
 #: src/gui/settings.rs
 msgid "These apply to every link you queue from now on. Links already in the queue keep what they were queued with."
@@ -922,6 +937,10 @@ msgid "Binaries located in: {folder}"
 msgstr "Programas ubicados en: {folder}"
 
 #: src/gui/setup.rs
+msgid "yt-dlp, FFmpeg and Deno come with this package and are updated together with MimirDLP, from your software center or with flatpak update."
+msgstr "yt-dlp, FFmpeg y Deno vienen con este paquete y se actualizan junto con MimirDLP, desde tu tienda de software o con flatpak update."
+
+#: src/gui/setup.rs
 #, python-brace-format
 msgid "yt-dlp, FFmpeg and Deno are kept in {folder}, and updated from here."
 msgstr "yt-dlp, FFmpeg y Deno se guardan en {folder} y se actualizan desde aquí."
@@ -931,16 +950,16 @@ msgid "yt-dlp, FFmpeg and Deno are kept in the bin folder next to this app. Noth
 msgstr "yt-dlp, FFmpeg y Deno se guardan en la carpeta bin junto a esta aplicación. No se instala nada en tu sistema."
 
 #: src/gui/setup.rs
-msgid "Components"
-msgstr "Componentes"
-
-#: src/gui/setup.rs
 msgid "Activity"
 msgstr "Actividad"
 
 #: src/gui/setup.rs
 msgid "Nothing yet. Each download and check will be listed here."
 msgstr "Nada todavía. Cada descarga y comprobación aparecerá aquí."
+
+#: src/gui/setup.rs
+msgid "Looking at what is installed..."
+msgstr "Revisando lo que está instalado..."
 
 #: src/gui/setup.rs
 msgid "This will re-download and reinstall ALL components."
@@ -963,10 +982,6 @@ msgid "Reinstall all"
 msgstr "Reinstalar todo"
 
 #: src/gui/setup.rs
-msgid "Looking at what is installed..."
-msgstr "Revisando lo que está instalado..."
-
-#: src/gui/setup.rs
 msgid "Checking for updates..."
 msgstr "Buscando actualizaciones..."
 
@@ -975,12 +990,28 @@ msgid "Checking..."
 msgstr "Comprobando..."
 
 #: src/gui/setup.rs
+msgid "Not found in this package"
+msgstr "No se encuentra en este paquete"
+
+#: src/gui/setup.rs
 msgid "Not installed"
 msgstr "No instalado"
 
 #: src/gui/setup.rs
 msgid "Installed but not responding"
 msgstr "Instalado, pero no responde"
+
+#: src/gui/setup.rs
+#, python-brace-format
+msgid "Version {version} ({n} day old, update MimirDLP)"
+msgid_plural "Version {version} ({n} days old, update MimirDLP)"
+msgstr[0] "Versión {version} (de hace {n} día, actualiza MimirDLP)"
+msgstr[1] "Versión {version} (de hace {n} días, actualiza MimirDLP)"
+
+#: src/gui/setup.rs
+#, python-brace-format
+msgid "Version {version} (included with MimirDLP)"
+msgstr "Versión {version} (incluida con MimirDLP)"
 
 #: src/gui/setup.rs
 #, python-brace-format
@@ -1234,37 +1265,6 @@ msgstr "Aplicando SponsorBlock..."
 #: src/runner.rs
 msgid "Moving the file into place..."
 msgstr "Moviendo el archivo a su lugar..."
-
-#: src/gui/mod.rs
-#, python-brace-format
-msgid "yt-dlp is {n} day old. Sites change often; if a download fails, update MimirDLP from your software center or with flatpak update."
-msgid_plural "yt-dlp is {n} days old. Sites change often; if a download fails, update MimirDLP from your software center or with flatpak update."
-msgstr[0] "yt-dlp tiene {n} día de antigüedad. Los sitios cambian a menudo; si una descarga falla, actualiza MimirDLP desde tu tienda de software o con flatpak update."
-msgstr[1] "yt-dlp tiene {n} días de antigüedad. Los sitios cambian a menudo; si una descarga falla, actualiza MimirDLP desde tu tienda de software o con flatpak update."
-
-#: src/gui/settings.rs
-msgid "Playlists, history, file names, speed limits"
-msgstr "Listas, historial, nombres de archivo, límites de velocidad"
-
-#: src/gui/setup.rs
-msgid "yt-dlp, FFmpeg and Deno come with this package and are updated together with MimirDLP, from your software center or with flatpak update."
-msgstr "yt-dlp, FFmpeg y Deno vienen con este paquete y se actualizan junto con MimirDLP, desde tu tienda de software o con flatpak update."
-
-#: src/gui/setup.rs
-msgid "Not found in this package"
-msgstr "No se encuentra en este paquete"
-
-#: src/gui/setup.rs
-#, python-brace-format
-msgid "Version {version} ({n} day old, update MimirDLP)"
-msgid_plural "Version {version} ({n} days old, update MimirDLP)"
-msgstr[0] "Versión {version} (de hace {n} día, actualiza MimirDLP)"
-msgstr[1] "Versión {version} (de hace {n} días, actualiza MimirDLP)"
-
-#: src/gui/setup.rs
-#, python-brace-format
-msgid "Version {version} (included with MimirDLP)"
-msgstr "Versión {version} (incluida con MimirDLP)"
 
 #~ msgid "the thumbnail fetch was interrupted"
 #~ msgstr "la descarga de la miniatura se interrumpió"
