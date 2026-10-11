@@ -5,7 +5,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for taking the time. Before reporting, open ☰ > Setup and updates and press "Check for updates": an old yt-dlp is the most common reason a site stops working.
+        Thanks for taking the time. Before reporting, open ☰ > Setup and updates and press "Check for updates" (in the Flatpak, update MimirDLP itself): an old yt-dlp is the most common reason a site stops working.
   - type: textarea
     id: what
     attributes:
@@ -37,6 +37,17 @@ body:
       options:
         - Windows
         - Linux
+    validations:
+      required: true
+  - type: dropdown
+    id: install
+    attributes:
+      label: How it was installed
+      options:
+        - Portable (.zip or .tar.gz from the release page)
+        - Scoop
+        - winget
+        - Flatpak
     validations:
       required: true
   - type: textarea
