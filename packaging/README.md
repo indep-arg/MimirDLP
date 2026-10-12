@@ -29,7 +29,7 @@ What the app expects from the Flatpak:
 - **The tools on `PATH`.** It looks up `yt-dlp`, `ffmpeg`, `ffprobe` and `deno` in each `PATH` folder in turn, which inside a Flatpak is `/app/bin`, then the runtime's `/usr/bin`. Whatever the package puts in `/app/bin` wins over the runtime's.
 - **yt-dlp:** the stable release from PyPI with the `default` and `curl-cffi` extras (`yt-dlp[default,curl-cffi]`). `default` brings `yt-dlp-ejs`, the scripts Deno runs for YouTube's challenges; `curl-cffi` lets yt-dlp impersonate a browser, which YouTube asks for. The standalone binaries carry both inside, the bare Python package neither. `flatpak-pip-generator` needs `--prefer-wheels=curl_cffi,cffi` for them: `curl_cffi`'s source package downloads a library while it builds, which a Flatpak build can't. The command it calls is `yt-dlp`.
 - **Deno:** 2.3.0 or newer (yt-dlp's floor), as `deno`.
-- **FFmpeg:** the runtime's `ffmpeg` and `ffprobe` (GNOME 50: FFmpeg 7.1). The base runtime leaves out the H.264 and HEVC decoders; the `org.freedesktop.Platform.codecs-extra` extension adds them. Remuxing doesn't need them, re-encoding does.
+- **FFmpeg:** the runtime's `ffmpeg` and `ffprobe` (GNOME 51: FFmpeg 8.1). The base runtime leaves out the H.264 and HEVC decoders; the `org.freedesktop.Platform.codecs-extra` extension adds them. Remuxing doesn't need them, re-encoding does.
 - **x86_64 only** to begin with.
 
 What it does in that mode (`Paths::bundled` in `src/provision/mod.rs`):
