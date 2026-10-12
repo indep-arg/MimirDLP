@@ -4,22 +4,30 @@
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>MIT</project_license>
   <name>MimirDLP</name>
-  <summary>Download videos and music from YouTube and most other sites</summary>
+  <summary>Download videos and music with yt-dlp</summary>
   <developer id="io.github.indep_arg">
     <name>indep-arg</name>
   </developer>
   <description>
     <p>
-      A simple window around yt-dlp. Paste a link, choose video or audio and the quality, and download.
+      A graphical front end for yt-dlp. Paste a link and it looks the video up before anything is downloaded, showing the title, thumbnail and length (for a playlist, its name and how many videos it has). Then pick video or audio, the format and the quality.
+    </p>
+    <p>
+      Several links can be queued at once, each with its own format and progress bar. They run one after another. A failed download can be retried, a stopped one resumes from the partial file, and whatever was still waiting is back the next time you open the app.
     </p>
     <ul>
-      <li>A queue that shows each video's title, thumbnail, length and size</li>
-      <li>Subtitles, thumbnails, metadata and chapters</li>
-      <li>SponsorBlock, to mark or cut sponsor segments</li>
-      <li>Videos that need an account, through your browser's cookies</li>
+      <li>Subtitles (including the automatic ones), thumbnails, metadata and chapters, embedded or kept</li>
+      <li>SponsorBlock: mark sponsor segments as chapters, or cut them out of the file (YouTube only)</li>
+      <li>Playlists: the whole list, one video from it, or a range</li>
+      <li>A history file, to skip what you already downloaded</li>
+      <li>Audio extraction, container conversion, speed limit and file name templates</li>
+      <li>Light and dark themes; English and Spanish, with translations on Weblate</li>
     </ul>
     <p>
-      It comes with yt-dlp, FFmpeg and Deno included, so there is nothing else to install. Updating MimirDLP brings newer versions of them.
+      The package includes yt-dlp, FFmpeg and Deno, so nothing is downloaded when the app starts. The yt-dlp in it is the stable release and only gets newer when the package does. Signing in with your browser's cookies doesn't work inside the sandbox yet.
+    </p>
+    <p>
+      Use it within the law and each site's terms; you are responsible for what you download.
     </p>
   </description>
   <launchable type="desktop-id">io.github.indep_arg.MimirDLP.desktop</launchable>
@@ -28,6 +36,7 @@
   </provides>
   <url type="homepage">https://github.com/indep-arg/MimirDLP</url>
   <url type="bugtracker">https://github.com/indep-arg/MimirDLP/issues</url>
+  <url type="help">https://github.com/indep-arg/MimirDLP/blob/main/docs/GUIDE.md</url>
   <url type="translate">https://hosted.weblate.org/engage/mimirdlp/</url>
   <url type="vcs-browser">https://github.com/indep-arg/MimirDLP</url>
   <screenshots>
@@ -57,11 +66,6 @@
     <internet>always</internet>
   </requires>
   <releases>
-    <release version="0.4.1" date="2026-10-11">
-      <description>
-        <p>Corrects the description of what the package includes, and no longer repeats the title in the Download header bar.</p>
-      </description>
-    </release>
     <release version="0.4.0" date="2026-10-11">
       <description>
         <p>Ready to run as a Flatpak, with yt-dlp, FFmpeg and Deno included in the package. Clearer wording in Spanish.</p>
