@@ -66,6 +66,11 @@
     <internet>always</internet>
   </requires>
   <releases>
+    <release version="0.5.0" date="2026-10-12">
+      <description>
+        <p>Remembers the size of the window between launches.</p>
+      </description>
+    </release>
     <release version="0.4.1" date="2026-10-11">
       <description>
         <p>Corrects the description of what the package includes, and no longer repeats the title in the Download header bar.</p>
