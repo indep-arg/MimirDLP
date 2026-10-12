@@ -28,6 +28,8 @@ pub const FILE_NAME: &str = "mimirdlp.config";
 /// The links waiting in the queue, so closing the app doesn't lose them.
 pub const QUEUE_NAME: &str = "mimirdlp.queue";
 pub const ARCHIVE_NAME: &str = "download_archive.txt";
+/// The window's size and place when it was last closed.
+pub const WINDOW_NAME: &str = "mimirdlp.window";
 
 /// `Variant => "key", "Label"` per choice: the key is what the settings file
 /// and yt-dlp see, the label what the pick list shows, translated. A label
@@ -1147,6 +1149,103 @@ pub fn valid_url(url: &str) -> bool {
         && !url.contains(char::is_whitespace)
 }
 
+/// How the window was left, so the next launch opens it the same way.
+/// Sizes and positions are logical pixels, as iced reports them; the size
+/// is the inside of the window, without the desktop's title bar.
+///
+/// Kept in a file of its own rather than in [`Settings`], which every
+/// queued link carries a copy of.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct WindowState {
+    pub width: f32,
+    pub height: f32,
+    /// Only remembered on Windows. On Linux this stays `None` and the
+    /// desktop places the window itself.
+    pub position: Option<(f32, f32)>,
+    pub maximized: bool,
+}
+
+impl WindowState {
+    /// The size of the first window, before there is anything to remember.
+    pub const DEFAULT_SIZE: (f32, f32) = (1000.0, 720.0);
+
+    /// The window as it was last closed; `None` before the first close.
+    pub fn load(paths: &Paths) -> Option<WindowState> {
+        WindowState::parse(&fs::read_to_string(paths.app_dir.join(WINDOW_NAME)).ok()?)
+    }
+
+    pub fn save(&self, paths: &Paths) -> std::io::Result<()> {
+        fs::create_dir_all(&paths.app_dir)?;
+        write_file(&paths.app_dir.join(WINDOW_NAME), &self.serialize())
+    }
+
+    /// What to remember of a window being closed. A maximized window's
+    /// size is the screen's, so the size and place it had before keep
+    /// being remembered, for when it is restored. A minimized one reports
+    /// nothing useful (Windows puts it at -32000, -32000 with no size), so
+    /// it is remembered as it was the last time.
+    pub fn when_closed(
+        previous: Option<WindowState>,
+        size: (f32, f32),
+        position: Option<(f32, f32)>,
+        maximized: bool,
+        minimized: bool,
+    ) -> Option<WindowState> {
+        if minimized {
+            return previous;
+        }
+        if maximized {
+            let (width, height) =
+                previous.map_or(WindowState::DEFAULT_SIZE, |p| (p.width, p.height));
+            return Some(WindowState {
+                width,
+                height,
+                position: previous.and_then(|p| p.position),
+                maximized: true,
+            });
+        }
+        let (width, height) = size;
+        if !(width >= 1.0 && height >= 1.0) {
+            return previous;
+        }
+        Some(WindowState {
+            width,
+            height,
+            position,
+            maximized: false,
+        })
+    }
+
+    fn serialize(&self) -> String {
+        let mut text = format!("width={}\nheight={}\n", self.width, self.height);
+        if let Some((x, y)) = self.position {
+            text += &format!("x={x}\ny={y}\n");
+        }
+        let maximized = if self.maximized { "yes" } else { "no" };
+        text + &format!("maximized={maximized}\n")
+    }
+
+    /// `None` unless there is a usable size: a broken file means the
+    /// default window, not a tiny one.
+    fn parse(text: &str) -> Option<WindowState> {
+        let value = |key: &str| {
+            text.lines()
+                .filter_map(|line| line.split_once('='))
+                .find(|(k, _)| k.trim() == key)
+                .map(|(_, v)| v.trim())
+        };
+        let number = |key: &str| value(key)?.parse::<f32>().ok().filter(|n| n.is_finite());
+        let width = number("width").filter(|w| *w >= 1.0)?;
+        let height = number("height").filter(|h| *h >= 1.0)?;
+        Some(WindowState {
+            width,
+            height,
+            position: number("x").zip(number("y")),
+            maximized: value("maximized") == Some("yes"),
+        })
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1155,6 +1254,103 @@ mod tests {
 
     fn paths() -> Paths {
         Paths::new(PathBuf::from("/app"))
+    }
+
+    #[test]
+    fn the_window_opens_as_it_was_closed() {
+        let dir = tempdir();
+        let paths = Paths::new(dir.clone());
+        assert_eq!(WindowState::load(&paths), None, "before the first close");
+        let placed = WindowState {
+            width: 1180.5,
+            height: 640.0,
+            position: Some((-1500.0, 32.0)),
+            maximized: false,
+        };
+        placed.save(&paths).unwrap();
+        assert_eq!(WindowState::load(&paths), Some(placed));
+        // Linux: no position.
+        let unplaced = WindowState {
+            position: None,
+            maximized: true,
+            ..placed
+        };
+        unplaced.save(&paths).unwrap();
+        assert_eq!(WindowState::load(&paths), Some(unplaced));
+        fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn a_broken_window_file_means_the_default_window() {
+        assert_eq!(WindowState::parse(""), None);
+        assert_eq!(WindowState::parse("width=900\n"), None, "no height");
+        assert_eq!(WindowState::parse("width=0\nheight=600\n"), None);
+        assert_eq!(WindowState::parse("width=NaN\nheight=600\n"), None);
+        assert_eq!(WindowState::parse("width=abc\nheight=600\n"), None);
+        let half_placed = WindowState::parse("width=900\nheight=600\nx=10\n").unwrap();
+        assert_eq!(half_placed.position, None, "x without y");
+        assert!(!half_placed.maximized);
+    }
+
+    #[test]
+    fn a_maximized_or_minimized_window_keeps_its_last_normal_size() {
+        let before = WindowState {
+            width: 900.0,
+            height: 600.0,
+            position: Some((40.0, 50.0)),
+            maximized: false,
+        };
+        let screen = (1920.0, 1080.0);
+
+        let maximized =
+            WindowState::when_closed(Some(before), screen, Some((0.0, 0.0)), true, false);
+        assert_eq!(
+            maximized,
+            Some(WindowState {
+                maximized: true,
+                ..before
+            })
+        );
+        let first_maximized = WindowState::when_closed(None, screen, None, true, false);
+        assert_eq!(
+            first_maximized,
+            Some(WindowState {
+                width: 1000.0,
+                height: 720.0,
+                position: None,
+                maximized: true,
+            })
+        );
+
+        let minimized = WindowState::when_closed(
+            Some(before),
+            (0.0, 0.0),
+            Some((-32000.0, -32000.0)),
+            false,
+            true,
+        );
+        assert_eq!(minimized, Some(before));
+        assert_eq!(
+            WindowState::when_closed(None, (0.0, 0.0), None, false, false),
+            None
+        );
+
+        let moved = WindowState::when_closed(
+            Some(before),
+            (1100.0, 700.0),
+            Some((300.0, 200.0)),
+            false,
+            false,
+        );
+        assert_eq!(
+            moved,
+            Some(WindowState {
+                width: 1100.0,
+                height: 700.0,
+                position: Some((300.0, 200.0)),
+                maximized: false,
+            })
+        );
     }
 
     // `user-dirs.dirs` is a Linux file, and its paths are Unix ones.

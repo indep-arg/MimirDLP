@@ -15,21 +15,36 @@ use iced::widget::{
 use iced::{Alignment, Element, Length, Subscription, Task, Theme, window};
 use tr::tr;
 
-use crate::config::{Settings, ThemePref};
+use crate::config::{Settings, ThemePref, WindowState};
 use crate::provision::Paths;
 use download::Download;
 use settings::SettingsPage;
 use setup::Setup;
 
+/// Below this the Settings rows and the queue cards overlap.
+const MIN_SIZE: iced::Size = iced::Size::new(720.0, 520.0);
+
 pub fn run() -> iced::Result {
+    // The window opens as it was closed. Only Windows gets its place back
+    // (see `remember_window`); on Linux the desktop chooses it.
+    let saved = Paths::for_current_exe()
+        .ok()
+        .and_then(|paths| WindowState::load(&paths));
+    let (width, height) = saved.map_or(WindowState::DEFAULT_SIZE, |w| (w.width, w.height));
+    let size = iced::Size::new(width.max(MIN_SIZE.width), height.max(MIN_SIZE.height));
+    let position = match saved.and_then(|w| w.position) {
+        Some((x, y)) => window::Position::Specific(iced::Point::new(x, y)),
+        None => window::Position::Default,
+    };
     iced::application(App::boot, App::update, App::view)
         .title("MimirDLP")
         .theme(App::theme)
         .subscription(App::subscription)
         .window(window::Settings {
-            size: iced::Size::new(1000.0, 720.0),
-            // Below this the Settings rows and the queue cards overlap.
-            min_size: Some(iced::Size::new(720.0, 520.0)),
+            size,
+            position,
+            maximized: saved.is_some_and(|w| w.maximized),
+            min_size: Some(MIN_SIZE),
             // Rendered from branding/logo.svg (rsvg-convert -w 256 -h 256).
             icon: window::icon::from_file_data(include_bytes!("../../branding/icon.png"), None)
                 .ok(),
@@ -86,7 +101,7 @@ enum Message {
     /// A web address from the About page, opened in the browser.
     OpenLink(&'static str),
     LinkOpened(&'static str, Result<(), String>),
-    CloseRequested,
+    CloseRequested(window::Id),
     /// The window got the focus: a link copied meanwhile may be offered.
     WindowFocused,
     /// Debug builds only, see [`dev_snapshot`].
@@ -199,15 +214,16 @@ impl App {
                 App::Running {
                     download, settings, ..
                 },
-                Message::CloseRequested,
+                Message::CloseRequested(id),
             ) => {
                 // Whatever was typed is kept, and a running download is
                 // stopped rather than left behind with no window.
                 let _ = settings.save();
                 download.shutdown();
-                iced::exit()
+                let paths = settings.paths().clone();
+                remember_window(id, paths).then(|()| iced::exit())
             }
-            (App::Broken(_), Message::CloseRequested) => iced::exit(),
+            (App::Broken(_), Message::CloseRequested(_)) => iced::exit(),
             (App::Running { snapshot_due, .. }, Message::SnapshotDue) => {
                 *snapshot_due = true;
                 Task::none()
@@ -508,7 +524,7 @@ impl App {
     }
 
     fn subscription(&self) -> Subscription<Message> {
-        let close = window::close_requests().map(|_| Message::CloseRequested);
+        let close = window::close_requests().map(Message::CloseRequested);
         match self {
             App::Running { snapshot_due, .. } => {
                 let theme = iced::system::theme_changes().map(Message::SystemTheme);
@@ -530,6 +546,37 @@ impl App {
             App::Broken(_) => close,
         }
     }
+}
+
+/// Saves the window's size and place for the next launch. If that fails
+/// the window still closes.
+fn remember_window(id: window::Id, paths: Paths) -> Task<()> {
+    window::size(id)
+        .then(move |size| window::position(id).map(move |position| (size, position)))
+        .then(move |(size, position)| {
+            window::is_maximized(id).map(move |maximized| (size, position, maximized))
+        })
+        .then(move |(size, position, maximized)| {
+            window::is_minimized(id)
+                .map(move |minimized| (size, position, maximized, minimized == Some(true)))
+        })
+        .map(move |(size, position, maximized, minimized)| {
+            // Only Windows reads and sets the place the same way. On X11,
+            // winit reports where the inside of the window is but puts the
+            // frame there, so the window crept down by the height of its
+            // title bar on every launch (seen on KDE). Wayland tells nothing.
+            let position = position.filter(|_| cfg!(windows));
+            let state = WindowState::when_closed(
+                WindowState::load(&paths),
+                (size.width, size.height),
+                position.map(|p| (p.x, p.y)),
+                maximized,
+                minimized,
+            );
+            if let Some(state) = state {
+                let _ = state.save(&paths);
+            }
+        })
 }
 
 /// Download can be shown once the tools work, or while the first

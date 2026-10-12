@@ -174,6 +174,10 @@ impl SettingsPage {
         &self.settings
     }
 
+    pub fn paths(&self) -> &Paths {
+        &self.paths
+    }
+
     /// An app-wide preference kept in the same file, set from the top bar.
     pub fn set_theme(&mut self, pref: ThemePref) -> Option<Note> {
         self.settings.theme = pref;
