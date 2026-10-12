@@ -6,7 +6,7 @@
 
 Download videos and music from YouTube and most other sites, with a simple window instead of a command line.
 
-[![Latest release](https://img.shields.io/github/v/release/indep-arg/MimirDLP?label=release&color=3584e4&cacheSeconds=3600)](https://github.com/indep-arg/MimirDLP/releases/latest)
+[![Latest release](https://img.shields.io/github/v/release/indep-arg/MimirDLP?label=release&color=3584e4)](https://github.com/indep-arg/MimirDLP/releases/latest)
 ![Platform: Windows | Linux](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-3584e4)
 ![License: MIT](https://img.shields.io/github/license/indep-arg/MimirDLP?color=3584e4)
 [![Translation status](https://hosted.weblate.org/widget/mimirdlp/svg-badge.svg)](https://hosted.weblate.org/engage/mimirdlp/)
@@ -17,16 +17,27 @@ Download videos and music from YouTube and most other sites, with a simple windo
 
 ## Download
 
-<p align="center">
+<p align="left">
   <a href="https://github.com/indep-arg/MimirDLP/releases/latest"><img src="https://img.shields.io/badge/Download_for-Windows-3584e4?style=for-the-badge" alt="Download for Windows"/></a>
   <a href="https://github.com/indep-arg/MimirDLP/releases/latest"><img src="https://img.shields.io/badge/Download_for-Linux-3584e4?style=for-the-badge" alt="Download for Linux"/></a>
 </p>
 
-On the release page, take the `.zip` for Windows (10 or later) or the `.tar.gz` for Linux (a recent distribution, such as Ubuntu 24.04 or later). There's no installer: extract it anywhere and run `mimirdlp`. Everything it needs stays in that folder (or in your user folder, if it's somewhere it can't write to, like `Program Files`).
+| System  | File      | Works on |
+|---------|-----------|----------|
+| Windows | `.zip`    | Windows 10 or later |
+| Linux   | `.tar.gz` | Any distribution with glibc 2.39 or newer |
+
+On Linux that means Ubuntu 24.04, Linux Mint 22, Fedora 40, Debian 13 or later, and rolling distributions like Arch or openSUSE Tumbleweed. Not sure about yours? Run `ldd --version` in a terminal: the first line shows your glibc version.
+
+1. Download the file for your system from the [release page](https://github.com/indep-arg/MimirDLP/releases/latest).
+2. Extract it anywhere. There's no installer.
+3. Run `mimirdlp`.
+
+Everything it needs stays in that folder, or in your user folder if it's somewhere it can't write to (like `Program Files`).
 
 ## How to use it
 
-1. Open MimirDLP. The first time, it downloads the tools it needs by itself (about 200 MB).
+1. The first time you open MimirDLP, it downloads the tools it needs by itself (about 200 MB).
 2. Copy a link and switch to MimirDLP: it shows up in the box by itself (or paste it with Ctrl+V). Press **Add**, then pick video or audio and the quality.
 3. Press **Download**.
 
