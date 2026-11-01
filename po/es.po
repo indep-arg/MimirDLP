@@ -1475,7 +1475,6 @@ msgstr "Aplicando SponsorBlock..."
 msgid "Moving the file into place..."
 msgstr "Moviendo el archivo a su lugar..."
 
-
 #~ msgid "Playlists, history, file names, speed limits"
 #~ msgstr "Listas, historial, nombres de archivo, límites de velocidad"
 
