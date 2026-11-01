@@ -66,6 +66,8 @@ MimirDLP opens on **Setup** and installs yt-dlp, FFmpeg and Deno (about 200 MB),
 
 To check for updates later, use ☰, **Setup and updates**; only what's out of date is downloaded again. When yt-dlp is more than two weeks old the Download screen reminds you, since an old yt-dlp is the usual reason a site stops working.
 
+The same screen chooses which yt-dlp builds to use. **Nightly**, the default and what yt-dlp recommends, gets fixes for sites that changed within a day. **Stable** releases are tested for longer but come weeks apart, so with them the reminder waits 45 days. Switching replaces the installed yt-dlp right away, with the same signature check as always.
+
 ## Downloading
 
 Works on any site yt-dlp supports. On the Download screen, paste one link or several (separated by spaces or new lines). A link you copied elsewhere appears in the empty box when you switch to MimirDLP; it's only queued when you press Add, and one you clear isn't put back. Each link is looked up and added to the queue as a card, where you can pick its format and quality until it starts.

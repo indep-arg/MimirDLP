@@ -51,6 +51,56 @@ impl Component {
     }
 }
 
+/// Which yt-dlp builds are installed. Nightly is the default and what
+/// yt-dlp itself recommends: fixes for sites that changed arrive within a
+/// day. Stable releases are tested for longer but come weeks apart.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum Channel {
+    #[default]
+    Nightly,
+    Stable,
+}
+
+impl Channel {
+    pub const ALL: [Channel; 2] = [Channel::Nightly, Channel::Stable];
+
+    fn key(self) -> &'static str {
+        match self {
+            Channel::Nightly => "nightly",
+            Channel::Stable => "stable",
+        }
+    }
+
+    fn from_key(key: &str) -> Option<Channel> {
+        Channel::ALL.into_iter().find(|c| c.key() == key)
+    }
+}
+
+impl std::fmt::Display for Channel {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&match self {
+            Channel::Nightly => tr!("Nightly (recommended)"),
+            Channel::Stable => tr!("Stable"),
+        })
+    }
+}
+
+/// Kept with the installed tools, since it says which build `bin/` holds.
+const CHANNEL_KEY: &str = "ytdlp_channel";
+
+/// The yt-dlp channel chosen for this copy, nightly unless stable was.
+pub fn ytdlp_channel(paths: &Paths) -> Channel {
+    read_state(paths, CHANNEL_KEY)
+        .and_then(|key| Channel::from_key(&key))
+        .unwrap_or_default()
+}
+
+/// Remembers the channel. The next install or update of yt-dlp uses it.
+pub fn set_ytdlp_channel(paths: &Paths, channel: Channel) -> io::Result<()> {
+    fs::create_dir_all(&paths.bin_dir)?;
+    write_state(paths, CHANNEL_KEY, channel.key())
+}
+
 /// Where everything lives: the settings, the history, the queue and `bin/`.
 #[derive(Debug, Clone)]
 pub struct Paths {
@@ -310,10 +360,17 @@ pub const YTDLP_STALE_DAYS: i64 = 14;
 /// could do nothing about it. Past 90 days the package has fallen behind.
 pub const YTDLP_STALE_DAYS_BUNDLED: i64 = 90;
 
+/// The same for the stable channel of a portable copy. Stable releases
+/// also come weeks apart, but here the user can update yt-dlp themselves,
+/// so the reminder comes sooner than for the package.
+pub const YTDLP_STALE_DAYS_STABLE: i64 = 45;
+
 /// After how many days this copy's yt-dlp counts as old.
 pub fn ytdlp_stale_days(paths: &Paths) -> i64 {
     if paths.bundled_tools() {
         YTDLP_STALE_DAYS_BUNDLED
+    } else if ytdlp_channel(paths) == Channel::Stable {
+        YTDLP_STALE_DAYS_STABLE
     } else {
         YTDLP_STALE_DAYS
     }
@@ -403,7 +460,7 @@ fn fetch_sums(source: &platform::Source) -> Result<String, Error> {
 }
 
 pub fn check_update(component: Component, paths: &Paths) -> UpdateCheck {
-    let Some(source) = platform::source(component) else {
+    let Some(source) = platform::source(component, ytdlp_channel(paths)) else {
         return UpdateCheck::Failed(Error::Unsupported.to_string());
     };
     let published =
@@ -525,7 +582,10 @@ fn logged<T>(emit: Emit<'_>, result: Result<T, Error>) -> Result<T, Error> {
 /// Downloads, verifies and installs one component.
 /// Every failure is already in the log when this returns an error.
 pub fn install(component: Component, paths: &Paths, emit: Emit<'_>) -> Result<(), Error> {
-    let source = logged(emit, platform::source(component).ok_or(Error::Unsupported))?;
+    let source = logged(
+        emit,
+        platform::source(component, ytdlp_channel(paths)).ok_or(Error::Unsupported),
+    )?;
     install_source(component, &source, paths, emit)
 }
 
@@ -648,6 +708,40 @@ mod tests {
     use super::*;
     use crate::testing::tempdir;
     use sha2::{Digest, Sha256};
+
+    /// Nightly unless stable was chosen, also when the state file is
+    /// missing or holds something unknown; kept next to the other state.
+    #[test]
+    fn the_yt_dlp_channel_is_remembered_with_the_tools() {
+        let dir = crate::testing::tempdir();
+        let paths = Paths::new(dir.clone());
+        assert_eq!(ytdlp_channel(&paths), Channel::Nightly);
+        set_ytdlp_channel(&paths, Channel::Stable).unwrap();
+        assert_eq!(ytdlp_channel(&paths), Channel::Stable);
+        write_state(&paths, "deno_zip_sha256", "abc").unwrap();
+        assert_eq!(
+            ytdlp_channel(&paths),
+            Channel::Stable,
+            "other keys stay apart"
+        );
+        write_state(&paths, CHANNEL_KEY, "beta").unwrap();
+        assert_eq!(ytdlp_channel(&paths), Channel::Nightly);
+        fs::remove_dir_all(dir).unwrap();
+    }
+
+    /// Nightly is old after two weeks, a stable release after 45 days and
+    /// the package's after 90, whatever channel was chosen before.
+    #[test]
+    fn how_old_is_too_old_depends_on_the_channel() {
+        let dir = crate::testing::tempdir();
+        let paths = Paths::new(dir.clone());
+        assert_eq!(ytdlp_stale_days(&paths), 14);
+        set_ytdlp_channel(&paths, Channel::Stable).unwrap();
+        assert_eq!(ytdlp_stale_days(&paths), 45);
+        let bundled = Paths::bundled(dir.clone(), vec![dir.join("bin")]);
+        assert_eq!(ytdlp_stale_days(&bundled), YTDLP_STALE_DAYS_BUNDLED);
+        fs::remove_dir_all(dir).unwrap();
+    }
 
     #[test]
     fn only_mimirdlps_own_flatpak_counts_as_bundled() {

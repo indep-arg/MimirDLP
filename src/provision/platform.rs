@@ -7,7 +7,7 @@
 
 use tr::tr;
 
-use super::{Component, Error};
+use super::{Channel, Component, Error};
 
 /// How the published checksum file is laid out.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -76,6 +76,13 @@ pub const YTDLP_SIGNED_BY: SignedBy = SignedBy {
     fingerprint: "ac0cbbe6848d6a873464af4e57cf65933b5a7581",
 };
 
+/// Stable releases are signed with the same key (checked on 2026-11-01:
+/// `gpg --verify` of the 2026.10.26 `SHA2-256SUMS` against it).
+pub const YTDLP_STABLE_SIGNED_BY: SignedBy = SignedBy {
+    url: "https://github.com/yt-dlp/yt-dlp/releases/latest/download/SHA2-256SUMS.sig",
+    ..YTDLP_SIGNED_BY
+};
+
 #[derive(Debug, Clone, Copy)]
 pub struct Source {
     pub url: &'static str,
@@ -91,17 +98,20 @@ pub struct Source {
     pub signed_by: Option<SignedBy>,
 }
 
-/// The three sources for one platform.
+/// The sources for one platform: yt-dlp from either channel, and the two
+/// other components.
 #[derive(Debug, Clone, Copy)]
 pub struct Table {
     pub yt_dlp: Source,
+    pub yt_dlp_stable: Source,
     pub ffmpeg: Source,
     pub deno: Source,
 }
 
 impl Table {
-    fn get(&self, component: Component) -> Source {
+    fn get(&self, component: Component, channel: Channel) -> Source {
         match component {
+            Component::YtDlp if channel == Channel::Stable => self.yt_dlp_stable,
             Component::YtDlp => self.yt_dlp,
             Component::Ffmpeg => self.ffmpeg,
             Component::Deno => self.deno,
@@ -109,9 +119,11 @@ impl Table {
     }
 }
 
-// Nightly is deliberate: it is the channel yt-dlp itself recommends.
+// Nightly is the default: it is the channel yt-dlp itself recommends.
 const YTDLP_SUMS: &str =
     "https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/latest/download/SHA2-256SUMS";
+const YTDLP_STABLE_SUMS: &str =
+    "https://github.com/yt-dlp/yt-dlp/releases/latest/download/SHA2-256SUMS";
 const FFMPEG_SUMS: &str =
     "https://github.com/yt-dlp/FFmpeg-Builds/releases/download/latest/checksums.sha256";
 
@@ -129,6 +141,17 @@ const LINUX_X86_64: Table = Table {
         },
         state_key: None,
         signed_by: Some(YTDLP_SIGNED_BY),
+    },
+    yt_dlp_stable: Source {
+        url: "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_linux",
+        asset: "yt-dlp_linux",
+        checksum_url: YTDLP_STABLE_SUMS,
+        checksum: ChecksumFormat::SumsFile,
+        packaging: Packaging::Raw {
+            install_as: "yt-dlp",
+        },
+        state_key: None,
+        signed_by: Some(YTDLP_STABLE_SIGNED_BY),
     },
     ffmpeg: Source {
         url: "https://github.com/yt-dlp/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-linux64-gpl.tar.xz",
@@ -171,6 +194,17 @@ const WINDOWS_X86_64: Table = Table {
         state_key: None,
         signed_by: Some(YTDLP_SIGNED_BY),
     },
+    yt_dlp_stable: Source {
+        url: "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe",
+        asset: "yt-dlp.exe",
+        checksum_url: YTDLP_STABLE_SUMS,
+        checksum: ChecksumFormat::SumsFile,
+        packaging: Packaging::Raw {
+            install_as: "yt-dlp",
+        },
+        state_key: None,
+        signed_by: Some(YTDLP_STABLE_SIGNED_BY),
+    },
     ffmpeg: Source {
         url: "https://github.com/yt-dlp/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip",
         asset: "ffmpeg-master-latest-win64-gpl.zip",
@@ -194,10 +228,12 @@ const WINDOWS_X86_64: Table = Table {
 };
 
 pub fn supported() -> bool {
-    source(Component::YtDlp).is_some()
+    source(Component::YtDlp, Channel::default()).is_some()
 }
 
-pub fn source(component: Component) -> Option<Source> {
+/// Where `component` comes from on this platform. `channel` only matters
+/// for yt-dlp.
+pub fn source(component: Component, channel: Channel) -> Option<Source> {
     #[cfg(all(target_os = "linux", target_arch = "x86_64"))]
     let table = Some(LINUX_X86_64);
     #[cfg(all(target_os = "windows", target_arch = "x86_64"))]
@@ -208,7 +244,7 @@ pub fn source(component: Component) -> Option<Source> {
     )))]
     let table: Option<Table> = None;
 
-    table.map(|table| table.get(component))
+    table.map(|table| table.get(component, channel))
 }
 
 #[cfg(test)]
@@ -221,7 +257,7 @@ mod tests {
     #[test]
     fn every_table_is_self_consistent() {
         for (name, table) in [("linux", LINUX_X86_64), ("windows", WINDOWS_X86_64)] {
-            for source in [table.yt_dlp, table.ffmpeg, table.deno] {
+            for source in [table.yt_dlp, table.yt_dlp_stable, table.ffmpeg, table.deno] {
                 assert!(source.url.starts_with("https://"), "{name}: {}", source.url);
                 assert!(
                     source.checksum_url.starts_with("https://"),
@@ -237,6 +273,37 @@ mod tests {
                     source.asset
                 );
             }
+        }
+    }
+
+    /// The stable channel only changes where yt-dlp comes from: same asset
+    /// names, same signing key, a different release page. FFmpeg and Deno
+    /// don't have channels.
+    #[test]
+    fn the_stable_channel_is_yt_dlp_from_its_own_releases() {
+        for table in [LINUX_X86_64, WINDOWS_X86_64] {
+            let (nightly, stable) = (table.yt_dlp, table.yt_dlp_stable);
+            assert_eq!(stable.asset, nightly.asset);
+            assert_eq!(stable.packaging, nightly.packaging);
+            assert!(
+                stable
+                    .url
+                    .starts_with("https://github.com/yt-dlp/yt-dlp/releases/")
+            );
+            assert!(nightly.url.contains("yt-dlp-nightly-builds"));
+            let (n, s) = (nightly.signed_by.unwrap(), stable.signed_by.unwrap());
+            assert_eq!((n.key, n.fingerprint), (s.key, s.fingerprint));
+            assert_ne!(n.url, s.url);
+            assert!(
+                s.url
+                    .starts_with("https://github.com/yt-dlp/yt-dlp/releases/")
+            );
+        }
+        for component in [Component::Ffmpeg, Component::Deno] {
+            assert_eq!(
+                source(component, Channel::Stable).map(|s| s.url),
+                source(component, Channel::Nightly).map(|s| s.url)
+            );
         }
     }
 
@@ -276,8 +343,12 @@ mod tests {
     #[test]
     #[ignore = "hits the network"]
     fn upstream_still_publishes_every_asset_in_this_table() {
-        for component in Component::ALL {
-            let source = source(component).expect("this platform has a table");
+        let sources = Component::ALL
+            .into_iter()
+            .map(|component| source(component, Channel::Nightly))
+            .chain([source(Component::YtDlp, Channel::Stable)]);
+        for source in sources {
+            let source = source.expect("this platform has a table");
             let text = crate::provision::download::fetch_text(source.checksum_url)
                 .unwrap_or_else(|e| panic!("{}: {e}", source.checksum_url));
             // A new signing key upstream would fail every install: this is

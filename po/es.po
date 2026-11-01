@@ -1016,6 +1016,11 @@ msgid "Some components are missing or broken, installing them now"
 msgstr "Faltan componentes o alguno está dañado, instalándolos ahora"
 
 #: src/gui/setup.rs
+#, python-brace-format
+msgid "Could not save the choice of yt-dlp builds: {e}"
+msgstr "No se pudo guardar la elección de versiones de yt-dlp: {e}"
+
+#: src/gui/setup.rs
 msgid "Some components are missing or broken"
 msgstr "Algunos componentes faltan o están dañados"
 
@@ -1030,6 +1035,14 @@ msgstr "Actualización completada"
 #: src/gui/setup.rs
 msgid "Full reinstallation completed"
 msgstr "Reinstalación completa terminada"
+
+#: src/gui/setup.rs
+msgid "yt-dlp now comes from the nightly builds"
+msgstr "yt-dlp ahora viene de las versiones nightly"
+
+#: src/gui/setup.rs
+msgid "yt-dlp now comes from the stable releases"
+msgstr "yt-dlp ahora viene de las versiones estables"
 
 #: src/gui/setup.rs
 #, python-brace-format
@@ -1056,6 +1069,14 @@ msgstr "Actividad"
 #: src/gui/setup.rs
 msgid "Nothing yet. Each download and check will be listed here."
 msgstr "Nada todavía. Cada descarga y comprobación aparecerá aquí."
+
+#: src/gui/setup.rs
+msgid "yt-dlp builds"
+msgstr "Versiones de yt-dlp"
+
+#: src/gui/setup.rs
+msgid "Nightly builds get fixes for sites that changed within a day. Stable releases are tested for longer but come weeks apart."
+msgstr "Las versiones nightly reciben arreglos para sitios que cambiaron en menos de un día. Las versiones estables se prueban durante más tiempo, pero salen con semanas de diferencia."
 
 #: src/gui/setup.rs
 msgid "Looking at what is installed..."
@@ -1208,6 +1229,14 @@ msgstr "la descarga se detuvo inesperadamente"
 #: src/provision/download.rs
 msgid "the file is unexpectedly large"
 msgstr "el archivo es inesperadamente grande"
+
+#: src/provision/mod.rs
+msgid "Nightly (recommended)"
+msgstr "Nightly (recomendada)"
+
+#: src/provision/mod.rs
+msgid "Stable"
+msgstr "Estable"
 
 #: src/provision/mod.rs
 msgid "This platform isn't supported (only Linux and Windows on x86_64)."

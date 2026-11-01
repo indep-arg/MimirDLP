@@ -10,8 +10,8 @@ use iced::widget::{Column, button, column, container, progress_bar, row, space, 
 use iced::{Alignment, Element, Font, Length, Task, Theme};
 use tr::tr;
 
-use super::{amount, card, log as log_panel, style};
-use crate::provision::{self, Component, Event, Level, Paths, Status, UpdateCheck};
+use super::{amount, card, dropdown, log as log_panel, style};
+use crate::provision::{self, Channel, Component, Event, Level, Paths, Status, UpdateCheck};
 
 /// What the worker thread sends back while it runs.
 #[derive(Debug, Clone)]
@@ -33,6 +33,7 @@ pub enum Message {
     AskReinstall,
     ConfirmReinstall,
     CancelReinstall,
+    Channel(Channel),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -48,6 +49,8 @@ enum Scope {
     Missing,
     Outdated,
     All,
+    /// yt-dlp again, from the channel just chosen.
+    Channel(Channel),
 }
 
 #[derive(Default)]
@@ -67,6 +70,8 @@ struct Transfer {
 pub struct Setup {
     paths: Paths,
     rows: [Row; 3],
+    /// Where yt-dlp comes from, as remembered in `bin/`.
+    channel: Channel,
     job: Option<Job>,
     confirm_reinstall: bool,
     log: Vec<(Level, String)>,
@@ -85,6 +90,7 @@ impl Setup {
         let setup = Setup {
             paths: paths.clone(),
             rows: Default::default(),
+            channel: provision::ytdlp_channel(&paths),
             job: Some(Job::Inspecting),
             confirm_reinstall: false,
             log: Vec::new(),
@@ -224,6 +230,7 @@ impl Setup {
                 self.confirm_reinstall = false;
                 return self.install(Component::ALL.to_vec(), Scope::All);
             }
+            Message::Channel(channel) => return self.switch_channel(channel),
         }
         Task::none()
     }
@@ -280,6 +287,34 @@ impl Setup {
         self.job = Some(job);
     }
 
+    /// Remembers the channel and, if yt-dlp is there, replaces it with
+    /// that channel's build right away. A missing one is installed from it
+    /// by "Install missing components".
+    fn switch_channel(&mut self, channel: Channel) -> Task<Message> {
+        if self.choose_channel(channel) {
+            return self.install(vec![Component::YtDlp], Scope::Channel(channel));
+        }
+        Task::none()
+    }
+
+    /// Saves a new channel; true when the yt-dlp in `bin/` is now from the
+    /// other one and has to be replaced.
+    fn choose_channel(&mut self, channel: Channel) -> bool {
+        if channel == self.channel {
+            return false;
+        }
+        if let Err(e) = provision::set_ytdlp_channel(&self.paths, channel) {
+            self.log.push((
+                Level::Error,
+                tr!("Could not save the choice of yt-dlp builds: {e}", e),
+            ));
+            return false;
+        }
+        self.channel = channel;
+        let row = &self.rows[index(Component::YtDlp)];
+        matches!(row.status, Some(Status::Installed { .. } | Status::Broken))
+    }
+
     fn select(&self, wanted: impl Fn(&Row) -> bool) -> Vec<Component> {
         Component::ALL
             .into_iter()
@@ -318,9 +353,15 @@ impl Setup {
                     Scope::Missing => tr!("Installation completed"),
                     Scope::Outdated => tr!("Update completed"),
                     Scope::All => tr!("Full reinstallation completed"),
+                    Scope::Channel(Channel::Nightly) => {
+                        tr!("yt-dlp now comes from the nightly builds")
+                    }
+                    Scope::Channel(Channel::Stable) => {
+                        tr!("yt-dlp now comes from the stable releases")
+                    }
                 },
             );
-            if scope != Scope::Outdated {
+            if matches!(scope, Scope::Missing | Scope::All) {
                 log(
                     Level::Info,
                     tr!(
@@ -356,6 +397,12 @@ impl Setup {
                 component_row(component, &self.rows[index(component)], &self.paths)
             }))
             .spacing(12);
+        // The package brings its own yt-dlp, so there is nothing to choose.
+        let components = if self.bundled() {
+            components
+        } else {
+            components.push(self.channel_choice())
+        };
 
         let mut page = column![
             header,
@@ -383,6 +430,25 @@ impl Setup {
             .width(Length::Fill)
             .center_x(Length::Fill)
             .into()
+    }
+
+    /// Nightly or stable yt-dlp, under the component list.
+    fn channel_choice(&self) -> Element<'_, Message> {
+        column![
+            row![
+                text(tr!("yt-dlp builds")).width(Length::Fill),
+                dropdown(Channel::ALL, Some(self.channel), Message::Channel),
+            ]
+            .align_y(Alignment::Center),
+            text(tr!(
+                "Nightly builds get fixes for sites that changed within a day. \
+                 Stable releases are tested for longer but come weeks apart."
+            ))
+            .size(13)
+            .style(style::muted_text),
+        ]
+        .spacing(6)
+        .into()
     }
 
     /// The contextual actions available, given what is installed right now.
@@ -640,6 +706,7 @@ mod tests {
         Setup {
             paths: Paths::new("/app".into()),
             rows,
+            channel: Channel::Nightly,
             job: None,
             confirm_reinstall: false,
             log: Vec::new(),
@@ -657,6 +724,29 @@ mod tests {
             .log
             .iter()
             .any(|(_, line)| line.starts_with("Some components are missing"))
+    }
+
+    /// Choosing the other channel is remembered in `bin/` and replaces an
+    /// installed yt-dlp; choosing the same one does nothing, and a missing
+    /// yt-dlp is left for "Install missing components".
+    #[test]
+    fn choosing_a_channel_is_saved_and_replaces_yt_dlp() {
+        let dir = crate::testing::tempdir();
+        let mut setup = with_ytdlp("2026.10.30.123456", None);
+        setup.paths = Paths::new(dir.clone());
+
+        assert!(!setup.choose_channel(Channel::Nightly), "already nightly");
+        assert!(setup.choose_channel(Channel::Stable));
+        assert_eq!(provision::ytdlp_channel(&setup.paths), Channel::Stable);
+        assert!(!setup.choose_channel(Channel::Stable));
+
+        setup.rows[index(Component::YtDlp)].status = Some(Status::Missing);
+        assert!(
+            !setup.choose_channel(Channel::Nightly),
+            "nothing to replace"
+        );
+        assert_eq!(provision::ytdlp_channel(&setup.paths), Channel::Nightly);
+        std::fs::remove_dir_all(dir).unwrap();
     }
 
     #[test]
