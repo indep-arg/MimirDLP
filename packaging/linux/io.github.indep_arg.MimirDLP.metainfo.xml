@@ -66,6 +66,17 @@
     <internet>always</internet>
   </requires>
   <releases>
+    <release version="0.7.0" date="2026-11-01">
+      <description>
+        <ul>
+          <li>A redesigned interface: icons, the link field in the header bar, clearer download cards with their status at a glance, and the same layout on every screen, in both themes.</li>
+          <li>A welcome on the first launch, with one progress bar while the tools are installed.</li>
+          <li>Settings rows line up, with switches on the right.</li>
+          <li>Opens faster: the tools are no longer started on every launch to check their version.</li>
+          <li>On Windows, no more white window for a moment while the app opens.</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.6.0" date="2026-11-01">
       <description>
         <ul>
