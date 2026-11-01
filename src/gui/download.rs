@@ -18,6 +18,7 @@ use iced::widget::{
 use iced::{Alignment, Element, Length, Task};
 use tr::tr;
 
+use super::icon::{self, Icon, On};
 use super::{amount, dropdown, entry, in_background, log as log_panel, style};
 use crate::config::{self, Kind, Quality, Settings, valid_url};
 use crate::engine::{ThumbnailPlan, thumbnail_plan};
@@ -613,10 +614,16 @@ impl Download {
                 .on_input(Message::UrlInput)
                 .on_submit(Message::AddUrl)
                 .padding(style::BUTTON_LARGE[0]),
-            button(text(tr!("Add")))
-                .padding(style::BUTTON_LARGE)
-                .style(style::pill)
-                .on_press(Message::AddUrl),
+            button(icon::labeled(
+                Icon::Add,
+                tr!("Add"),
+                style::TEXT,
+                On::Color,
+                true
+            ))
+            .padding(style::BUTTON_LARGE)
+            .style(style::pill)
+            .on_press(Message::AddUrl),
         ]
         .spacing(style::SPACE_S)
         .align_y(Alignment::Center);
@@ -689,29 +696,55 @@ impl Download {
 
     fn actions(&self) -> Element<'_, Message> {
         let button = if self.running() {
-            button(text(if self.recording {
+            let label = if self.recording {
                 tr!("Stop and save")
             } else {
                 tr!("Stop")
-            }))
+            };
+            button(icon::labeled(
+                Icon::Stop,
+                label,
+                style::TEXT,
+                On::Color,
+                true,
+            ))
             .padding(style::BUTTON_LARGE)
             .style(style::pill_danger)
             .on_press(Message::Stop)
         } else {
-            button(text(tr!("Download")))
-                .padding(style::BUTTON_LARGE)
-                .style(style::pill)
-                .on_press(Message::Start)
-        };
-        let open_folder = iced::widget::button(text(tr!("Open folder")))
+            button(icon::labeled(
+                Icon::Download,
+                tr!("Download"),
+                style::TEXT,
+                On::Color,
+                true,
+            ))
             .padding(style::BUTTON_LARGE)
-            .style(style::pill_secondary)
-            .on_press(Message::OpenFolder);
-        let log_toggle = iced::widget::button(text(if self.show_log {
+            .style(style::pill)
+            .on_press(Message::Start)
+        };
+        let open_folder = iced::widget::button(icon::labeled(
+            Icon::OpenFolder,
+            tr!("Open folder"),
+            style::TEXT,
+            On::Plain,
+            true,
+        ))
+        .padding(style::BUTTON_LARGE)
+        .style(style::pill_secondary)
+        .on_press(Message::OpenFolder);
+        let log_label = if self.show_log {
             tr!("Hide activity")
         } else {
             tr!("Show activity")
-        }))
+        };
+        let log_toggle = iced::widget::button(icon::labeled(
+            Icon::Log,
+            log_label,
+            style::TEXT,
+            On::Plain,
+            true,
+        ))
         .padding(style::BUTTON_LARGE)
         .style(style::flat(self.show_log))
         .on_press(Message::ToggleLog);
@@ -720,10 +753,16 @@ impl Download {
             .align_y(Alignment::Center);
         if self.items.iter().any(|i| i.status.is_finished()) {
             actions = actions.push(
-                iced::widget::button(text(tr!("Clear finished")))
-                    .padding(style::BUTTON_LARGE)
-                    .style(style::pill_secondary)
-                    .on_press(Message::ClearFinished),
+                iced::widget::button(icon::labeled(
+                    Icon::Trash,
+                    tr!("Clear finished"),
+                    style::TEXT,
+                    On::Plain,
+                    true,
+                ))
+                .padding(style::BUTTON_LARGE)
+                .style(style::pill_secondary)
+                .on_press(Message::ClearFinished),
             );
         }
         // While it runs, the summary above already says so.
@@ -747,13 +786,13 @@ fn item_card(item: &QueueItem) -> Element<'_, Message> {
             .into(),
         None => {
             let glyph = if matches!(item.meta, MetaState::Fetching) {
-                "..."
+                Icon::Working
             } else {
-                "?"
+                Icon::File
             };
             // `center(Length::Fill)` would override the fixed size and
             // let a long title squeeze the placeholder away.
-            container(text(glyph).size(20).style(style::muted_text))
+            container(icon::tinted(glyph, 24.0, style::muted))
                 .width(120)
                 .height(68)
                 .align_x(Alignment::Center)

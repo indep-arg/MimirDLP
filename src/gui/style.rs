@@ -22,6 +22,8 @@ pub fn theme(pref: ThemePref, system: Mode) -> Theme {
 // One scale for every screen, so the same kind of thing looks the same
 // wherever it is. Plain text keeps iced's default size (16).
 
+/// Ordinary text, iced's default size, for labels set next to an icon.
+pub const TEXT: f32 = 16.0;
 /// Hints, details under a title, notices and the activity log.
 pub const CAPTION: f32 = 13.0;
 /// Section titles and the header bar's title, always in bold.

@@ -6,10 +6,11 @@
 use std::thread;
 
 use iced::futures::channel::mpsc;
-use iced::widget::{Column, button, column, progress_bar, row, space, text};
+use iced::widget::{Column, button, column, container, progress_bar, row, space, text};
 use iced::{Alignment, Element, Font, Length, Task, Theme};
 use tr::tr;
 
+use super::icon::{self, Icon};
 use super::{amount, card, dropdown, log as log_panel, section_title, style};
 use crate::provision::{self, Channel, Component, Event, Level, Paths, Status, UpdateCheck};
 
@@ -426,10 +427,16 @@ impl Setup {
         // Copying the diagnostics changes nothing and works at any time, so
         // it sits with the activity rather than among the actions, which
         // are greyed out while a job runs.
-        let copy = button(text(tr!("Copy diagnostic information")).size(style::CAPTION))
-            .padding(style::BUTTON_SMALL)
-            .style(style::pill_secondary)
-            .on_press(Message::CopyDiagnostics);
+        let copy = button(icon::labeled(
+            Icon::Copy,
+            tr!("Copy diagnostic information"),
+            style::CAPTION,
+            icon::On::Plain,
+            true,
+        ))
+        .padding(style::BUTTON_SMALL)
+        .style(style::pill_secondary)
+        .on_press(Message::CopyDiagnostics);
         page = page.push(
             column![
                 row![section_title(tr!("Activity")).width(Length::Fill), copy]
@@ -738,12 +745,22 @@ fn component_row(component: Component, row: &Row, paths: &Paths) -> Element<'sta
             ),
         },
     };
-    let mark = match tone {
-        Tone::Good => "✓",
-        Tone::Warn => "⚠",
-        Tone::Bad => "✗",
-        Tone::Neutral => "…",
+    let mark: fn(&Theme) -> iced::Color = match tone {
+        Tone::Good => |t| t.palette().success,
+        Tone::Warn => |t| t.palette().warning,
+        Tone::Bad => |t| t.palette().danger,
+        Tone::Neutral => style::muted,
     };
+    let mark = icon::tinted(
+        match tone {
+            Tone::Good => Icon::Ok,
+            Tone::Warn => Icon::Warning,
+            Tone::Bad => Icon::Failed,
+            Tone::Neutral => Icon::Working,
+        },
+        18.0,
+        mark,
+    );
     let color = move |theme: &Theme| {
         let palette = theme.palette();
         text::Style {
@@ -756,7 +773,7 @@ fn component_row(component: Component, row: &Row, paths: &Paths) -> Element<'sta
         }
     };
     row![
-        text(mark).width(22).style(color),
+        container(mark).width(30),
         text(component.label()).width(90),
         text(detail).style(move |t: &Theme| match tone {
             Tone::Good | Tone::Neutral => style::muted_text(t),

@@ -2,6 +2,7 @@
 //! screen at a time.
 
 mod download;
+mod icon;
 mod log;
 mod open;
 mod settings;
@@ -626,8 +627,8 @@ fn header_bar<'a>(
     let back: Element<'a, Message> = if page == Page::Download {
         space().into()
     } else {
-        button(text("\u{2039}").size(22).line_height(1.0))
-            .padding(style::BUTTON_SMALL)
+        button(icon::icon(icon::Icon::Back, 20.0))
+            .padding([style::SPACE_S, style::SPACE_S])
             .style(style::flat(false))
             .on_press_maybe(can_go_back.then_some(Message::Navigate(Page::Download)))
             .into()
@@ -657,21 +658,10 @@ fn header_bar<'a>(
         .into()
 }
 
-/// Three bars drawn as boxes rather than a glyph, since not every font has
-/// one for it.
+/// The header bar's menu button, the same size as the back button.
 fn menu_button<'a>(open: bool) -> Element<'a, Message> {
-    let bar = || {
-        container(space())
-            .width(Length::Fixed(16.0))
-            .height(Length::Fixed(2.0))
-            .style(|t: &Theme| container::Style {
-                background: Some(t.palette().text.into()),
-                border: iced::border::rounded(1),
-                ..container::Style::default()
-            })
-    };
-    button(column![bar(), bar(), bar()].spacing(3))
-        .padding([10, 12])
+    button(icon::icon(icon::Icon::Menu, 20.0))
+        .padding([style::SPACE_S, style::SPACE_S])
         .style(style::flat(open))
         .on_press(Message::ToggleMenu)
         .into()
@@ -744,10 +734,16 @@ const TRANSLATE: &str = "https://hosted.weblate.org/engage/mimirdlp/";
 /// The versions a bug report asks for, and where to report or translate.
 fn about<'a>(ytdlp: Option<&str>) -> Element<'a, Message> {
     let link = |label: String, url: &'static str| {
-        button(text(label))
-            .padding(style::BUTTON)
-            .style(style::pill_secondary)
-            .on_press(Message::OpenLink(url))
+        button(icon::labeled(
+            icon::Icon::Link,
+            label,
+            style::TEXT,
+            icon::On::Plain,
+            true,
+        ))
+        .padding(style::BUTTON)
+        .style(style::pill_secondary)
+        .on_press(Message::OpenLink(url))
     };
     let muted = |label: String| text(label).style(style::muted_text);
     let mut info = column![
@@ -849,10 +845,16 @@ fn update_notice<'a>(version: &str) -> Element<'a, Message> {
         text(tr!("MimirDLP {version} is available.", version))
             .size(style::CAPTION)
             .width(Length::Fill),
-        button(text(tr!("What's new")).size(style::CAPTION))
-            .padding(style::BUTTON_SMALL)
-            .style(style::pill)
-            .on_press(Message::OpenLink(crate::app_update::RELEASES)),
+        button(icon::labeled(
+            icon::Icon::New,
+            tr!("What's new"),
+            style::CAPTION,
+            icon::On::Color,
+            true,
+        ))
+        .padding(style::BUTTON_SMALL)
+        .style(style::pill)
+        .on_press(Message::OpenLink(crate::app_update::RELEASES)),
         button(text(tr!("Later")).size(style::CAPTION))
             .padding(style::BUTTON_SMALL)
             .style(style::pill_secondary)
@@ -893,9 +895,12 @@ fn stale_notice<'a>(age: i64, can_update: bool, bundled: bool) -> Element<'a, Me
                     % age
         )
     };
-    let notice = row![text(warning).size(style::CAPTION).width(Length::Fill)]
-        .spacing(style::SPACE_S)
-        .align_y(Alignment::Center);
+    let notice = row![
+        icon::tinted(icon::Icon::Warning, 16.0, style::warning),
+        text(warning).size(style::CAPTION).width(Length::Fill)
+    ]
+    .spacing(style::SPACE_S)
+    .align_y(Alignment::Center);
     let notice = if bundled {
         notice
     } else {

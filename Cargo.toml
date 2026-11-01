@@ -13,7 +13,7 @@ license = "MIT"
 repository = "https://github.com/indep-arg/MimirDLP"
 
 [dependencies]
-iced = { version = "0.14.0", features = ["image"] }
+iced = { version = "0.14.0", features = ["image", "svg"] }
 lzma-rust2 = { version = "0.25.0", default-features = false, features = ["std", "xz", "optimization"] }
 pgp = { version = "0.21.0", default-features = false }
 # The folder picker: the desktop's own dialog. On Linux through the XDG
