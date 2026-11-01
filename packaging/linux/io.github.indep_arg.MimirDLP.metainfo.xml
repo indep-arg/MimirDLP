@@ -66,6 +66,18 @@
     <internet>always</internet>
   </requires>
   <releases>
+    <release version="0.6.0" date="2026-11-01">
+      <description>
+        <ul>
+          <li>When a download fails for a common reason, the card says what happened and what to do, such as signing in or waiting after too many requests.</li>
+          <li>Stopping a live stream saves what was recorded so far.</li>
+          <li>A password for videos a site protects with one, never saved to disk.</li>
+          <li>A choice between nightly and stable yt-dlp builds, and a setting for retries after network errors.</li>
+          <li>A notice when a new version of MimirDLP is out, and a button that copies diagnostic information for bug reports.</li>
+          <li>The activity log no longer shows your IP address, and the libraries the app is built on are updated with security fixes.</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.5.0" date="2026-10-12">
       <description>
         <p>Remembers the size of the window between launches.</p>
