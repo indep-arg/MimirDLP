@@ -349,7 +349,7 @@ impl App {
                 Task::none()
             }
             (App::Running { download, .. }, Message::WindowFocused) => {
-                if download.wants_clipboard() {
+                if download.wants_clipboard() && !dev_no_clipboard() {
                     iced::clipboard::read()
                         .map(|text| Message::Download(download::Message::Clipboard(text)))
                 } else {
@@ -1084,6 +1084,12 @@ fn choice<'a, Message: 'a>(label: String, control: Element<'a, Message>) -> Elem
     row![text(label).width(Length::Fill), control]
         .align_y(Alignment::Center)
         .into()
+}
+
+/// Debug builds only: `YTP_DEV_NO_CLIPBOARD=1` never offers what is on the
+/// clipboard, so screenshots don't show whatever the developer copied.
+fn dev_no_clipboard() -> bool {
+    cfg!(debug_assertions) && std::env::var_os("YTP_DEV_NO_CLIPBOARD").is_some()
 }
 
 /// Debug builds only: `YTP_DEV_PAGE=setup|download|settings|about` opens on
