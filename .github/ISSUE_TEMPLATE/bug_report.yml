@@ -18,18 +18,22 @@ body:
     attributes:
       label: Link
       description: The link that fails, if it can be shared.
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostic information
+      description: In the app, open ☰ > Setup and updates, press "Copy diagnostic information" and paste it here. It holds the versions of MimirDLP and its tools, and nothing personal.
+      render: text
   - type: input
     id: version
     attributes:
       label: MimirDLP version
-      description: Shown in ☰ > About MimirDLP, for example 0.1.0.
-    validations:
-      required: true
+      description: Only if you can't paste the diagnostic information. Shown in ☰ > About MimirDLP, for example 0.1.0.
   - type: input
     id: ytdlp
     attributes:
       label: yt-dlp version
-      description: Shown in ☰ > About MimirDLP too.
+      description: Only if you can't paste the diagnostic information. Shown in ☰ > About MimirDLP too.
   - type: dropdown
     id: os
     attributes:
