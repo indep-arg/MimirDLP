@@ -514,7 +514,13 @@ impl App {
         };
 
         let window = column![
-            header_bar(page, can_download, menu_open, setup.bundled()),
+            header_bar(
+                page,
+                can_download,
+                menu_open,
+                setup.bundled(),
+                (page == Page::Download).then(|| download.url_bar().map(Message::Download)),
+            ),
             content
         ]
         .height(Length::Fill);
@@ -618,11 +624,14 @@ const HEADER_HEIGHT: f32 = 52.0;
 /// GNOME's header bar: a back button off the main screen, the title in the
 /// middle, and the menu that leads everywhere else.
 /// With the tools bundled, Setup only lists them, so it is "Components".
+/// The bar across the top: back, the screen's title (or `center`, the
+/// Download screen's link field) and the menu.
 fn header_bar<'a>(
     page: Page,
     can_go_back: bool,
     menu_open: bool,
     bundled: bool,
+    center: Option<Element<'a, Message>>,
 ) -> Element<'a, Message> {
     let back: Element<'a, Message> = if page == Page::Download {
         space().into()
@@ -644,9 +653,19 @@ fn header_bar<'a>(
     let side = |content: Element<'a, Message>, align: Alignment| {
         container(content).width(Length::Fixed(80.0)).align_x(align)
     };
+    // As wide as the page's content below it, so the two line up.
+    let center = match center {
+        Some(content) => {
+            container(container(content).max_width(style::PAGE_WIDTH - 2.0 * style::PAGE_PADDING))
+                .center_x(Length::Fill)
+        }
+        None => {
+            container(text(title).size(style::HEADING).font(style::BOLD)).center_x(Length::Fill)
+        }
+    };
     let bar = row![
         side(back, Alignment::Start),
-        container(text(title).size(style::HEADING).font(style::BOLD)).center_x(Length::Fill),
+        center,
         side(menu_button(menu_open), Alignment::End),
     ]
     .padding([0, 8])

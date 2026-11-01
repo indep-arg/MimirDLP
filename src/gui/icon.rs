@@ -16,11 +16,15 @@ pub enum Icon {
     Failed,
     File,
     Link,
+    Live,
     Log,
     Menu,
     New,
     Ok,
     OpenFolder,
+    Queued,
+    Remove,
+    Retry,
     Stop,
     Trash,
     Warning,
@@ -29,7 +33,7 @@ pub enum Icon {
 
 impl Icon {
     #[cfg(test)]
-    pub const ALL: [Icon; 16] = [
+    pub const ALL: [Icon; 20] = [
         Icon::Add,
         Icon::Back,
         Icon::Copy,
@@ -37,11 +41,15 @@ impl Icon {
         Icon::Failed,
         Icon::File,
         Icon::Link,
+        Icon::Live,
         Icon::Log,
         Icon::Menu,
         Icon::New,
         Icon::Ok,
         Icon::OpenFolder,
+        Icon::Queued,
+        Icon::Remove,
+        Icon::Retry,
         Icon::Stop,
         Icon::Trash,
         Icon::Warning,
@@ -57,11 +65,15 @@ impl Icon {
             Icon::Failed => include_bytes!("../../assets/icons/circle-x.svg"),
             Icon::File => include_bytes!("../../assets/icons/file.svg"),
             Icon::Link => include_bytes!("../../assets/icons/external-link.svg"),
+            Icon::Live => include_bytes!("../../assets/icons/radio.svg"),
             Icon::Log => include_bytes!("../../assets/icons/list.svg"),
             Icon::Menu => include_bytes!("../../assets/icons/menu.svg"),
             Icon::New => include_bytes!("../../assets/icons/sparkles.svg"),
             Icon::Ok => include_bytes!("../../assets/icons/circle-check.svg"),
             Icon::OpenFolder => include_bytes!("../../assets/icons/folder-open.svg"),
+            Icon::Queued => include_bytes!("../../assets/icons/clock.svg"),
+            Icon::Remove => include_bytes!("../../assets/icons/x.svg"),
+            Icon::Retry => include_bytes!("../../assets/icons/rotate-ccw.svg"),
             Icon::Stop => include_bytes!("../../assets/icons/square.svg"),
             Icon::Trash => include_bytes!("../../assets/icons/trash-2.svg"),
             Icon::Warning => include_bytes!("../../assets/icons/triangle-alert.svg"),
@@ -120,6 +132,27 @@ pub fn labeled<'a, Message: 'a>(
         .spacing(size / 2.0)
         .align_y(Alignment::Center)
         .into()
+}
+
+/// A button that is only an icon, for an action on one item. `label`
+/// says what it does in a tooltip, since an icon alone can be unclear.
+pub fn button<'a, Message: Clone + 'a>(
+    icon: Icon,
+    label: String,
+    on_press: Message,
+) -> Element<'a, Message> {
+    iced::widget::tooltip(
+        iced::widget::button(self::icon(icon, 18.0))
+            .padding(super::style::SPACE_S)
+            .style(super::style::flat(false))
+            .on_press(on_press),
+        iced::widget::container(text(label).size(super::style::CAPTION))
+            .padding([super::style::SPACE_XS, super::style::SPACE_S])
+            .style(super::style::popover),
+        iced::widget::tooltip::Position::Bottom,
+    )
+    .gap(super::style::SPACE_XS)
+    .into()
 }
 
 #[cfg(test)]

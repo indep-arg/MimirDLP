@@ -505,10 +505,6 @@ msgstr ""
 msgid "Clear finished"
 msgstr ""
 
-#: src/gui/download.rs src/gui/setup.rs
-msgid "Working..."
-msgstr ""
-
 #: src/gui/download.rs
 msgid "Looking up this link..."
 msgstr ""
@@ -527,11 +523,6 @@ msgstr[1] ""
 
 #: src/gui/download.rs
 msgid "Playlist"
-msgstr ""
-
-#: src/gui/download.rs
-#, python-brace-format
-msgid "{kind}, {quality}"
 msgstr ""
 
 #: src/gui/download.rs
@@ -571,6 +562,10 @@ msgstr ""
 
 #: src/gui/download.rs
 msgid "Processing"
+msgstr ""
+
+#: src/gui/download.rs
+msgid "Recording live"
 msgstr ""
 
 #: src/gui/download.rs
@@ -1107,6 +1102,10 @@ msgid "yt-dlp, FFmpeg and Deno are kept in the bin folder next to this app. Noth
 msgstr ""
 
 #: src/gui/setup.rs
+msgid "Copy diagnostic information"
+msgstr ""
+
+#: src/gui/setup.rs
 msgid "Activity"
 msgstr ""
 
@@ -1120,10 +1119,6 @@ msgstr ""
 
 #: src/gui/setup.rs
 msgid "Nightly builds get fixes for sites that changed within a day. Stable releases are tested for longer but come weeks apart."
-msgstr ""
-
-#: src/gui/setup.rs
-msgid "Copy diagnostic information"
 msgstr ""
 
 #: src/gui/setup.rs
@@ -1148,6 +1143,10 @@ msgstr ""
 
 #: src/gui/setup.rs
 msgid "Reinstall all"
+msgstr ""
+
+#: src/gui/setup.rs
+msgid "Working..."
 msgstr ""
 
 #: src/gui/setup.rs

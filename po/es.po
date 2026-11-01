@@ -506,10 +506,6 @@ msgstr "Mostrar actividad"
 msgid "Clear finished"
 msgstr "Limpiar lista"
 
-#: src/gui/download.rs src/gui/setup.rs
-msgid "Working..."
-msgstr "Trabajando..."
-
 #: src/gui/download.rs
 msgid "Looking up this link..."
 msgstr "Consultando este enlace..."
@@ -529,11 +525,6 @@ msgstr[1] "Lista, {n} videos"
 #: src/gui/download.rs
 msgid "Playlist"
 msgstr "Lista"
-
-#: src/gui/download.rs
-#, python-brace-format
-msgid "{kind}, {quality}"
-msgstr "{kind}, {quality}"
 
 #: src/gui/download.rs
 msgid "Queued"
@@ -573,6 +564,10 @@ msgstr "quedan {time}"
 #: src/gui/download.rs
 msgid "Processing"
 msgstr "Procesando"
+
+#: src/gui/download.rs
+msgid "Recording live"
+msgstr "Grabando en vivo"
 
 #: src/gui/download.rs
 msgid "Downloading"
@@ -1108,6 +1103,10 @@ msgid "yt-dlp, FFmpeg and Deno are kept in the bin folder next to this app. Noth
 msgstr "yt-dlp, FFmpeg y Deno se guardan en la carpeta bin junto a esta aplicación. No se instala nada en tu sistema."
 
 #: src/gui/setup.rs
+msgid "Copy diagnostic information"
+msgstr "Copiar información de diagnóstico"
+
+#: src/gui/setup.rs
 msgid "Activity"
 msgstr "Actividad"
 
@@ -1122,10 +1121,6 @@ msgstr "Versiones de yt-dlp"
 #: src/gui/setup.rs
 msgid "Nightly builds get fixes for sites that changed within a day. Stable releases are tested for longer but come weeks apart."
 msgstr "Las versiones nightly reciben arreglos para sitios que cambiaron en menos de un día. Las versiones estables se prueban durante más tiempo, pero salen con semanas de diferencia."
-
-#: src/gui/setup.rs
-msgid "Copy diagnostic information"
-msgstr "Copiar información de diagnóstico"
 
 #: src/gui/setup.rs
 msgid "Looking at what is installed..."
@@ -1150,6 +1145,10 @@ msgstr "Actualizar los componentes desactualizados"
 #: src/gui/setup.rs
 msgid "Reinstall all"
 msgstr "Reinstalar todo"
+
+#: src/gui/setup.rs
+msgid "Working..."
+msgstr "Trabajando..."
 
 #: src/gui/setup.rs
 msgid "Checking for updates..."
@@ -1474,6 +1473,10 @@ msgstr "Aplicando SponsorBlock..."
 #: src/runner.rs
 msgid "Moving the file into place..."
 msgstr "Moviendo el archivo a su lugar..."
+
+#, python-brace-format
+#~ msgid "{kind}, {quality}"
+#~ msgstr "{kind}, {quality}"
 
 #~ msgid "Playlists, history, file names, speed limits"
 #~ msgstr "Listas, historial, nombres de archivo, límites de velocidad"

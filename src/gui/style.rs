@@ -152,6 +152,18 @@ pub fn warning(theme: &Theme) -> Color {
     theme.palette().warning
 }
 
+/// A choice that can't be changed any more, shaped like the dropdown it
+/// was so the card doesn't change shape: the same wash, no arrow.
+pub fn chip(theme: &Theme) -> container::Style {
+    let text = theme.palette().text;
+    container::Style {
+        background: Some(Color { a: 0.06, ..text }.into()),
+        text_color: Some(muted(theme)),
+        border: border::rounded(8),
+        ..container::Style::default()
+    }
+}
+
 /// The header bar runs edge to edge, so it has no corners.
 pub fn header_bar(theme: &Theme) -> container::Style {
     container::Style {

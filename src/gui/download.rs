@@ -15,7 +15,7 @@ use iced::futures::channel::mpsc;
 use iced::widget::{
     Column, button, column, container, image, progress_bar, row, scrollable, space, text,
 };
-use iced::{Alignment, Element, Length, Task};
+use iced::{Alignment, Color, Element, Length, Task, Theme};
 use tr::tr;
 
 use super::icon::{self, Icon, On};
@@ -608,56 +608,65 @@ impl Download {
         Task::none()
     }
 
-    pub fn view(&self) -> Element<'_, Message> {
-        let top_bar = row![
+    /// The link field and its button, shown in the header bar.
+    pub fn url_bar(&self) -> Element<'_, Message> {
+        row![
             entry(&tr!("Paste a video or playlist link..."), &self.url_input)
                 .on_input(Message::UrlInput)
                 .on_submit(Message::AddUrl)
-                .padding(style::BUTTON_LARGE[0]),
+                .padding([style::SPACE_S, style::SPACE_M]),
             button(icon::labeled(
                 Icon::Add,
                 tr!("Add"),
                 style::TEXT,
                 On::Color,
-                true
+                true,
             ))
-            .padding(style::BUTTON_LARGE)
+            .padding(style::BUTTON)
             .style(style::pill)
             .on_press(Message::AddUrl),
         ]
         .spacing(style::SPACE_S)
-        .align_y(Alignment::Center);
+        .align_y(Alignment::Center)
+        .into()
+    }
 
-        let queue: Element<'_, Message> = if self.items.is_empty() {
-            // Adwaita's status page: what this screen is for, said once.
-            container(
-                column![
-                    text(tr!("Download a video"))
-                        .size(style::TITLE)
-                        .font(style::BOLD),
-                    text(tr!(
-                        "Paste a link from YouTube or almost any other site above."
-                    ))
-                    .style(style::muted_text),
-                ]
-                .spacing(style::SPACE_S)
-                .align_x(Alignment::Center),
-            )
-            .center(Length::Fill)
-            .into()
-        } else {
-            scrollable(
-                Column::with_children(self.items.iter().map(item_card))
+    pub fn view(&self) -> Element<'_, Message> {
+        let queue: Element<'_, Message> =
+            if self.items.is_empty() {
+                // Adwaita's status page: what this screen is for, said once.
+                container(
+                    column![
+                        text(tr!("Download a video"))
+                            .size(style::TITLE)
+                            .font(style::BOLD),
+                        text(tr!(
+                            "Paste a link from YouTube or almost any other site above."
+                        ))
+                        .style(style::muted_text),
+                    ]
+                    .spacing(style::SPACE_S)
+                    .align_x(Alignment::Center),
+                )
+                .center(Length::Fill)
+                .into()
+            } else {
+                scrollable(
+                    Column::with_children(self.items.iter().map(|item| {
+                        item_card(item, self.recording && self.current == Some(item.id))
+                    }))
                     .spacing(style::SPACE_S)
                     .width(Length::Fill),
-            )
-            .height(Length::Fill)
-            .into()
-        };
+                )
+                // Its own lane, so the scrollbar never covers a card's edge.
+                .spacing(style::SPACE_S)
+                .height(Length::Fill)
+                .into()
+            };
 
         // The window's page frame (gui::page_frame) gives the width and
         // the room around it, the same as on every other screen.
-        let mut page = column![top_bar, queue, self.queue_progress(), self.actions()]
+        let mut page = column![queue, self.queue_progress(), self.actions()]
             .spacing(style::SPACE_L)
             .height(Length::Fill);
         if self.show_log {
@@ -686,7 +695,7 @@ impl Download {
         };
         column![
             text(summary).size(style::CAPTION).style(style::muted_text),
-            progress_bar(0.0..=1.0, done as f32 / total as f32)
+            progress_bar(0.0..=1.0, queue_fraction(&self.items))
                 .girth(6)
                 .style(style::progress),
         ]
@@ -776,13 +785,19 @@ impl Download {
 /// One card in the queue: a thumbnail (or a placeholder while it loads or
 /// on a failed lookup), the title, the two quick per-item pickers, whatever
 /// metadata resolved, and this item's own status/progress.
-fn item_card(item: &QueueItem) -> Element<'_, Message> {
+/// One link of the queue: its thumbnail, title and details, the choices it
+/// downloads with, where it is at, and the actions it allows. `live` is
+/// set while it is the live stream being recorded.
+fn item_card(item: &QueueItem, live: bool) -> Element<'_, Message> {
     let id = item.id;
+    // 16:9, like nearly every thumbnail.
+    let (thumb_width, thumb_height) = (144.0, 81.0);
     let thumb: Element<'_, Message> = match &item.thumbnail {
         Some(handle) => image(handle.clone())
-            .width(120)
-            .height(68)
+            .width(thumb_width)
+            .height(thumb_height)
             .content_fit(iced::ContentFit::Cover)
+            .border_radius(8.0)
             .into(),
         None => {
             let glyph = if matches!(item.meta, MetaState::Fetching) {
@@ -793,11 +808,11 @@ fn item_card(item: &QueueItem) -> Element<'_, Message> {
             // `center(Length::Fill)` would override the fixed size and
             // let a long title squeeze the placeholder away.
             container(icon::tinted(glyph, 24.0, style::muted))
-                .width(120)
-                .height(68)
+                .width(thumb_width)
+                .height(thumb_height)
                 .align_x(Alignment::Center)
                 .align_y(Alignment::Center)
-                .style(style::card)
+                .style(style::chip)
                 .into()
         }
     };
@@ -807,15 +822,19 @@ fn item_card(item: &QueueItem) -> Element<'_, Message> {
         _ => item.url.clone(),
     };
 
-    let details: Element<'_, Message> = match &item.meta {
-        MetaState::Fetching => text(tr!("Looking up this link..."))
-            .size(style::CAPTION)
-            .style(style::muted_text)
-            .into(),
-        MetaState::Failed(e) => text(tr!("Could not look this link up: {e}", e))
-            .size(style::CAPTION)
-            .style(text::warning)
-            .into(),
+    let details: Option<Element<'_, Message>> = match &item.meta {
+        MetaState::Fetching => Some(
+            text(tr!("Looking up this link..."))
+                .size(style::CAPTION)
+                .style(style::muted_text)
+                .into(),
+        ),
+        MetaState::Failed(e) => Some(
+            text(tr!("Could not look this link up: {e}", e))
+                .size(style::CAPTION)
+                .style(text::warning)
+                .into(),
+        ),
         MetaState::Ready(meta) => {
             let mut parts = Vec::new();
             match meta.playlist {
@@ -831,107 +850,150 @@ fn item_card(item: &QueueItem) -> Element<'_, Message> {
             if let Some(bytes) = meta.approx_size {
                 parts.push(format!("~{:.1} MB", bytes as f64 / 1_000_000.0));
             }
-            if parts.is_empty() {
-                space::vertical().height(0).into()
-            } else {
-                text(parts.join("   "))
+            (!parts.is_empty()).then(|| {
+                text(parts.join("  \u{b7}  "))
                     .size(style::CAPTION)
                     .style(style::muted_text)
                     .into()
-            }
+            })
         }
     };
 
-    // Only a waiting item can still change; quality means nothing for audio.
+    // The same two controls in every state: dropdowns while the link
+    // waits, the same shapes without an arrow once it can't change.
+    // Quality means nothing for audio.
     let (kind, quality) = (item.settings.kind, item.settings.quality);
-    let picks: Element<'_, Message> = if item.status == ItemStatus::Queued {
-        let mut picks = row![dropdown(Kind::ALL, Some(kind), move |k| {
-            Message::ItemKind(id, k)
-        })]
-        .spacing(8);
-        if kind == Kind::VideoAudio {
-            picks = picks.push(dropdown(Quality::ALL, Some(quality), move |q| {
-                Message::ItemQuality(id, q)
-            }));
+    let editable = item.status == ItemStatus::Queued;
+    let pick = |dropdown: Element<'static, Message>, fixed: String| -> Element<'static, Message> {
+        if editable {
+            dropdown
+        } else {
+            container(text(fixed).size(style::CAPTION))
+                .padding(CHOICE_PADDING)
+                .style(style::chip)
+                .into()
         }
-        picks.into()
-    } else {
-        let label = match kind {
-            Kind::VideoAudio => tr!(
-                "{kind}, {quality}",
-                kind,
-                quality = quality.to_string().to_lowercase()
-            ),
-            Kind::AudioOnly => kind.to_string(),
-        };
-        text(label)
-            .size(style::CAPTION)
-            .style(style::muted_text)
-            .into()
     };
-
-    let status_row: Element<'_, Message> = match &item.status {
-        ItemStatus::Queued => text(tr!("Queued"))
-            .size(style::CAPTION)
-            .style(style::muted_text)
+    let mut picks = row![pick(
+        dropdown(Kind::ALL, Some(kind), move |k| Message::ItemKind(id, k))
+            .text_size(style::CAPTION)
+            .padding(CHOICE_PADDING)
             .into(),
-        ItemStatus::Downloading(progress) => progress_view(*progress),
+        kind.to_string(),
+    )]
+    .spacing(style::SPACE_S);
+    if kind == Kind::VideoAudio {
+        picks = picks.push(pick(
+            dropdown(Quality::ALL, Some(quality), move |q| {
+                Message::ItemQuality(id, q)
+            })
+            .text_size(style::CAPTION)
+            .padding(CHOICE_PADDING)
+            .into(),
+            quality.to_string(),
+        ));
+    }
+
+    let status = |glyph: Icon, color: fn(&Theme) -> Color, label: String| {
+        row![
+            icon::tinted(glyph, 16.0, color),
+            text(label)
+                .size(style::CAPTION)
+                .style(move |t: &Theme| text::Style {
+                    color: Some(color(t))
+                }),
+        ]
+        .spacing(style::SPACE_S)
+        .align_y(Alignment::Center)
+    };
+    let status_row: Element<'_, Message> = match &item.status {
+        ItemStatus::Queued => status(Icon::Queued, style::muted, tr!("Queued")).into(),
+        ItemStatus::Downloading(progress) => progress_view(*progress, live),
         // No file: yt-dlp skipped it (already in the history, or the file
         // is already there).
-        ItemStatus::Completed { path: None } => text(tr!("Nothing new to download"))
-            .size(style::CAPTION)
-            .style(style::muted_text)
+        ItemStatus::Completed { path: None } => {
+            status(Icon::Ok, style::muted, tr!("Nothing new to download")).into()
+        }
+        ItemStatus::Completed { path: Some(_) } => {
+            status(Icon::Ok, success, tr!("Completed")).into()
+        }
+        ItemStatus::Failed(reason) => status(Icon::Failed, danger, tr!("Failed: {reason}", reason))
+            .width(Length::Fill)
             .into(),
-        ItemStatus::Completed { path: Some(path) } => row![
-            text(tr!("Completed"))
-                .size(style::CAPTION)
-                .style(text::success),
-            button(text(tr!("Open folder")).size(style::CAPTION))
-                .padding(style::BUTTON_SMALL)
-                .style(style::pill_secondary)
-                .on_press(Message::OpenItemFolder(path.clone())),
-        ]
-        .spacing(10)
-        .align_y(Alignment::Center)
-        .into(),
-        ItemStatus::Failed(reason) => row![
-            text(tr!("Failed: {reason}", reason))
-                .size(style::CAPTION)
-                .style(text::danger)
-                .width(Length::Fill),
-            button(text(tr!("Retry")).size(style::CAPTION))
-                .padding(style::BUTTON_SMALL)
-                .style(style::pill_secondary)
-                .on_press(Message::RetryItem(id)),
-        ]
-        .spacing(10)
-        .align_y(Alignment::Center)
-        .into(),
     };
 
-    let removable = !matches!(item.status, ItemStatus::Downloading(_));
-    let remove = button(text(tr!("Remove")).size(style::CAPTION))
-        .padding(style::BUTTON_SMALL)
-        .style(style::pill_secondary)
-        .on_press_maybe(removable.then_some(Message::RemoveItem(id)));
+    // Only what applies is shown, rather than greyed-out buttons.
+    let mut actions = column![].spacing(style::SPACE_XS);
+    if let ItemStatus::Completed { path: Some(path) } = &item.status {
+        actions = actions.push(icon::button(
+            Icon::OpenFolder,
+            tr!("Open folder"),
+            Message::OpenItemFolder(path.clone()),
+        ));
+    }
+    if matches!(item.status, ItemStatus::Failed(_)) {
+        actions = actions.push(icon::button(
+            Icon::Retry,
+            tr!("Retry"),
+            Message::RetryItem(id),
+        ));
+    }
+    if !matches!(item.status, ItemStatus::Downloading(_)) {
+        actions = actions.push(icon::button(
+            Icon::Remove,
+            tr!("Remove"),
+            Message::RemoveItem(id),
+        ));
+    }
 
+    let mut body = column![text(title).font(style::BOLD)].spacing(style::SPACE_S);
+    if let Some(details) = details {
+        body = body.push(details);
+    }
     container(
         // The text column takes what is left and wraps inside it, so a
-        // long error can't push Remove (or Retry) out of the card.
+        // long error can't push the actions out of the card.
         row![
             thumb,
-            column![text(title).size(14), picks, details, status_row]
-                .spacing(6)
-                .width(Length::Fill),
-            remove,
+            body.push(picks).push(status_row).width(Length::Fill),
+            actions,
         ]
-        .spacing(14)
-        .align_y(Alignment::Center),
+        .spacing(style::SPACE_M)
+        .align_y(Alignment::Start),
     )
-    .padding(12)
+    .padding(style::SPACE_M)
     .width(Length::Fill)
     .style(style::card)
     .into()
+}
+
+/// The room inside a card's small dropdowns and the fixed choices that
+/// replace them, so both have the same size.
+const CHOICE_PADDING: [f32; 2] = [4.0, 10.0];
+
+fn success(theme: &Theme) -> Color {
+    theme.palette().success
+}
+
+fn danger(theme: &Theme) -> Color {
+    theme.palette().danger
+}
+
+/// How far the queue is, from 0 to 1: the finished links, plus the part
+/// of the running one already downloaded when its size is known.
+fn queue_fraction(items: &[QueueItem]) -> f32 {
+    if items.is_empty() {
+        return 0.0;
+    }
+    let done: f32 = items
+        .iter()
+        .map(|item| match &item.status {
+            ItemStatus::Completed { .. } | ItemStatus::Failed(_) => 1.0,
+            ItemStatus::Downloading(progress) => amount(progress.downloaded, progress.total).1,
+            ItemStatus::Queued => 0.0,
+        })
+        .sum();
+    done / items.len() as f32
 }
 
 /// A live stream is fetched as video and audio at once, so yt-dlp reports
@@ -955,7 +1017,7 @@ fn combine(streams: &BTreeMap<u32, Progress>) -> Progress {
     }
 }
 
-fn progress_view(progress: Progress) -> Element<'static, Message> {
+fn progress_view(progress: Progress, live: bool) -> Element<'static, Message> {
     let mb = |bytes: u64| bytes as f64 / 1_000_000.0;
     let (mut details, fraction) = amount(progress.downloaded, progress.total);
     if let Some(speed) = progress.speed {
@@ -971,12 +1033,23 @@ fn progress_view(progress: Progress) -> Element<'static, Message> {
     }
     column![
         row![
-            text(if progress.done {
-                tr!("Processing")
-            } else {
-                tr!("Downloading")
-            })
-            .size(style::CAPTION),
+            row![
+                icon::tinted(
+                    if live { Icon::Live } else { Icon::Download },
+                    16.0,
+                    if live { danger } else { style::accent },
+                ),
+                text(if progress.done {
+                    tr!("Processing")
+                } else if live {
+                    tr!("Recording live")
+                } else {
+                    tr!("Downloading")
+                })
+                .size(style::CAPTION),
+            ]
+            .spacing(style::SPACE_S)
+            .align_y(Alignment::Center),
             space::horizontal(),
             text(details).size(style::CAPTION).style(style::muted_text),
         ]
@@ -1384,6 +1457,36 @@ mod tests {
                 path: Some("/v/2.mkv".into())
             }
         );
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+
+    /// The overall bar counts the running link's progress too, not only
+    /// the links that are done; a link of unknown size counts as nothing
+    /// until it ends.
+    #[test]
+    fn the_queue_bar_includes_the_running_download() {
+        let dir = tempdir();
+        let mut screen = Download::new(Paths::new(dir.clone()));
+        assert_eq!(queue_fraction(&screen.items), 0.0);
+        for url in ["https://example.com/a", "https://example.com/b"] {
+            let _ = screen.update(Message::UrlInput(url.into()), &Settings::default());
+            let _ = screen.update(Message::AddUrl, &Settings::default());
+        }
+        screen.items[0].status = ItemStatus::Completed { path: None };
+        screen.items[1].status = ItemStatus::Downloading(Progress {
+            downloaded: 50,
+            total: Some(100),
+            ..Progress::default()
+        });
+        assert_eq!(queue_fraction(&screen.items), 0.75);
+        screen.items[1].status = ItemStatus::Downloading(Progress {
+            downloaded: 50,
+            total: None,
+            ..Progress::default()
+        });
+        assert_eq!(queue_fraction(&screen.items), 0.5);
+        screen.items[1].status = ItemStatus::Failed("gone".into());
+        assert_eq!(queue_fraction(&screen.items), 1.0);
         std::fs::remove_dir_all(dir).unwrap();
     }
 
