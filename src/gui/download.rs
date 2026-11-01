@@ -102,6 +102,8 @@ pub struct Download {
     current: Option<u64>,
     /// Present while a download runs, and what stops it.
     job: Option<Arc<Cancel>>,
+    /// The running download is a live stream: Stop saves what it got.
+    recording: bool,
     /// Shown next to the button when the run can't start.
     problem: Option<String>,
     /// The last line as it arrived, and how often it has repeated, so a
@@ -129,6 +131,7 @@ impl Download {
             files: Vec::new(),
             current: None,
             job: None,
+            recording: false,
             problem: None,
             last: None,
             repeats: 0,
@@ -247,8 +250,13 @@ impl Download {
             Message::Start => return self.start(),
             Message::Stop => {
                 if let Some(cancel) = self.job.clone() {
-                    self.log((Level::Warn, tr!("Stopping the download...")));
-                    cancel.cancel();
+                    if self.recording {
+                        self.log((Level::Warn, tr!("Stopping the recording...")));
+                        cancel.stop_recording();
+                    } else {
+                        self.log((Level::Warn, tr!("Stopping the download...")));
+                        cancel.cancel();
+                    }
                 }
                 return Task::none();
             }
@@ -482,6 +490,7 @@ impl Download {
             self.items[index].status = ItemStatus::Downloading(Progress::default());
             self.progress.clear();
             self.files.clear();
+            self.recording = false;
 
             if !self.log.is_empty() {
                 self.log((Level::Info, String::new()));
@@ -536,8 +545,16 @@ impl Download {
                 self.log((Level::Ok, tr!("Saved: {path}", path)));
                 self.files.push(path);
             }
+            Event::Live => {
+                self.recording = true;
+                self.log((
+                    Level::Info,
+                    tr!("This is a live stream. Stop ends the recording and saves what it got."),
+                ));
+            }
             Event::Finished(finish) => {
                 self.job = None;
+                self.recording = false;
                 self.progress.clear();
                 let id = self.current.take();
                 let (level, message) = match &finish {
@@ -560,6 +577,7 @@ impl Download {
                             "Download cancelled. A partial file was kept, so starting again resumes it."
                         ),
                     ),
+                    Finish::RecordingSaved => (Level::Success, tr!("Recording stopped and saved")),
                     Finish::Failed(reason) => (Level::Error, reason.clone()),
                 };
                 self.log((level, message));
@@ -571,14 +589,17 @@ impl Download {
                         // Queued: starting again resumes it.
                         Finish::Cancelled => item.status = ItemStatus::Queued,
                         Finish::Failed(reason) => item.status = ItemStatus::Failed(reason.clone()),
-                        Finish::Completed | Finish::StoppedAsConfigured => {
+                        Finish::Completed
+                        | Finish::StoppedAsConfigured
+                        | Finish::RecordingSaved => {
                             item.status = ItemStatus::Completed {
                                 path: self.files.last().cloned(),
                             }
                         }
                     }
                 }
-                if !matches!(finish, Finish::Cancelled) {
+                // Stop ends the run, whether it saved a recording or not.
+                if !matches!(finish, Finish::Cancelled | Finish::RecordingSaved) {
                     return self.run_next();
                 }
             }
@@ -666,10 +687,14 @@ impl Download {
 
     fn actions(&self) -> Element<'_, Message> {
         let button = if self.running() {
-            button(text(tr!("Stop")))
-                .padding([10, 28])
-                .style(style::pill_danger)
-                .on_press(Message::Stop)
+            button(text(if self.recording {
+                tr!("Stop and save")
+            } else {
+                tr!("Stop")
+            }))
+            .padding([10, 28])
+            .style(style::pill_danger)
+            .on_press(Message::Stop)
         } else {
             button(text(tr!("Download")))
                 .padding([10, 28])
@@ -1311,6 +1336,44 @@ mod tests {
                 path: Some("/v/2.mkv".into())
             }
         );
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+
+    /// Once yt-dlp says the download is live, Stop becomes "Stop and
+    /// save"; the saved recording completes the item and ends the run
+    /// instead of starting the next link.
+    #[test]
+    fn a_stopped_live_recording_completes_its_item_and_ends_the_run() {
+        let dir = tempdir();
+        let mut screen = Download::new(Paths::new(dir.clone()));
+        let settings = Settings::default();
+        for url in ["https://example.com/live", "https://example.com/next"] {
+            let _ = screen.update(Message::UrlInput(url.into()), &settings);
+            let _ = screen.update(Message::AddUrl, &settings);
+        }
+        let _ = screen.update(Message::Start, &settings);
+        assert!(!screen.recording);
+        let _ = screen.update(Message::Report(Event::Live), &settings);
+        assert!(screen.recording);
+
+        let _ = screen.update(Message::Stop, &settings);
+        assert!(screen.job.as_ref().unwrap().is_cancelled());
+        let _ = screen.update(
+            Message::Report(Event::File("/v/Live.mkv".into())),
+            &settings,
+        );
+        let _ = screen.update(
+            Message::Report(Event::Finished(Finish::RecordingSaved)),
+            &settings,
+        );
+        assert_eq!(
+            screen.items[0].status,
+            ItemStatus::Completed {
+                path: Some("/v/Live.mkv".into())
+            }
+        );
+        assert!(!screen.recording && !screen.running());
+        assert_eq!(screen.items[1].status, ItemStatus::Queued);
         std::fs::remove_dir_all(dir).unwrap();
     }
 

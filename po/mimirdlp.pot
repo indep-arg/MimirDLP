@@ -342,6 +342,10 @@ msgid "Couldn't reach the site. Check your internet connection and try again."
 msgstr ""
 
 #: src/gui/download.rs
+msgid "Stopping the recording..."
+msgstr ""
+
+#: src/gui/download.rs
 msgid "Stopping the download..."
 msgstr ""
 
@@ -409,6 +413,10 @@ msgid "Saved: {path}"
 msgstr ""
 
 #: src/gui/download.rs
+msgid "This is a live stream. Stop ends the recording and saves what it got."
+msgstr ""
+
+#: src/gui/download.rs
 msgid "Finished, with nothing new to download"
 msgstr ""
 
@@ -429,6 +437,10 @@ msgstr ""
 
 #: src/gui/download.rs
 msgid "Download cancelled. A partial file was kept, so starting again resumes it."
+msgstr ""
+
+#: src/gui/download.rs
+msgid "Recording stopped and saved"
 msgstr ""
 
 #: src/gui/download.rs
@@ -463,6 +475,10 @@ msgstr ""
 #: src/gui/download.rs
 #, python-brace-format
 msgid "Ready: {done} of {total} done"
+msgstr ""
+
+#: src/gui/download.rs
+msgid "Stop and save"
 msgstr ""
 
 #: src/gui/download.rs
@@ -1165,6 +1181,33 @@ msgstr ""
 msgid "Version {version} (update check failed)"
 msgstr ""
 
+#: src/live.rs
+msgid "Nothing was recorded yet."
+msgstr ""
+
+#: src/live.rs
+msgid "The recording has no file name."
+msgstr ""
+
+#: src/live.rs
+#, python-brace-format
+msgid "Could not start FFmpeg: {e}"
+msgstr ""
+
+#: src/live.rs
+msgid "FFmpeg took too long to save the recording."
+msgstr ""
+
+#: src/live.rs
+#, python-brace-format
+msgid "FFmpeg could not save the recording: {error}"
+msgstr ""
+
+#: src/live.rs
+#, python-brace-format
+msgid "Could not move the recording into place: {e}"
+msgstr ""
+
 #: src/metadata.rs
 msgid "Timed out looking up this link."
 msgstr ""
@@ -1339,6 +1382,10 @@ msgstr ""
 
 #: src/runner.rs
 msgid "yt-dlp could not be started. Reinstall it from Setup."
+msgstr ""
+
+#: src/runner.rs
+msgid "Saving what was recorded..."
 msgstr ""
 
 #: src/runner.rs

@@ -343,6 +343,10 @@ msgid "Couldn't reach the site. Check your internet connection and try again."
 msgstr "No se pudo conectar con el sitio. Comprueba tu conexión a internet y vuelve a intentarlo."
 
 #: src/gui/download.rs
+msgid "Stopping the recording..."
+msgstr "Deteniendo la grabación..."
+
+#: src/gui/download.rs
 msgid "Stopping the download..."
 msgstr "Deteniendo la descarga..."
 
@@ -410,6 +414,10 @@ msgid "Saved: {path}"
 msgstr "Guardado: {path}"
 
 #: src/gui/download.rs
+msgid "This is a live stream. Stop ends the recording and saves what it got."
+msgstr "Es una transmisión en vivo. Al detenerla, termina la grabación y se guarda lo grabado."
+
+#: src/gui/download.rs
 msgid "Finished, with nothing new to download"
 msgstr "Terminado, no había nada nuevo que descargar"
 
@@ -431,6 +439,10 @@ msgstr "Detenido según lo configurado (por el límite o el historial)"
 #: src/gui/download.rs
 msgid "Download cancelled. A partial file was kept, so starting again resumes it."
 msgstr "Descarga cancelada. Se conservó el archivo parcial, así que al volver a empezar continúa donde quedó."
+
+#: src/gui/download.rs
+msgid "Recording stopped and saved"
+msgstr "Grabación detenida y guardada"
 
 #: src/gui/download.rs
 msgid "Paste a video or playlist link..."
@@ -465,6 +477,10 @@ msgstr "Todo listo."
 #, python-brace-format
 msgid "Ready: {done} of {total} done"
 msgstr "En espera: {done} de {total} terminados"
+
+#: src/gui/download.rs
+msgid "Stop and save"
+msgstr "Detener y guardar"
 
 #: src/gui/download.rs
 msgid "Stop"
@@ -1166,6 +1182,33 @@ msgstr "Versión {version} (instalada antes del control de actualizaciones, rein
 msgid "Version {version} (update check failed)"
 msgstr "Versión {version} (falló la búsqueda de actualizaciones)"
 
+#: src/live.rs
+msgid "Nothing was recorded yet."
+msgstr "Todavía no se grabó nada."
+
+#: src/live.rs
+msgid "The recording has no file name."
+msgstr "La grabación no tiene nombre de archivo."
+
+#: src/live.rs
+#, python-brace-format
+msgid "Could not start FFmpeg: {e}"
+msgstr "No se pudo iniciar FFmpeg: {e}"
+
+#: src/live.rs
+msgid "FFmpeg took too long to save the recording."
+msgstr "FFmpeg tardó demasiado en guardar la grabación."
+
+#: src/live.rs
+#, python-brace-format
+msgid "FFmpeg could not save the recording: {error}"
+msgstr "FFmpeg no pudo guardar la grabación: {error}"
+
+#: src/live.rs
+#, python-brace-format
+msgid "Could not move the recording into place: {e}"
+msgstr "No se pudo mover la grabación a su lugar: {e}"
+
 #: src/metadata.rs
 msgid "Timed out looking up this link."
 msgstr "Se agotó el tiempo al consultar este enlace."
@@ -1341,6 +1384,10 @@ msgstr "No se confía en las sumas de verificación: {reason}."
 #: src/runner.rs
 msgid "yt-dlp could not be started. Reinstall it from Setup."
 msgstr "No se pudo iniciar yt-dlp. Reinstálalo desde Instalación."
+
+#: src/runner.rs
+msgid "Saving what was recorded..."
+msgstr "Guardando lo grabado..."
 
 #: src/runner.rs
 #, python-brace-format

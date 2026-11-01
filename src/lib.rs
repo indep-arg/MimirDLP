@@ -6,6 +6,7 @@ pub mod engine;
 pub mod explain;
 pub mod gui;
 pub mod i18n;
+pub mod live;
 pub mod log;
 pub mod metadata;
 pub mod process;

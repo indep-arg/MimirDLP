@@ -9,7 +9,7 @@
 
 use std::ffi::OsString;
 use std::io::{BufRead, BufReader, Read, Write};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::{Child, Stdio};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Mutex, mpsc};
@@ -20,6 +20,7 @@ use tr::tr;
 
 use crate::engine::{self, Options, Outcome};
 use crate::explain;
+use crate::live;
 use crate::log::Level;
 use crate::process;
 use crate::provision::Paths;
@@ -28,6 +29,7 @@ use crate::provision::Paths;
 const DOWNLOAD: &str = "[ytp] ";
 const POSTPROCESS: &str = "[ytp-pp] ";
 const FILE: &str = "[ytp-file] ";
+const LIVE: &str = "[ytp-live] ";
 /// How often the reading loop checks whether the run was cancelled.
 const POLL: Duration = Duration::from_millis(200);
 
@@ -37,6 +39,9 @@ pub enum Event {
     Progress(Progress),
     /// A finished file, as reported by `--print after_move:%(filepath)s`.
     File(String),
+    /// What is being downloaded is a live stream, so stopping it saves
+    /// what was recorded ([`Cancel::stop_recording`]).
+    Live,
     Finished(Finish),
 }
 
@@ -60,6 +65,9 @@ pub enum Finish {
     /// Exit 101: the download limit or `--break-on-existing` was reached.
     StoppedAsConfigured,
     Cancelled,
+    /// A live recording was stopped and what it got was saved (the file
+    /// was reported with [`Event::File`]).
+    RecordingSaved,
     Failed(String),
 }
 
@@ -67,6 +75,7 @@ pub enum Finish {
 #[derive(Debug, Default)]
 pub struct Cancel {
     requested: AtomicBool,
+    keep_recording: AtomicBool,
     child: Mutex<Option<Child>>,
 }
 
@@ -81,6 +90,18 @@ impl Cancel {
             // cancelled download.
             process::kill_tree(child);
         }
+    }
+
+    /// Stops a live recording and saves what it got. A download that
+    /// turns out not to be live is cancelled as usual, its `.part` file
+    /// kept for resuming.
+    pub fn stop_recording(&self) {
+        self.keep_recording.store(true, Ordering::SeqCst);
+        self.cancel();
+    }
+
+    fn keeps_recording(&self) -> bool {
+        self.keep_recording.load(Ordering::SeqCst)
     }
 
     pub fn is_cancelled(&self) -> bool {
@@ -120,6 +141,8 @@ fn presentation_args() -> Vec<OsString> {
         "download:[ytp] %(progress.status)s|%(progress.downloaded_bytes)s|%(progress.total_bytes)s|%(progress.total_bytes_estimate)s|%(progress.speed)s|%(progress.eta)s",
         "--progress-template",
         "postprocess:[ytp-pp] %(progress.status)s|%(progress.postprocessor)s",
+        "--print",
+        "before_dl:[ytp-live] %(is_live)s",
         "--print",
         "after_move:[ytp-file] %(filepath)s",
     ]
@@ -223,6 +246,10 @@ pub fn run(
     cancel.hold(child);
 
     let mut last_error = None;
+    let mut is_live = false;
+    // Where each stream is written, which a stopped recording is saved
+    // from.
+    let mut destinations: Vec<PathBuf> = Vec::new();
     loop {
         let line = match rx.recv_timeout(POLL) {
             Ok(line) => line,
@@ -234,8 +261,17 @@ pub fn run(
             Err(mpsc::RecvTimeoutError::Disconnected) => break,
         };
         if let Some(event) = parse_line(line.trim_end()) {
-            if let Event::Log(Level::Error, message) = &event {
-                last_error = Some(message.clone());
+            match &event {
+                Event::Log(Level::Error, message) => last_error = Some(message.clone()),
+                Event::Log(_, line) => {
+                    if let Some(path) = live::destination_from_line(line)
+                        && !destinations.contains(&path)
+                    {
+                        destinations.push(path);
+                    }
+                }
+                Event::Live => is_live = true,
+                _ => {}
             }
             emit(event);
         }
@@ -253,7 +289,16 @@ pub fn run(
         .take()
         .and_then(|mut child| child.wait().ok())
         .and_then(|status| status.code());
-    let finish = if cancel.is_cancelled() {
+    let finish = if cancel.is_cancelled() && cancel.keeps_recording() && is_live {
+        emit(Event::Log(Level::Info, tr!("Saving what was recorded...")));
+        match live::save_recording(&paths.tool("ffmpeg"), &destinations) {
+            Ok(saved) => {
+                emit(Event::File(saved.display().to_string()));
+                Finish::RecordingSaved
+            }
+            Err(e) => Finish::Failed(e),
+        }
+    } else if cancel.is_cancelled() {
         Finish::Cancelled
     } else {
         match code.map(engine::classify_exit) {
@@ -282,6 +327,10 @@ fn parse_line(line: &str) -> Option<Event> {
     }
     if let Some(path) = rest.strip_prefix(FILE) {
         return Some(Event::File(path.to_string()));
+    }
+    // "True", "False" or "NA" (a site that doesn't say).
+    if let Some(answer) = rest.strip_prefix(LIVE) {
+        return (answer == "True").then_some(Event::Live);
     }
     if line.is_empty() {
         return None;
@@ -469,6 +518,20 @@ mod tests {
         assert_eq!(parse_line(""), None);
     }
 
+    /// `--print before_dl:[ytp-live] %(is_live)s` prints Python's True or
+    /// False, or NA when a site doesn't say.
+    #[test]
+    fn a_live_stream_is_recognised_before_it_downloads() {
+        assert_eq!(parse_line("[ytp-live] True"), Some(Event::Live));
+        assert_eq!(parse_line("[ytp-live] False"), None);
+        assert_eq!(parse_line("[ytp-live] NA"), None);
+        assert!(
+            presentation_args()
+                .iter()
+                .any(|a| a == "before_dl:[ytp-live] %(is_live)s")
+        );
+    }
+
     #[test]
     fn the_final_path_is_reported() {
         assert_eq!(
@@ -628,6 +691,85 @@ mod tests {
             assert!(argv.contains("--config-locations -"), "{argv}");
             fs::remove_dir_all(dir).unwrap();
             fs::remove_dir_all(dir2).unwrap();
+        }
+
+        /// A stand-in ffmpeg in `bin/` that writes its output file.
+        fn fake_ffmpeg(paths: &Paths) {
+            let ffmpeg = paths.tool("ffmpeg");
+            fs::write(
+                &ffmpeg,
+                "#!/bin/sh\nfor last; do :; done\necho saved > \"$last\"\n",
+            )
+            .unwrap();
+            fs::set_permissions(&ffmpeg, fs::Permissions::from_mode(0o755)).unwrap();
+        }
+
+        /// Runs a stand-in yt-dlp that announces `live`, starts writing
+        /// `Live.mkv.part` and waits; Stop is pressed with `stop_recording`
+        /// once it has.
+        fn stop_a_recording(live: &str) -> (Vec<Event>, std::path::PathBuf) {
+            let out = crate::testing::tempdir();
+            let destination = out.join("Live.mkv");
+            let (dir, paths) = fake_ytdlp(
+                &format!(
+                    "echo '[ytp-live] {live}'\n\
+                     echo '[download] Destination: {0}'\n\
+                     echo recorded > '{0}.part'\n\
+                     echo started\nsleep 60",
+                    destination.display()
+                ),
+                0,
+            );
+            fake_ffmpeg(&paths);
+            let cancel = Cancel::default();
+            let _writing = crate::testing::exec_guard();
+            let mut events = Vec::new();
+            run(
+                &paths,
+                &Options::default(),
+                None,
+                &["https://example.com/live".into()],
+                &cancel,
+                &mut |e| {
+                    if e == Event::Log(Level::Info, "started".into()) {
+                        cancel.stop_recording();
+                    }
+                    events.push(e)
+                },
+            );
+            fs::remove_dir_all(dir).unwrap();
+            (events, out)
+        }
+
+        #[test]
+        fn stopping_a_live_recording_saves_what_it_got() {
+            let (events, out) = stop_a_recording("True");
+            let saved = out.join("Live.mkv");
+            assert!(
+                events.contains(&Event::File(saved.display().to_string())),
+                "{events:?}"
+            );
+            assert_eq!(
+                events.last(),
+                Some(&Event::Finished(Finish::RecordingSaved))
+            );
+            assert_eq!(fs::read_to_string(&saved).unwrap(), "saved\n");
+            assert!(
+                !out.join("Live.mkv.part").exists(),
+                "the leftover is removed"
+            );
+            fs::remove_dir_all(out).unwrap();
+        }
+
+        /// Not live: Stop is an ordinary cancel, and the .part file stays
+        /// so the next run resumes it.
+        #[test]
+        fn stopping_a_video_that_is_not_live_keeps_it_resumable() {
+            let (events, out) = stop_a_recording("False");
+            assert_eq!(events.last(), Some(&Event::Finished(Finish::Cancelled)));
+            assert!(out.join("Live.mkv.part").exists());
+            assert!(!out.join("Live.mkv").exists());
+            fs::remove_dir_all(out).unwrap();
         }
 
         #[test]
