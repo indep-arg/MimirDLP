@@ -3,11 +3,11 @@ name = "mimirdlp"
 version = "0.5.0"
 description = "A portable GUI around yt-dlp: Mimir's well of downloads."
 edition = "2024"
-# Tracks the current stable Rust, not an old floor. The application is
-# handed out as a prebuilt binary, and anyone compiling it from source
-# installs a toolchain with rustup, so holding back the whole dependency
-# tree to suit an old distro package would buy nothing. Bump it whenever
-# the toolchain in use moves on.
+# The oldest Rust that can build MimirDLP, kept close to the latest stable
+# on purpose. Users get a prebuilt binary, and building from source only
+# needs a current toolchain from rustup, so there is no reason to hold
+# dependencies back for the older compilers some distros ship. Raise it
+# when moving to a newer toolchain.
 rust-version = "1.98"
 license = "MIT"
 repository = "https://github.com/indep-arg/MimirDLP"
