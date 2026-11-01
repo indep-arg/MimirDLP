@@ -489,29 +489,27 @@ impl App {
         let can_setup = !download.uses_tools();
 
         let content = match page {
-            Page::Setup => setup.view().map(Message::Setup),
+            Page::Setup => page_frame(setup.view().map(Message::Setup)),
             Page::Download => {
-                let screen = download.view().map(Message::Download);
-                let notices = column![]
+                // The notices sit in the page, lined up with what is below.
+                let screen = column![]
                     .push(app_update.as_deref().map(update_notice))
                     .push(
                         setup
                             .ytdlp_age()
                             .map(|age| stale_notice(age, can_setup, setup.bundled())),
-                    );
-                column![notices, screen].into()
+                    )
+                    .push(download.view().map(Message::Download))
+                    .spacing(style::SPACE_M)
+                    .height(Length::Fill);
+                page_frame(screen.into())
             }
-            Page::Settings => scrollable(
-                container(
-                    container(settings.view().map(Message::Settings))
-                        .padding(24)
-                        .max_width(760),
-                )
-                .center_x(Length::Fill),
-            )
-            .height(Length::Fill)
-            .into(),
-            Page::About => about(setup.ytdlp_version()),
+            Page::Settings => scrollable(page_frame(settings.view().map(Message::Settings)))
+                .height(Length::Fill)
+                .into(),
+            Page::About => scrollable(page_frame(about(setup.ytdlp_version())))
+                .height(Length::Fill)
+                .into(),
         };
 
         let window = column![
@@ -629,7 +627,7 @@ fn header_bar<'a>(
         space().into()
     } else {
         button(text("\u{2039}").size(22).line_height(1.0))
-            .padding([4, 14])
+            .padding(style::BUTTON_SMALL)
             .style(style::flat(false))
             .on_press_maybe(can_go_back.then_some(Message::Navigate(Page::Download)))
             .into()
@@ -647,7 +645,7 @@ fn header_bar<'a>(
     };
     let bar = row![
         side(back, Alignment::Start),
-        container(text(title).size(15).font(style::BOLD)).center_x(Length::Fill),
+        container(text(title).size(style::HEADING).font(style::BOLD)).center_x(Length::Fill),
         side(menu_button(menu_open), Alignment::End),
     ]
     .padding([0, 8])
@@ -691,11 +689,16 @@ fn main_menu<'a>(can_setup: bool, bundled: bool, settings: &Settings) -> Element
             .on_press_maybe(message)
     };
     let theme_choice = |label: String, target: ThemePref| {
-        button(text(label).size(13).center().width(Length::Fill))
-            .width(Length::Fill)
-            .padding([6, 8])
-            .style(style::segment(theme == target))
-            .on_press(Message::ThemePref(target))
+        button(
+            text(label)
+                .size(style::CAPTION)
+                .center()
+                .width(Length::Fill),
+        )
+        .width(Length::Fill)
+        .padding([6, 8])
+        .style(style::segment(theme == target))
+        .on_press(Message::ThemePref(target))
     };
     container(
         column![
@@ -742,7 +745,7 @@ const TRANSLATE: &str = "https://hosted.weblate.org/engage/mimirdlp/";
 fn about<'a>(ytdlp: Option<&str>) -> Element<'a, Message> {
     let link = |label: String, url: &'static str| {
         button(text(label))
-            .padding([8, 16])
+            .padding(style::BUTTON)
             .style(style::pill_secondary)
             .on_press(Message::OpenLink(url))
     };
@@ -752,9 +755,9 @@ fn about<'a>(ytdlp: Option<&str>) -> Element<'a, Message> {
             "Version {version}",
             version = env!("CARGO_PKG_VERSION")
         ))
-        .size(15),
+        .size(style::HEADING),
     ]
-    .spacing(4)
+    .spacing(style::SPACE_XS)
     .align_x(Alignment::Center);
     if let Some(version) = ytdlp {
         info = info.push(muted(tr!("Using yt-dlp {version}", version)));
@@ -763,28 +766,47 @@ fn about<'a>(ytdlp: Option<&str>) -> Element<'a, Message> {
         image(LOGO.clone())
             .width(Length::Fixed(96.0))
             .height(Length::Fixed(96.0)),
-        text("MimirDLP").size(26).font(style::BOLD),
+        text("MimirDLP").size(style::TITLE).font(style::BOLD),
         info,
         text(tr!(
             "Download videos and music from YouTube and many other sites."
         ))
         .center(),
-        column![
+        // One row of equal buttons, as everywhere else, rather than a
+        // stack of three widths.
+        row![
             link(tr!("Website"), REPOSITORY),
             link(tr!("Report a problem"), REPORT),
             link(tr!("Help translate"), TRANSLATE),
         ]
-        .spacing(8)
+        .spacing(style::SPACE_S)
+        .wrap()
         .align_x(Alignment::Center),
         muted(tr!("Free software under the MIT license.")),
     ]
-    .spacing(16)
-    .padding(24)
-    .max_width(560)
+    .spacing(style::SPACE_L)
+    .width(Length::Fill)
     .align_x(Alignment::Center);
-    scrollable(container(content).center_x(Length::Fill))
-        .height(Length::Fill)
-        .into()
+    content.into()
+}
+
+/// Every screen's content: at most [`style::PAGE_WIDTH`] wide, centered,
+/// with the same room around it, so nothing moves when the screen changes.
+fn page_frame<'a, Message: 'a>(content: Element<'a, Message>) -> Element<'a, Message> {
+    container(
+        container(content)
+            .padding(style::PAGE_PADDING)
+            .max_width(style::PAGE_WIDTH)
+            .height(Length::Fill),
+    )
+    .center_x(Length::Fill)
+    .height(Length::Fill)
+    .into()
+}
+
+/// A section's title, above its card or panel.
+fn section_title<'a>(title: String) -> iced::widget::Text<'a> {
+    text(title).size(style::HEADING).font(style::BOLD)
 }
 
 /// One entry of the language picker: the system's language, or one of the
@@ -820,31 +842,43 @@ fn language_picker<'a>(current: &str) -> Element<'a, Message> {
     .into()
 }
 
-/// Sites change their pages all the time and yt-dlp follows within days,
-/// so an old one is the usual reason a download suddenly fails. A bundled
-/// one comes with the package, so the way out is updating MimirDLP itself,
-/// and there is no button for that here.
 /// A newer MimirDLP is out: what it is, a button to its release page and
 /// one to close the notice until the next launch.
 fn update_notice<'a>(version: &str) -> Element<'a, Message> {
     let notice = row![
         text(tr!("MimirDLP {version} is available.", version))
-            .size(13)
+            .size(style::CAPTION)
             .width(Length::Fill),
-        button(text(tr!("What's new")).size(13))
-            .padding([4, 14])
+        button(text(tr!("What's new")).size(style::CAPTION))
+            .padding(style::BUTTON_SMALL)
             .style(style::pill)
             .on_press(Message::OpenLink(crate::app_update::RELEASES)),
-        button(text(tr!("Later")).size(13))
-            .padding([4, 14])
+        button(text(tr!("Later")).size(style::CAPTION))
+            .padding(style::BUTTON_SMALL)
             .style(style::pill_secondary)
             .on_press(Message::DismissAppUpdate),
     ]
-    .spacing(12)
+    .spacing(style::SPACE_S)
     .align_y(Alignment::Center);
-    container(notice).padding([10, 24]).into()
+    notice_box(notice.into(), style::accent)
 }
 
+/// A notice's card, tinted with `tone`.
+fn notice_box<'a>(
+    content: Element<'a, Message>,
+    tone: fn(&iced::Theme) -> iced::Color,
+) -> Element<'a, Message> {
+    container(content)
+        .padding([style::SPACE_S, style::SPACE_M])
+        .width(Length::Fill)
+        .style(style::notice(tone))
+        .into()
+}
+
+/// Sites change their pages all the time and yt-dlp follows within days,
+/// so an old one is the usual reason a download suddenly fails. A bundled
+/// one comes with the package, so the way out is updating MimirDLP itself,
+/// and there is no button for that here.
 fn stale_notice<'a>(age: i64, can_update: bool, bundled: bool) -> Element<'a, Message> {
     let warning = if bundled {
         tr!(
@@ -859,37 +893,32 @@ fn stale_notice<'a>(age: i64, can_update: bool, bundled: bool) -> Element<'a, Me
                     % age
         )
     };
-    let notice = row![
-        text(warning)
-            .size(13)
-            .style(text::warning)
-            .width(Length::Fill)
-    ]
-    .spacing(12)
-    .align_y(Alignment::Center);
+    let notice = row![text(warning).size(style::CAPTION).width(Length::Fill)]
+        .spacing(style::SPACE_S)
+        .align_y(Alignment::Center);
     let notice = if bundled {
         notice
     } else {
         notice.push(
-            button(text(tr!("Check for updates")).size(13))
-                .padding([4, 14])
+            button(text(tr!("Check for updates")).size(style::CAPTION))
+                .padding(style::BUTTON_SMALL)
                 .style(style::pill_secondary)
                 .on_press_maybe(can_update.then_some(Message::CheckForUpdates)),
         )
     };
-    container(notice).padding([10, 24]).into()
+    notice_box(notice.into(), style::warning)
 }
 
 /// A titled card, the building block of every screen.
 fn card<'a, Message: 'a>(title: String, body: Element<'a, Message>) -> Element<'a, Message> {
     column![
-        text(title).size(15),
+        section_title(title),
         container(body)
-            .padding(16)
+            .padding(style::SPACE_L)
             .width(Length::Fill)
             .style(style::card)
     ]
-    .spacing(8)
+    .spacing(style::SPACE_S)
     .into()
 }
 

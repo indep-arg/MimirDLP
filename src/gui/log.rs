@@ -41,11 +41,11 @@ fn entry<'a, Message: 'a>(level: Level, line: &'a str) -> Element<'a, Message> {
     row![
         text(level.tag())
             .font(Font::MONOSPACE)
-            .size(13)
+            .size(style::CAPTION)
             .style(move |t: &Theme| text::Style {
                 color: Some(style::level(t, level))
             }),
-        text(line).font(Font::MONOSPACE).size(13),
+        text(line).font(Font::MONOSPACE).size(style::CAPTION),
     ]
     .spacing(8)
     .into()

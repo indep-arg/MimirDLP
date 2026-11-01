@@ -612,26 +612,28 @@ impl Download {
             entry(&tr!("Paste a video or playlist link..."), &self.url_input)
                 .on_input(Message::UrlInput)
                 .on_submit(Message::AddUrl)
-                .padding(10),
+                .padding(style::BUTTON_LARGE[0]),
             button(text(tr!("Add")))
-                .padding([10, 22])
+                .padding(style::BUTTON_LARGE)
                 .style(style::pill)
                 .on_press(Message::AddUrl),
         ]
-        .spacing(10)
+        .spacing(style::SPACE_S)
         .align_y(Alignment::Center);
 
         let queue: Element<'_, Message> = if self.items.is_empty() {
             // Adwaita's status page: what this screen is for, said once.
             container(
                 column![
-                    text(tr!("Download a video")).size(24).font(style::BOLD),
+                    text(tr!("Download a video"))
+                        .size(style::TITLE)
+                        .font(style::BOLD),
                     text(tr!(
                         "Paste a link from YouTube or almost any other site above."
                     ))
                     .style(style::muted_text),
                 ]
-                .spacing(8)
+                .spacing(style::SPACE_S)
                 .align_x(Alignment::Center),
             )
             .center(Length::Fill)
@@ -639,16 +641,18 @@ impl Download {
         } else {
             scrollable(
                 Column::with_children(self.items.iter().map(item_card))
-                    .spacing(10)
+                    .spacing(style::SPACE_S)
                     .width(Length::Fill),
             )
             .height(Length::Fill)
             .into()
         };
 
+        // The window's page frame (gui::page_frame) gives the width and
+        // the room around it, the same as on every other screen.
         let mut page = column![top_bar, queue, self.queue_progress(), self.actions()]
-            .spacing(16)
-            .max_width(800);
+            .spacing(style::SPACE_L)
+            .height(Length::Fill);
         if self.show_log {
             page = page.push(log_panel::panel(
                 &self.log,
@@ -656,9 +660,7 @@ impl Download {
                 Length::Fixed(150.0),
             ));
         }
-        container(page.padding(24).height(Length::Fill))
-            .center_x(Length::Fill)
-            .into()
+        page.into()
     }
 
     /// How much of the whole queue is done.
@@ -676,12 +678,12 @@ impl Download {
             tr!("Ready: {done} of {total} done", done, total)
         };
         column![
-            text(summary).size(13).style(style::muted_text),
+            text(summary).size(style::CAPTION).style(style::muted_text),
             progress_bar(0.0..=1.0, done as f32 / total as f32)
                 .girth(6)
                 .style(style::progress),
         ]
-        .spacing(6)
+        .spacing(style::SPACE_S)
         .into()
     }
 
@@ -692,17 +694,17 @@ impl Download {
             } else {
                 tr!("Stop")
             }))
-            .padding([10, 28])
+            .padding(style::BUTTON_LARGE)
             .style(style::pill_danger)
             .on_press(Message::Stop)
         } else {
             button(text(tr!("Download")))
-                .padding([10, 28])
+                .padding(style::BUTTON_LARGE)
                 .style(style::pill)
                 .on_press(Message::Start)
         };
         let open_folder = iced::widget::button(text(tr!("Open folder")))
-            .padding([10, 20])
+            .padding(style::BUTTON_LARGE)
             .style(style::pill_secondary)
             .on_press(Message::OpenFolder);
         let log_toggle = iced::widget::button(text(if self.show_log {
@@ -710,24 +712,23 @@ impl Download {
         } else {
             tr!("Show activity")
         }))
-        .padding([10, 16])
+        .padding(style::BUTTON_LARGE)
         .style(style::flat(self.show_log))
         .on_press(Message::ToggleLog);
         let mut actions = row![button, open_folder]
-            .spacing(12)
+            .spacing(style::SPACE_S)
             .align_y(Alignment::Center);
         if self.items.iter().any(|i| i.status.is_finished()) {
             actions = actions.push(
                 iced::widget::button(text(tr!("Clear finished")))
-                    .padding([10, 20])
+                    .padding(style::BUTTON_LARGE)
                     .style(style::pill_secondary)
                     .on_press(Message::ClearFinished),
             );
         }
+        // While it runs, the summary above already says so.
         if let Some(problem) = &self.problem {
             actions = actions.push(text(problem).style(text::danger));
-        } else if self.running() {
-            actions = actions.push(text(tr!("Working...")).style(style::muted_text));
         }
         actions.push(space::horizontal()).push(log_toggle).into()
     }
@@ -769,11 +770,11 @@ fn item_card(item: &QueueItem) -> Element<'_, Message> {
 
     let details: Element<'_, Message> = match &item.meta {
         MetaState::Fetching => text(tr!("Looking up this link..."))
-            .size(13)
+            .size(style::CAPTION)
             .style(style::muted_text)
             .into(),
         MetaState::Failed(e) => text(tr!("Could not look this link up: {e}", e))
-            .size(13)
+            .size(style::CAPTION)
             .style(text::warning)
             .into(),
         MetaState::Ready(meta) => {
@@ -795,7 +796,7 @@ fn item_card(item: &QueueItem) -> Element<'_, Message> {
                 space::vertical().height(0).into()
             } else {
                 text(parts.join("   "))
-                    .size(13)
+                    .size(style::CAPTION)
                     .style(style::muted_text)
                     .into()
             }
@@ -824,22 +825,30 @@ fn item_card(item: &QueueItem) -> Element<'_, Message> {
             ),
             Kind::AudioOnly => kind.to_string(),
         };
-        text(label).size(13).style(style::muted_text).into()
+        text(label)
+            .size(style::CAPTION)
+            .style(style::muted_text)
+            .into()
     };
 
     let status_row: Element<'_, Message> = match &item.status {
-        ItemStatus::Queued => text(tr!("Queued")).size(13).style(style::muted_text).into(),
+        ItemStatus::Queued => text(tr!("Queued"))
+            .size(style::CAPTION)
+            .style(style::muted_text)
+            .into(),
         ItemStatus::Downloading(progress) => progress_view(*progress),
         // No file: yt-dlp skipped it (already in the history, or the file
         // is already there).
         ItemStatus::Completed { path: None } => text(tr!("Nothing new to download"))
-            .size(13)
+            .size(style::CAPTION)
             .style(style::muted_text)
             .into(),
         ItemStatus::Completed { path: Some(path) } => row![
-            text(tr!("Completed")).size(13).style(text::success),
-            button(text(tr!("Open folder")).size(13))
-                .padding([4, 12])
+            text(tr!("Completed"))
+                .size(style::CAPTION)
+                .style(text::success),
+            button(text(tr!("Open folder")).size(style::CAPTION))
+                .padding(style::BUTTON_SMALL)
                 .style(style::pill_secondary)
                 .on_press(Message::OpenItemFolder(path.clone())),
         ]
@@ -848,11 +857,11 @@ fn item_card(item: &QueueItem) -> Element<'_, Message> {
         .into(),
         ItemStatus::Failed(reason) => row![
             text(tr!("Failed: {reason}", reason))
-                .size(13)
+                .size(style::CAPTION)
                 .style(text::danger)
                 .width(Length::Fill),
-            button(text(tr!("Retry")).size(13))
-                .padding([4, 12])
+            button(text(tr!("Retry")).size(style::CAPTION))
+                .padding(style::BUTTON_SMALL)
                 .style(style::pill_secondary)
                 .on_press(Message::RetryItem(id)),
         ]
@@ -862,8 +871,8 @@ fn item_card(item: &QueueItem) -> Element<'_, Message> {
     };
 
     let removable = !matches!(item.status, ItemStatus::Downloading(_));
-    let remove = button(text(tr!("Remove")).size(13))
-        .padding([4, 12])
+    let remove = button(text(tr!("Remove")).size(style::CAPTION))
+        .padding(style::BUTTON_SMALL)
         .style(style::pill_secondary)
         .on_press_maybe(removable.then_some(Message::RemoveItem(id)));
 
@@ -928,9 +937,9 @@ fn progress_view(progress: Progress) -> Element<'static, Message> {
             } else {
                 tr!("Downloading")
             })
-            .size(13),
+            .size(style::CAPTION),
             space::horizontal(),
-            text(details).size(13).style(style::muted_text),
+            text(details).size(style::CAPTION).style(style::muted_text),
         ]
         .align_y(Alignment::Center),
         progress_bar(0.0..=1.0, fraction)

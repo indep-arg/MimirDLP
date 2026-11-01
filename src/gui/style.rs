@@ -19,6 +19,33 @@ pub fn theme(pref: ThemePref, system: Mode) -> Theme {
     if dark { dark_theme() } else { light_theme() }
 }
 
+// One scale for every screen, so the same kind of thing looks the same
+// wherever it is. Plain text keeps iced's default size (16).
+
+/// Hints, details under a title, notices and the activity log.
+pub const CAPTION: f32 = 13.0;
+/// Section titles and the header bar's title, always in bold.
+pub const HEADING: f32 = 15.0;
+/// The one big title of a screen: the empty queue, the About page.
+pub const TITLE: f32 = 24.0;
+
+/// Gaps, from the space inside a row to the space between sections.
+pub const SPACE_XS: f32 = 4.0;
+pub const SPACE_S: f32 = 8.0;
+pub const SPACE_M: f32 = 12.0;
+pub const SPACE_L: f32 = 20.0;
+
+/// Every screen's content is this wide at most, centered in the window,
+/// with this much room around it.
+pub const PAGE_WIDTH: f32 = 760.0;
+pub const PAGE_PADDING: f32 = 24.0;
+
+/// Button sizes: the screen's main actions, ordinary buttons, and small
+/// ones inside a notice or a row.
+pub const BUTTON_LARGE: [f32; 2] = [10.0, 24.0];
+pub const BUTTON: [f32; 2] = [8.0, 20.0];
+pub const BUTTON_SMALL: [f32; 2] = [4.0, 14.0];
+
 // Both palettes are libadwaita's named colors.
 fn dark_theme() -> Theme {
     Theme::custom(
@@ -93,6 +120,34 @@ pub fn card(theme: &Theme) -> container::Style {
         },
         ..container::Style::default()
     }
+}
+
+/// A notice above a screen's content: a card tinted with `tone` (the
+/// warning color for a problem, the accent for news).
+pub fn notice(tone: fn(&Theme) -> Color) -> impl Fn(&Theme) -> container::Style {
+    move |theme| {
+        let (surface, _) = surface(theme);
+        let color = tone(theme);
+        container::Style {
+            background: Some(mix(surface, Color { a: 0.12, ..color }).into()),
+            border: Border {
+                color: Color { a: 0.35, ..color },
+                width: 1.0,
+                radius: 12.0.into(),
+            },
+            ..container::Style::default()
+        }
+    }
+}
+
+/// The accent, for [`notice`].
+pub fn accent(theme: &Theme) -> Color {
+    theme.palette().primary
+}
+
+/// The warning color, for [`notice`].
+pub fn warning(theme: &Theme) -> Color {
+    theme.palette().warning
 }
 
 /// The header bar runs edge to edge, so it has no corners.

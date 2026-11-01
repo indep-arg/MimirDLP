@@ -6,11 +6,11 @@
 use std::thread;
 
 use iced::futures::channel::mpsc;
-use iced::widget::{Column, button, column, container, progress_bar, row, space, text};
+use iced::widget::{Column, button, column, progress_bar, row, space, text};
 use iced::{Alignment, Element, Font, Length, Task, Theme};
 use tr::tr;
 
-use super::{amount, card, dropdown, log as log_panel, style};
+use super::{amount, card, dropdown, log as log_panel, section_title, style};
 use crate::provision::{self, Channel, Component, Event, Level, Paths, Status, UpdateCheck};
 
 /// What the worker thread sends back while it runs.
@@ -406,7 +406,7 @@ impl Setup {
             Column::with_children(Component::ALL.into_iter().map(|component| {
                 component_row(component, &self.rows[index(component)], &self.paths)
             }))
-            .spacing(12);
+            .spacing(style::SPACE_M);
         // The package brings its own yt-dlp, so there is nothing to choose.
         let components = if self.bundled() {
             components
@@ -419,27 +419,31 @@ impl Setup {
             card(tr!("Components"), components.into()),
             self.actions()
         ]
-        .spacing(20);
+        .spacing(style::SPACE_L);
         if let Some(transfer) = &self.transfer {
             page = page.push(transfer_view(transfer));
         }
+        // Copying the diagnostics changes nothing and works at any time, so
+        // it sits with the activity rather than among the actions, which
+        // are greyed out while a job runs.
+        let copy = button(text(tr!("Copy diagnostic information")).size(style::CAPTION))
+            .padding(style::BUTTON_SMALL)
+            .style(style::pill_secondary)
+            .on_press(Message::CopyDiagnostics);
         page = page.push(
             column![
-                text(tr!("Activity")).size(15),
+                row![section_title(tr!("Activity")).width(Length::Fill), copy]
+                    .align_y(Alignment::Center),
                 log_panel::panel(
                     &self.log,
                     tr!("Nothing yet. Each download and check will be listed here."),
                     Length::Fill,
                 ),
             ]
-            .spacing(8)
+            .spacing(style::SPACE_S)
             .height(Length::Fill),
         );
-
-        container(page.padding(24).max_width(760))
-            .width(Length::Fill)
-            .center_x(Length::Fill)
-            .into()
+        page.height(Length::Fill).into()
     }
 
     /// What a bug report needs to know about this copy: its version, the
@@ -481,7 +485,7 @@ impl Setup {
                 "Nightly builds get fixes for sites that changed within a day. \
                  Stable releases are tested for longer but come weeks apart."
             ))
-            .size(13)
+            .size(style::CAPTION)
             .style(style::muted_text),
         ]
         .spacing(6)
@@ -491,19 +495,11 @@ impl Setup {
     /// The contextual actions available, given what is installed right now.
     /// None for tools that came with the package, only what is going on.
     fn actions(&self) -> Element<'_, Message> {
-        let copy = button(text(tr!("Copy diagnostic information")))
-            .padding([8, 20])
-            .style(style::pill_secondary)
-            .on_press(Message::CopyDiagnostics);
         if self.bundled() {
             let busy = self
                 .job
                 .map(|_| text(tr!("Looking at what is installed...")).style(style::muted_text));
-            return row![copy]
-                .push(busy)
-                .spacing(10)
-                .align_y(Alignment::Center)
-                .into();
+            return row![].push(busy).into();
         }
         if self.confirm_reinstall {
             return row![
@@ -511,11 +507,11 @@ impl Setup {
                     .style(text::warning)
                     .width(Length::Fill),
                 button(text(tr!("Cancel")))
-                    .padding([8, 20])
+                    .padding(style::BUTTON)
                     .style(style::pill_secondary)
                     .on_press(Message::CancelReinstall),
                 button(text(tr!("Reinstall")))
-                    .padding([8, 20])
+                    .padding(style::BUTTON)
                     .style(style::pill_danger)
                     .on_press(Message::ConfirmReinstall),
             ]
@@ -535,7 +531,7 @@ impl Setup {
         let idle = !self.busy();
         let action = |label: String, message: Message, primary: bool| {
             button(text(label))
-                .padding([8, 20])
+                .padding(style::BUTTON)
                 .style(if primary {
                     style::pill
                 } else {
@@ -544,7 +540,7 @@ impl Setup {
                 .on_press_maybe(idle.then_some(message))
         };
 
-        let mut actions = row![].spacing(10).align_y(Alignment::Center);
+        let mut actions = row![].spacing(style::SPACE_S).align_y(Alignment::Center);
         if has_missing {
             actions = actions.push(action(
                 tr!("Install missing components"),
@@ -569,7 +565,6 @@ impl Setup {
         if has_installed {
             actions = actions.push(action(tr!("Reinstall all"), Message::AskReinstall, false));
         }
-        actions = actions.push(copy);
         if let Some(job) = self.job {
             let busy = match job {
                 Job::Inspecting => tr!("Looking at what is installed..."),
@@ -578,7 +573,9 @@ impl Setup {
             };
             actions = actions.push(text(busy).style(style::muted_text));
         }
-        actions.into()
+        // Longer labels (Spanish, say) go on to a second line rather than
+        // squeezing each other.
+        actions.wrap().vertical_spacing(style::SPACE_S).into()
     }
 }
 
@@ -774,9 +771,11 @@ fn transfer_view(transfer: &Transfer) -> Element<'_, Message> {
     let (amount, fraction) = amount(transfer.received, transfer.total);
     column![
         row![
-            text(&transfer.file).font(Font::MONOSPACE).size(13),
+            text(&transfer.file)
+                .font(Font::MONOSPACE)
+                .size(style::CAPTION),
             space::horizontal(),
-            text(amount).size(13).style(style::muted_text),
+            text(amount).size(style::CAPTION).style(style::muted_text),
         ]
         .align_y(Alignment::Center),
         progress_bar(0.0..=1.0, fraction)

@@ -371,7 +371,7 @@ fn updates_section(settings: &Settings) -> Element<'_, Message> {
         text(tr!(
             "Looks at MimirDLP's release page on GitHub once a day, when the app starts. Nothing about you or your downloads is sent, and nothing is installed by itself."
         ))
-        .size(13)
+        .size(style::CAPTION)
         .style(style::muted_text),
     ]
     .spacing(8)
@@ -386,7 +386,7 @@ fn desktop_section<'a>(installed: bool) -> Element<'a, Message> {
         text(tr!(
             "Adds a launcher and the icon to your user folder, so MimirDLP can be started from the menu and shows its icon in the taskbar. Turning it off removes them."
         ))
-        .size(13)
+        .size(style::CAPTION)
         .style(style::muted_text),
     ]
     .spacing(8)
@@ -406,7 +406,7 @@ fn advanced_toggle<'a>(open: bool) -> Element<'a, Message> {
         row![
             column![
                 text(label),
-                text(contents).size(13).style(style::muted_text),
+                text(contents).size(style::CAPTION).style(style::muted_text),
             ]
             .spacing(2)
             .width(Length::Fill),
@@ -604,7 +604,7 @@ fn format_section(settings: &Settings) -> Element<'_, Message> {
             } else {
                 body = body.push(
                     text(tr!("The audio is kept exactly as the site serves it."))
-                        .size(13)
+                        .size(style::CAPTION)
                         .style(style::muted_text),
                 );
             }
@@ -663,7 +663,7 @@ fn extras_section(settings: &Settings) -> Element<'_, Message> {
                     .on_toggle(|v| Message::Toggle(Flag::AutoSubs, v)),
             );
         if let Some(problem) = settings.auto_subs_problem() {
-            body = body.push(text(problem).size(13).style(text::warning));
+            body = body.push(text(problem).size(style::CAPTION).style(text::warning));
         }
     }
     body = body.push(choice(
@@ -790,12 +790,12 @@ fn history_row(history: History<'_>) -> Element<'_, Message> {
             text(tr!("This deletes the history file for good."))
                 .style(text::warning)
                 .width(Length::Fill),
-            button(text(tr!("Cancel")).size(13))
-                .padding([4, 14])
+            button(text(tr!("Cancel")).size(style::CAPTION))
+                .padding(style::BUTTON_SMALL)
                 .style(style::pill_secondary)
                 .on_press(Message::CancelClearHistory),
-            button(text(tr!("Clear")).size(13))
-                .padding([4, 14])
+            button(text(tr!("Clear")).size(style::CAPTION))
+                .padding(style::BUTTON_SMALL)
                 .style(style::pill_danger)
                 .on_press(Message::ConfirmClearHistory),
         ]
@@ -809,7 +809,7 @@ fn history_row(history: History<'_>) -> Element<'_, Message> {
     };
     let row = row![
         text(summary)
-            .size(13)
+            .size(style::CAPTION)
             .style(style::muted_text)
             .width(Length::Fill),
         button(
@@ -818,9 +818,9 @@ fn history_row(history: History<'_>) -> Element<'_, Message> {
             } else {
                 tr!("View entries")
             })
-            .size(13)
+            .size(style::CAPTION)
         )
-        .padding([4, 14])
+        .padding(style::BUTTON_SMALL)
         .style(style::pill_secondary)
         .on_press_maybe(
             history
@@ -828,8 +828,8 @@ fn history_row(history: History<'_>) -> Element<'_, Message> {
                 .is_some()
                 .then_some(Message::ToggleHistoryList)
         ),
-        button(text(tr!("Clear history")).size(13))
-            .padding([4, 14])
+        button(text(tr!("Clear history")).size(style::CAPTION))
+            .padding(style::BUTTON_SMALL)
             .style(style::pill_secondary)
             .on_press_maybe(history.count.is_some().then_some(Message::ClearHistory)),
     ]
@@ -848,14 +848,14 @@ fn history_row(history: History<'_>) -> Element<'_, Message> {
 fn history_list_view(lines: &[String]) -> Element<'_, Message> {
     let body: Element<'_, Message> = if lines.is_empty() {
         text(tr!("The history is empty."))
-            .size(13)
+            .size(style::CAPTION)
             .style(style::muted_text)
             .into()
     } else {
         Column::with_children(
             lines
                 .iter()
-                .map(|line| text(line).font(Font::MONOSPACE).size(13).into()),
+                .map(|line| text(line).font(Font::MONOSPACE).size(style::CAPTION).into()),
         )
         .spacing(4)
         .into()
@@ -884,7 +884,7 @@ fn sign_in_section(settings: &Settings, cookies: bool) -> Element<'_, Message> {
              It is used for the links you add next and is never saved: it is \
              forgotten when the app closes."
         ))
-        .size(13)
+        .size(style::CAPTION)
         .style(style::muted_text),
     ];
     if !cookies {
@@ -916,7 +916,7 @@ fn sign_in_section(settings: &Settings, cookies: bool) -> Element<'_, Message> {
                      Chrome, Edge and other Chromium browsers may have to be closed \
                      first, and recent versions on Windows can't be read at all."
                 ))
-                .size(13)
+                .size(style::CAPTION)
                 .style(style::muted_text),
             );
     }
@@ -984,13 +984,13 @@ fn destination_section<'a>(settings: &'a Settings, paths: &'a Paths) -> Element<
                 .on_input(|v| Message::Text(Field::OutputDir, v))
                 .padding(10),
             button(text(tr!("Choose...")))
-                .padding([10, 18])
+                .padding(style::BUTTON_LARGE)
                 .style(style::pill_secondary)
                 .on_press(Message::ChooseFolder),
         ]
         .spacing(10)
         .align_y(Alignment::Center),
-        text(hint).size(13).style(style::muted_text),
+        text(hint).size(style::CAPTION).style(style::muted_text),
     ]
     .spacing(8)
     .into()
