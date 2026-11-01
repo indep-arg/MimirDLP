@@ -30,7 +30,7 @@ tar = { version = "0.4.46", default-features = false }
 # parses them; tr supplies the tr!() macro and the translator registry.
 tr = { version = "0.1.11", default-features = false }
 ureq = "3.4.1"
-zip = { version = "8.6.0", default-features = false, features = ["deflate"] }
+zip = { version = "9.2.1", default-features = false, features = ["deflate"] }
 
 [target.'cfg(unix)'.dependencies]
 # kill(2) on a process group, to stop yt-dlp along with what it started.

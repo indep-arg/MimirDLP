@@ -49,7 +49,7 @@ pub fn install_from(packaging: &Packaging, download: &Path, paths: &Paths) -> Re
                 if !entry.is_file() {
                     continue;
                 }
-                let path = Path::new(entry.name()).to_path_buf();
+                let path = Path::new(&*entry.name().map_err(archive_err)?).to_path_buf();
                 if let Some(name) = wanted(&path, members)
                     && !found.contains(&name)
                 {
