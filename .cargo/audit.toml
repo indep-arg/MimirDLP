@@ -1,0 +1,10 @@
+# Settings for `cargo audit` (.github/workflows/audit.yml).
+[advisories]
+# Both come through pgp and have no fixed release. They concern timing
+# leaks while signing or decrypting with a private key; this app only
+# verifies public signatures (src/provision/signature.rs), where there is
+# no secret to leak. Remove them once pgp ships a fixed version.
+ignore = [
+    "RUSTSEC-2023-0071", # rsa: Marvin attack
+    "RUSTSEC-2026-0387", # crypto-bigint: timing variability
+]
