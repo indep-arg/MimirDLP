@@ -9,3 +9,15 @@ updates:
     groups:
       actions:
         patterns: ["*"]
+
+  # The Rust dependencies. Compatible updates arrive grouped in one pull
+  # request a month; a new major version gets one of its own, since it can
+  # need code changes. Security updates are sent as soon as an advisory
+  # appears, whatever the schedule.
+  - package-ecosystem: cargo
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      cargo:
+        update-types: ["minor", "patch"]
