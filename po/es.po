@@ -8,11 +8,11 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: src/config.rs src/gui/settings.rs
+#: src/config.rs
 msgid "Video and audio"
 msgstr "Video y audio"
 
-#: src/config.rs src/gui/settings.rs
+#: src/config.rs
 msgid "Audio only"
 msgstr "Solo audio"
 
@@ -486,7 +486,7 @@ msgstr "Detener y guardar"
 msgid "Stop"
 msgstr "Detener"
 
-#: src/gui/download.rs
+#: src/gui/download.rs src/gui/settings.rs
 msgid "Download"
 msgstr "Descargar"
 

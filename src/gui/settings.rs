@@ -7,7 +7,7 @@
 //! with. `config::Settings`, `Settings::to_options` and `Settings::problems`
 //! hold the model and its rules; this module only edits and shows it.
 
-use iced::widget::{Column, button, column, container, radio, row, rule, scrollable, text};
+use iced::widget::{Column, button, column, container, row, rule, scrollable, text};
 use iced::{Alignment, Element, Font, Length, Task};
 use tr::tr;
 
@@ -365,9 +365,7 @@ impl SettingsPage {
 
 fn updates_section(settings: &Settings) -> Element<'_, Message> {
     column![
-        switch(settings.app_updates)
-            .label(tr!("Tell me when a new version of MimirDLP is out"))
-            .on_toggle(|v| Message::Toggle(Flag::AppUpdates, v)),
+        toggle_row(tr!("Tell me when a new version of MimirDLP is out"), settings.app_updates, |v| Message::Toggle(Flag::AppUpdates, v)),
         text(tr!(
             "Looks at MimirDLP's release page on GitHub once a day, when the app starts. Nothing about you or your downloads is sent, and nothing is installed by itself."
         ))
@@ -380,9 +378,7 @@ fn updates_section(settings: &Settings) -> Element<'_, Message> {
 
 fn desktop_section<'a>(installed: bool) -> Element<'a, Message> {
     column![
-        switch(installed)
-            .label(tr!("Show MimirDLP in the applications menu"))
-            .on_toggle(Message::DesktopEntry),
+        toggle_row(tr!("Show MimirDLP in the applications menu"), installed, Message::DesktopEntry),
         text(tr!(
             "Adds a launcher and the icon to your user folder, so MimirDLP can be started from the menu and shows its icon in the taskbar. Turning it off removes them."
         ))
@@ -449,6 +445,46 @@ impl<'a> From<Rows<'a>> for Element<'a, Message> {
         }
         list.into()
     }
+}
+
+/// A path to show where there is little room: cut at the start, so the
+/// end, the folder's own name, stays readable ("…/MimirDLP/downloads"),
+/// rather than cut by the field at some letter in the middle.
+fn short_path(path: &std::path::Path) -> String {
+    let full = path.display().to_string();
+    if full.chars().count() <= 40 {
+        return full;
+    }
+    let last: Vec<String> = path
+        .components()
+        .rev()
+        .take(2)
+        .map(|c| c.as_os_str().to_string_lossy().into_owned())
+        .collect();
+    let sep = std::path::MAIN_SEPARATOR;
+    match last.as_slice() {
+        [name, parent] => format!("\u{2026}{sep}{parent}{sep}{name}"),
+        _ => full,
+    }
+}
+
+/// An on/off setting: its label on the left, the switch on the right,
+/// like every other row here. The label can be clicked too.
+fn toggle_row<'a>(
+    label: String,
+    value: bool,
+    on_toggle: impl Fn(bool) -> Message + 'a,
+) -> Element<'a, Message> {
+    let flip = on_toggle(!value);
+    row![
+        iced::widget::mouse_area(text(label).width(Length::Fill))
+            .on_press(flip)
+            .interaction(iced::mouse::Interaction::Pointer),
+        switch(value).on_toggle(on_toggle),
+    ]
+    .spacing(style::SPACE_M)
+    .align_y(Alignment::Center)
+    .into()
 }
 
 /// A typed value, saved later (see [`Field`]).
@@ -522,20 +558,13 @@ fn view<'a>(
 }
 
 fn format_section(settings: &Settings) -> Element<'_, Message> {
-    let mut body = rows![
-        radio(
-            tr!("Video and audio"),
-            Kind::VideoAudio,
-            Some(settings.kind),
-            Message::Kind
-        ),
-        radio(
-            tr!("Audio only"),
-            Kind::AudioOnly,
-            Some(settings.kind),
-            Message::Kind
-        ),
-    ];
+    // The same dropdown as on a queued link's card.
+    let mut body = rows![choice(
+        tr!("Download"),
+        dropdown(Kind::ALL, Some(settings.kind), Message::Kind)
+            .width(style::CONTROL_WIDTH)
+            .into(),
+    )];
 
     match settings.kind {
         Kind::VideoAudio => {
@@ -546,6 +575,7 @@ fn format_section(settings: &Settings) -> Element<'_, Message> {
                     Some(settings.video_format),
                     Message::VideoFormat,
                 )
+                .width(style::CONTROL_WIDTH)
                 .into(),
             ));
             if settings.video_format == VideoFormat::Custom {
@@ -562,15 +592,21 @@ fn format_section(settings: &Settings) -> Element<'_, Message> {
             body = body
                 .push(choice(
                     tr!("Quality"),
-                    dropdown(Quality::ALL, Some(settings.quality), Message::Quality).into(),
+                    dropdown(Quality::ALL, Some(settings.quality), Message::Quality)
+                        .width(style::CONTROL_WIDTH)
+                        .into(),
                 ))
                 .push(choice(
                     tr!("Container"),
-                    dropdown(Container::ALL, Some(settings.container), Message::Container).into(),
+                    dropdown(Container::ALL, Some(settings.container), Message::Container)
+                        .width(style::CONTROL_WIDTH)
+                        .into(),
                 ))
                 .push(choice(
                     tr!("Convert the container"),
-                    dropdown(Convert::ALL, Some(settings.convert), Message::Convert).into(),
+                    dropdown(Convert::ALL, Some(settings.convert), Message::Convert)
+                        .width(style::CONTROL_WIDTH)
+                        .into(),
                 ));
             if settings.convert != Convert::Keep {
                 body = body.push(choice(
@@ -580,15 +616,17 @@ fn format_section(settings: &Settings) -> Element<'_, Message> {
             }
         }
         Kind::AudioOnly => {
-            body = body.push(
-                switch(settings.audio_convert)
-                    .label(tr!("Convert it to another format"))
-                    .on_toggle(|v| Message::Toggle(Flag::AudioConvert, v)),
-            );
+            body = body.push(toggle_row(
+                tr!("Convert it to another format"),
+                settings.audio_convert,
+                |v| Message::Toggle(Flag::AudioConvert, v),
+            ));
             if settings.audio_convert {
                 body = body.push(choice(
                     tr!("Audio format"),
-                    dropdown(Audio::ALL, Some(settings.audio), Message::Audio).into(),
+                    dropdown(Audio::ALL, Some(settings.audio), Message::Audio)
+                        .width(style::CONTROL_WIDTH)
+                        .into(),
                 ));
                 if !settings.audio.is_lossless() {
                     body = body.push(choice(
@@ -598,6 +636,7 @@ fn format_section(settings: &Settings) -> Element<'_, Message> {
                             Some(settings.audio_quality),
                             Message::AudioQuality,
                         )
+                        .width(style::CONTROL_WIDTH)
                         .into(),
                     ));
                 }
@@ -614,11 +653,11 @@ fn format_section(settings: &Settings) -> Element<'_, Message> {
 }
 
 fn extras_section(settings: &Settings) -> Element<'_, Message> {
-    let mut body = rows![
-        switch(settings.thumbnail)
-            .label(tr!("Embed the thumbnail"))
-            .on_toggle(|v| Message::Toggle(Flag::Thumbnail, v)),
-    ];
+    let mut body = rows![toggle_row(
+        tr!("Embed the thumbnail"),
+        settings.thumbnail,
+        |v| Message::Toggle(Flag::Thumbnail, v)
+    ),];
     if settings.thumbnail {
         body = body.push(choice(
             tr!("Thumbnail format"),
@@ -627,23 +666,24 @@ fn extras_section(settings: &Settings) -> Element<'_, Message> {
                 Some(settings.thumbnail_format),
                 Message::ThumbFormat,
             )
+            .width(style::CONTROL_WIDTH)
             .into(),
         ));
     }
     body = body
-        .push(
-            switch(settings.metadata)
-                .label(tr!("Embed title, artist and date"))
-                .on_toggle(|v| Message::Toggle(Flag::Metadata, v)),
-        )
-        .push(
-            switch(settings.chapters)
-                .label(tr!("Embed chapters"))
-                .on_toggle(|v| Message::Toggle(Flag::Chapters, v)),
-        )
+        .push(toggle_row(
+            tr!("Embed title, artist and date"),
+            settings.metadata,
+            |v| Message::Toggle(Flag::Metadata, v),
+        ))
+        .push(toggle_row(tr!("Embed chapters"), settings.chapters, |v| {
+            Message::Toggle(Flag::Chapters, v)
+        }))
         .push(choice(
             tr!("Subtitles"),
-            dropdown(Subs::ALL, Some(settings.subs), Message::Subs).into(),
+            dropdown(Subs::ALL, Some(settings.subs), Message::Subs)
+                .width(style::CONTROL_WIDTH)
+                .into(),
         ));
 
     if settings.subs != Subs::Off {
@@ -657,11 +697,11 @@ fn extras_section(settings: &Settings) -> Element<'_, Message> {
                     240,
                 ),
             ))
-            .push(
-                switch(settings.auto_subs)
-                    .label(tr!("Include auto-generated subtitles"))
-                    .on_toggle(|v| Message::Toggle(Flag::AutoSubs, v)),
-            );
+            .push(toggle_row(
+                tr!("Include auto-generated subtitles"),
+                settings.auto_subs,
+                |v| Message::Toggle(Flag::AutoSubs, v),
+            ));
         if let Some(problem) = settings.auto_subs_problem() {
             body = body.push(text(problem).size(style::CAPTION).style(text::warning));
         }
@@ -669,12 +709,16 @@ fn extras_section(settings: &Settings) -> Element<'_, Message> {
     body = body.push(choice(
         // A name, the same in every language.
         "SponsorBlock".to_string(),
-        dropdown(Sponsor::ALL, Some(settings.sponsor), Message::Sponsor).into(),
+        dropdown(Sponsor::ALL, Some(settings.sponsor), Message::Sponsor)
+            .width(style::CONTROL_WIDTH)
+            .into(),
     ));
     if settings.sponsor != Sponsor::Off {
         body = body.push(choice(
             tr!("Segments"),
-            dropdown(Segments::ALL, Some(settings.segments), Message::Segments).into(),
+            dropdown(Segments::ALL, Some(settings.segments), Message::Segments)
+                .width(style::CONTROL_WIDTH)
+                .into(),
         ));
         if settings.segments == Segments::Custom {
             body = body.push(choice(
@@ -689,11 +733,11 @@ fn extras_section(settings: &Settings) -> Element<'_, Message> {
         }
     }
     if settings.sponsor == Sponsor::Remove {
-        body = body.push(
-            switch(settings.keyframes)
-                .label(tr!("Cut exactly at keyframes (re-encodes, much slower)"))
-                .on_toggle(|v| Message::Toggle(Flag::Keyframes, v)),
-        );
+        body = body.push(toggle_row(
+            tr!("Cut exactly at keyframes (re-encodes, much slower)"),
+            settings.keyframes,
+            |v| Message::Toggle(Flag::Keyframes, v),
+        ));
     }
     body.into()
 }
@@ -706,6 +750,7 @@ fn automation_section<'a>(settings: &'a Settings, history: History<'a>) -> Eleme
             Some(settings.playlist),
             Message::Playlist
         )
+        .width(style::CONTROL_WIDTH)
         .into(),
     )];
 
@@ -715,23 +760,23 @@ fn automation_section<'a>(settings: &'a Settings, history: History<'a>) -> Eleme
                 tr!("Items (empty for all)"),
                 text_field("1-5,8", &settings.playlist_items, Field::PlaylistItems, 160),
             ))
-            .push(
-                switch(settings.playlist_reverse)
-                    .label(tr!("Start from the end of the playlist"))
-                    .on_toggle(|v| Message::Toggle(Flag::PlaylistReverse, v)),
-            )
-            .push(
-                switch(settings.organize)
-                    .label(tr!("One folder per playlist, numbered"))
-                    .on_toggle(|v| Message::Toggle(Flag::Organize, v)),
-            );
+            .push(toggle_row(
+                tr!("Start from the end of the playlist"),
+                settings.playlist_reverse,
+                |v| Message::Toggle(Flag::PlaylistReverse, v),
+            ))
+            .push(toggle_row(
+                tr!("One folder per playlist, numbered"),
+                settings.organize,
+                |v| Message::Toggle(Flag::Organize, v),
+            ));
     }
 
-    body = body.push(
-        switch(settings.archive)
-            .label(tr!("Keep a history and skip what was downloaded before"))
-            .on_toggle(|v| Message::Toggle(Flag::Archive, v)),
-    );
+    body = body.push(toggle_row(
+        tr!("Keep a history and skip what was downloaded before"),
+        settings.archive,
+        |v| Message::Toggle(Flag::Archive, v),
+    ));
     if settings.archive {
         body = body
             .push(choice(
@@ -743,11 +788,11 @@ fn automation_section<'a>(settings: &'a Settings, history: History<'a>) -> Eleme
                     240,
                 ),
             ))
-            .push(
-                switch(settings.archive_stop)
-                    .label(tr!("Stop as soon as a video is already in the history"))
-                    .on_toggle(|v| Message::Toggle(Flag::ArchiveStop, v)),
-            )
+            .push(toggle_row(
+                tr!("Stop as soon as a video is already in the history"),
+                settings.archive_stop,
+                |v| Message::Toggle(Flag::ArchiveStop, v),
+            ))
             .push(history_row(history));
     }
     body = body
@@ -762,7 +807,9 @@ fn automation_section<'a>(settings: &'a Settings, history: History<'a>) -> Eleme
         ))
         .push(choice(
             tr!("File names"),
-            dropdown(Template::ALL, Some(settings.template), Message::Template).into(),
+            dropdown(Template::ALL, Some(settings.template), Message::Template)
+                .width(style::CONTROL_WIDTH)
+                .into(),
         ));
     if settings.template == Template::Custom {
         body = body.push(choice(
@@ -775,11 +822,11 @@ fn automation_section<'a>(settings: &'a Settings, history: History<'a>) -> Eleme
             ),
         ));
     }
-    body = body.push(
-        switch(settings.restrict_filenames)
-            .label(tr!("Plain ASCII file names"))
-            .on_toggle(|v| Message::Toggle(Flag::Restrict, v)),
-    );
+    body = body.push(toggle_row(
+        tr!("Plain ASCII file names"),
+        settings.restrict_filenames,
+        |v| Message::Toggle(Flag::Restrict, v),
+    ));
     body.into()
 }
 
@@ -897,6 +944,7 @@ fn sign_in_section(settings: &Settings, cookies: bool) -> Element<'_, Message> {
             Some(settings.cookies_browser),
             Message::Browser,
         )
+        .width(style::CONTROL_WIDTH)
         .into(),
     ));
     if settings.cookies_browser != Browser::None {
@@ -946,9 +994,11 @@ fn network_section(settings: &Settings) -> Element<'_, Message> {
             tr!("Retries after a network error"),
             text_field("10", &settings.retries, Field::Retries, 160),
         ),
-        switch(settings.live_from_start)
-            .label(tr!("Record live streams from the start"))
-            .on_toggle(|v| Message::Toggle(Flag::LiveFromStart, v)),
+        toggle_row(
+            tr!("Record live streams from the start"),
+            settings.live_from_start,
+            |v| Message::Toggle(Flag::LiveFromStart, v)
+        ),
         choice(
             tr!("Wait for a scheduled stream (seconds)"),
             text_field(
@@ -958,15 +1008,21 @@ fn network_section(settings: &Settings) -> Element<'_, Message> {
                 160
             ),
         ),
-        switch(settings.preserve_mtime)
-            .label(tr!("Keep the original upload date on the file"))
-            .on_toggle(|v| Message::Toggle(Flag::Mtime, v)),
-        switch(settings.ignore_errors)
-            .label(tr!("Keep going when one video of a playlist fails"))
-            .on_toggle(|v| Message::Toggle(Flag::IgnoreErrors, v)),
-        switch(settings.verbose)
-            .label(tr!("Verbose log (for troubleshooting)"))
-            .on_toggle(|v| Message::Toggle(Flag::Verbose, v)),
+        toggle_row(
+            tr!("Keep the original upload date on the file"),
+            settings.preserve_mtime,
+            |v| Message::Toggle(Flag::Mtime, v)
+        ),
+        toggle_row(
+            tr!("Keep going when one video of a playlist fails"),
+            settings.ignore_errors,
+            |v| Message::Toggle(Flag::IgnoreErrors, v)
+        ),
+        toggle_row(
+            tr!("Verbose log (for troubleshooting)"),
+            settings.verbose,
+            |v| Message::Toggle(Flag::Verbose, v)
+        ),
     ]
     .into()
 }
@@ -980,7 +1036,7 @@ fn destination_section<'a>(settings: &'a Settings, paths: &'a Paths) -> Element<
     };
     column![
         row![
-            entry(&default.to_string_lossy(), &settings.output_dir)
+            entry(&short_path(&default), &settings.output_dir)
                 .on_input(|v| Message::Text(Field::OutputDir, v))
                 .padding(10),
             button(text(tr!("Choose...")))
@@ -1085,6 +1141,20 @@ mod tests {
         assert_eq!(page.settings().output_dir, "/videos/new");
         assert_eq!(Settings::load(&paths).output_dir, "/videos/new");
         std::fs::remove_dir_all(dir).unwrap();
+    }
+
+    /// A long default folder shows its end, the part that tells which
+    /// folder it is; a short one is shown whole.
+    #[test]
+    fn a_long_folder_is_cut_at_the_start() {
+        let sep = std::path::MAIN_SEPARATOR;
+        let long = std::path::Path::new("/home/someone/Applications/portable/MimirDLP/downloads");
+        assert_eq!(
+            short_path(long),
+            format!("\u{2026}{sep}MimirDLP{sep}downloads")
+        );
+        let short = std::path::Path::new("/opt/MimirDLP/downloads");
+        assert_eq!(short_path(short), short.display().to_string());
     }
 
     /// Every field and flag reaches its own setting and no other.

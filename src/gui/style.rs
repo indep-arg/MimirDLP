@@ -42,6 +42,10 @@ pub const SPACE_L: f32 = 20.0;
 pub const PAGE_WIDTH: f32 = 760.0;
 pub const PAGE_PADDING: f32 = 24.0;
 
+/// The width of every dropdown on the right of a settings row, so their
+/// column lines up.
+pub const CONTROL_WIDTH: f32 = 300.0;
+
 /// Button sizes: the screen's main actions, ordinary buttons, and small
 /// ones inside a notice or a row.
 pub const BUTTON_LARGE: [f32; 2] = [10.0, 24.0];

@@ -651,7 +651,8 @@ impl Setup {
         column![
             row![
                 text(tr!("yt-dlp builds")).width(Length::Fill),
-                dropdown(Channel::ALL, Some(self.channel), Message::Channel),
+                dropdown(Channel::ALL, Some(self.channel), Message::Channel)
+                    .width(style::CONTROL_WIDTH),
             ]
             .align_y(Alignment::Center),
             text(tr!(

@@ -7,11 +7,11 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: src/config.rs src/gui/settings.rs
+#: src/config.rs
 msgid "Video and audio"
 msgstr ""
 
-#: src/config.rs src/gui/settings.rs
+#: src/config.rs
 msgid "Audio only"
 msgstr ""
 
@@ -485,7 +485,7 @@ msgstr ""
 msgid "Stop"
 msgstr ""
 
-#: src/gui/download.rs
+#: src/gui/download.rs src/gui/settings.rs
 msgid "Download"
 msgstr ""
 
