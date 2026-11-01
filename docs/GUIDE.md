@@ -62,7 +62,7 @@ In the Flatpak the ☰ menu has **Components** instead of "Setup and updates", s
 
 ## First launch
 
-MimirDLP opens on **Setup** and installs yt-dlp, FFmpeg and Deno (about 200 MB), then moves on to the Download screen. If the install fails (no internet, say), "Install missing components" tries again. The Flatpak skips this step.
+The first time, MimirDLP welcomes you and installs yt-dlp, FFmpeg and Deno (about 200 MB) by itself, with one progress bar for the whole install; "Show details" opens the full Setup screen with every step. Then it moves on to the Download screen. If the install fails (no internet, say), it says why, and "Try again" picks up from there. The Flatpak skips this step.
 
 To check for updates later, use ☰, **Setup and updates**; only what's out of date is downloaded again. When yt-dlp is more than two weeks old the Download screen reminds you, since an old yt-dlp is the usual reason a site stops working.
 

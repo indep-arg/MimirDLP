@@ -36,6 +36,8 @@ pub enum Message {
     CancelReinstall,
     Channel(Channel),
     CopyDiagnostics,
+    /// The first launch's welcome: show or hide the full Setup screen.
+    ToggleDetails,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -80,6 +82,11 @@ pub struct Setup {
     transfer: Option<Transfer>,
     /// Debug builds only: an action to run once the first inspection ends.
     pending: Option<Message>,
+    /// A first launch shows a welcome with one progress bar instead of
+    /// this screen, until everything is installed.
+    welcome: bool,
+    /// The full screen was asked for from the welcome.
+    details: bool,
     /// Install what is missing as soon as the first inspection ends, so a
     /// first launch needs no button press. Off when the folder can't be
     /// written to, when the tools came with the package, and in debug
@@ -93,6 +100,8 @@ impl Setup {
             paths: paths.clone(),
             rows: Default::default(),
             channel: provision::ytdlp_channel(&paths),
+            welcome: first_launch(&paths),
+            details: false,
             job: Some(Job::Inspecting),
             confirm_reinstall: false,
             log: Vec::new(),
@@ -177,6 +186,11 @@ impl Setup {
     }
 
     pub fn update(&mut self, message: Message) -> Task<Message> {
+        // Only changes what is shown, so it works while busy too.
+        if matches!(message, Message::ToggleDetails) {
+            self.details = !self.details;
+            return Task::none();
+        }
         // Changes nothing, so it works in the Flatpak and while busy too.
         if matches!(message, Message::CopyDiagnostics) {
             self.log.push((
@@ -241,7 +255,7 @@ impl Setup {
                 return self.install(Component::ALL.to_vec(), Scope::All);
             }
             Message::Channel(channel) => return self.switch_channel(channel),
-            Message::CopyDiagnostics => {}
+            Message::CopyDiagnostics | Message::ToggleDetails => {}
         }
         Task::none()
     }
@@ -272,6 +286,11 @@ impl Setup {
                 let first_inspection = self.job == Some(Job::Inspecting);
                 self.job = None;
                 self.transfer = None;
+                // Once everything runs there is nothing left to welcome to;
+                // a later visit shows the full screen.
+                if self.ready() {
+                    self.welcome = false;
+                }
                 if !first_inspection {
                     return Task::none();
                 }
@@ -384,7 +403,138 @@ impl Setup {
         })
     }
 
+    /// The first launch's welcome is showing rather than the full screen.
+    pub fn welcoming(&self) -> bool {
+        self.welcome && !self.details
+    }
+
+    /// The welcome's progress: which step of the three is running (1 to
+    /// 3) and how far the whole install is, from 0 to 1. A component counts
+    /// once it runs; the one downloading counts for what it received.
+    fn welcome_progress(&self) -> (usize, f32) {
+        let installed = self
+            .rows
+            .iter()
+            .filter(|row| matches!(row.status, Some(Status::Installed { .. })))
+            .count();
+        let current = self
+            .transfer
+            .as_ref()
+            .map_or(0.0, |t| amount(t.received, t.total).1);
+        let total = self.rows.len();
+        let step = (installed + 1).min(total);
+        (step, ((installed as f32 + current) / total as f32).min(1.0))
+    }
+
+    /// What a first launch sees: what the app needs and why, one bar for
+    /// the whole install, and what went wrong if it did.
+    fn welcome_view(&self) -> Element<'_, Message> {
+        let where_kept = if self.paths.installed {
+            tr!(
+                "To download, MimirDLP needs yt-dlp, FFmpeg and Deno, about 200 MB. \
+                 They are kept in your user folder."
+            )
+        } else {
+            tr!(
+                "To download, MimirDLP needs yt-dlp, FFmpeg and Deno, about 200 MB. \
+                 They are kept next to the app; nothing is installed on your system."
+            )
+        };
+        let (step, fraction) = self.welcome_progress();
+        let total = self.rows.len();
+        let last_error = self
+            .log
+            .iter()
+            .rev()
+            .find(|(level, _)| *level == Level::Error)
+            .map(|(_, line)| line.clone());
+        let progress: Element<'_, Message> = match self.job {
+            Some(Job::Installing(_)) => {
+                let current = Component::ALL[step - 1].label();
+                let detail = self
+                    .transfer
+                    .as_ref()
+                    .map(|t| amount(t.received, t.total).0)
+                    .unwrap_or_default();
+                column![
+                    row![
+                        text(tr!(
+                            "Step {step} of {total}: getting {component}...",
+                            step,
+                            total,
+                            component = current
+                        ))
+                        .size(style::CAPTION)
+                        .width(Length::Fill),
+                        text(detail).size(style::CAPTION).style(style::muted_text),
+                    ],
+                    progress_bar(0.0..=1.0, fraction)
+                        .girth(8)
+                        .style(style::progress),
+                ]
+                .spacing(style::SPACE_S)
+                .into()
+            }
+            Some(_) => text(tr!("Getting ready..."))
+                .size(style::CAPTION)
+                .style(style::muted_text)
+                .into(),
+            None => {
+                let (message, label) = match last_error {
+                    Some(error) => (
+                        text(tr!("Not everything could be installed: {error}", error))
+                            .size(style::CAPTION)
+                            .style(text::danger),
+                        tr!("Try again"),
+                    ),
+                    None => (
+                        text(tr!("Nothing is installed yet."))
+                            .size(style::CAPTION)
+                            .style(style::muted_text),
+                        tr!("Install"),
+                    ),
+                };
+                column![
+                    message,
+                    button(icon::labeled(
+                        Icon::Download,
+                        label,
+                        style::TEXT,
+                        icon::On::Color,
+                        true,
+                    ))
+                    .padding(style::BUTTON)
+                    .style(style::pill)
+                    .on_press(Message::InstallMissing),
+                ]
+                .spacing(style::SPACE_M)
+                .align_x(Alignment::Center)
+                .into()
+            }
+        };
+        let content = column![
+            iced::widget::image(super::LOGO.clone())
+                .width(Length::Fixed(96.0))
+                .height(Length::Fixed(96.0)),
+            text(tr!("Welcome to MimirDLP"))
+                .size(style::TITLE)
+                .font(style::BOLD),
+            container(text(where_kept).style(style::muted_text).center()).max_width(560.0),
+            container(progress).max_width(480.0),
+            button(text(tr!("Show details")).size(style::CAPTION))
+                .padding(style::BUTTON_SMALL)
+                .style(style::flat(false))
+                .on_press(Message::ToggleDetails),
+        ]
+        .spacing(style::SPACE_L)
+        .align_x(Alignment::Center);
+        container(content).center(Length::Fill).into()
+    }
+
     pub fn view(&self) -> Element<'_, Message> {
+        if self.welcoming() {
+            return self.welcome_view();
+        }
         let where_kept = if self.bundled() {
             tr!(
                 "yt-dlp, FFmpeg and Deno come with this package and are updated \
@@ -401,7 +551,23 @@ impl Setup {
                  Nothing is installed on your system."
             )
         };
-        let header = text(where_kept).style(style::muted_text);
+        let header: Element<'_, Message> = if self.welcome {
+            // Opened from the first launch's welcome: the way back to it.
+            row![
+                text(where_kept)
+                    .style(style::muted_text)
+                    .width(Length::Fill),
+                button(text(tr!("Hide details")).size(style::CAPTION))
+                    .padding(style::BUTTON_SMALL)
+                    .style(style::flat(false))
+                    .on_press(Message::ToggleDetails),
+            ]
+            .spacing(style::SPACE_M)
+            .align_y(Alignment::Center)
+            .into()
+        } else {
+            text(where_kept).style(style::muted_text).into()
+        };
 
         let components =
             Column::with_children(Component::ALL.into_iter().map(|component| {
@@ -658,6 +824,12 @@ fn pretty_name(os_release: &str) -> Option<String> {
         .filter(|name| !name.is_empty())
 }
 
+/// No tool in the folder yet, and none expected from a package: the
+/// first launch, which gets the welcome.
+fn first_launch(paths: &Paths) -> bool {
+    !paths.bundled_tools() && provision::none_present(paths)
+}
+
 fn index(component: Component) -> usize {
     Component::ALL
         .iter()
@@ -841,6 +1013,8 @@ mod tests {
             paths: Paths::new("/app".into()),
             rows,
             channel: Channel::Nightly,
+            welcome: false,
+            details: false,
             job: None,
             confirm_reinstall: false,
             log: Vec::new(),
@@ -858,6 +1032,70 @@ mod tests {
             .log
             .iter()
             .any(|(_, line)| line.starts_with("Some components are missing"))
+    }
+
+    /// A folder with no tool at all is a first launch: the welcome shows
+    /// until everything runs, and "Show details" swaps it for the full
+    /// screen and back. A folder with tools never gets it.
+    #[test]
+    fn a_first_launch_is_welcomed_until_everything_runs() {
+        let dir = crate::testing::tempdir();
+        let paths = Paths::new(dir.clone());
+        assert!(first_launch(&paths));
+        assert!(!first_launch(&Paths::bundled(dir.clone(), vec![])));
+        std::fs::create_dir_all(&paths.bin_dir).unwrap();
+        std::fs::write(paths.tool("yt-dlp"), "").unwrap();
+        assert!(!first_launch(&paths), "a folder with a tool isn't new");
+        std::fs::remove_dir_all(dir).unwrap();
+
+        let mut setup = with_ytdlp("2026.10.30", None);
+        setup.welcome = true;
+        setup.rows[index(Component::Ffmpeg)].status = Some(Status::Missing);
+        assert!(setup.welcoming());
+        let _ = setup.update(Message::ToggleDetails);
+        assert!(!setup.welcoming());
+        let _ = setup.update(Message::ToggleDetails);
+        assert!(setup.welcoming());
+
+        let _ = setup.report(Report::Done);
+        assert!(setup.welcoming(), "FFmpeg is still missing");
+        let _ = setup.report(Report::Status(
+            Component::Ffmpeg,
+            Status::Installed {
+                version: "1".into(),
+            },
+        ));
+        let _ = setup.report(Report::Status(
+            Component::Deno,
+            Status::Installed {
+                version: "1".into(),
+            },
+        ));
+        let _ = setup.report(Report::Done);
+        assert!(!setup.welcoming(), "nothing left to welcome to");
+    }
+
+    /// One bar for the whole install: each installed component is a
+    /// third, the downloading one adds what it received.
+    #[test]
+    fn the_welcome_counts_steps_and_progress() {
+        let mut setup = with_ytdlp("2026.10.30", None);
+        setup.rows[index(Component::Ffmpeg)].status = Some(Status::Missing);
+        setup.rows[index(Component::Deno)].status = Some(Status::Missing);
+        assert_eq!(setup.welcome_progress(), (2, 1.0 / 3.0));
+        setup.transfer = Some(Transfer {
+            file: "ffmpeg.tar.xz".into(),
+            received: 50,
+            total: Some(100),
+        });
+        assert_eq!(setup.welcome_progress(), (2, 0.5));
+        for component in Component::ALL {
+            setup.rows[index(component)].status = Some(Status::Installed {
+                version: "1".into(),
+            });
+        }
+        setup.transfer = None;
+        assert_eq!(setup.welcome_progress(), (3, 1.0));
     }
 
     /// The report says what a bug report needs and nothing personal: no

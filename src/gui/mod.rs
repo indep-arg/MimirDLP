@@ -519,7 +519,12 @@ impl App {
                 can_download,
                 menu_open,
                 setup.bundled(),
-                (page == Page::Download).then(|| download.url_bar().map(Message::Download)),
+                match page {
+                    Page::Download => Some(download.url_bar().map(Message::Download)),
+                    // The welcome has its own title, and nowhere to go back to.
+                    Page::Setup if setup.welcoming() => Some(space().into()),
+                    _ => None,
+                },
             ),
             content
         ]
@@ -633,13 +638,14 @@ fn header_bar<'a>(
     bundled: bool,
     center: Option<Element<'a, Message>>,
 ) -> Element<'a, Message> {
-    let back: Element<'a, Message> = if page == Page::Download {
+    // Shown only where it leads somewhere, rather than greyed out.
+    let back: Element<'a, Message> = if page == Page::Download || !can_go_back {
         space().into()
     } else {
         button(icon::icon(icon::Icon::Back, 20.0))
             .padding([style::SPACE_S, style::SPACE_S])
             .style(style::flat(false))
-            .on_press_maybe(can_go_back.then_some(Message::Navigate(Page::Download)))
+            .on_press(Message::Navigate(Page::Download))
             .into()
     };
     let title = match page {

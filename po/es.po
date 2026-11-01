@@ -1090,6 +1090,48 @@ msgid "Binaries located in: {folder}"
 msgstr "Programas ubicados en: {folder}"
 
 #: src/gui/setup.rs
+msgid "To download, MimirDLP needs yt-dlp, FFmpeg and Deno, about 200 MB. They are kept in your user folder."
+msgstr "Para descargar, MimirDLP necesita yt-dlp, FFmpeg y Deno, unos 200 MB. Se guardan en tu carpeta de usuario."
+
+#: src/gui/setup.rs
+msgid "To download, MimirDLP needs yt-dlp, FFmpeg and Deno, about 200 MB. They are kept next to the app; nothing is installed on your system."
+msgstr "Para descargar, MimirDLP necesita yt-dlp, FFmpeg y Deno, unos 200 MB. Se guardan junto a la aplicación; no se instala nada en tu sistema."
+
+#: src/gui/setup.rs
+#, python-brace-format
+msgid "Step {step} of {total}: getting {component}..."
+msgstr "Paso {step} de {total}: obteniendo {component}..."
+
+#: src/gui/setup.rs
+msgid "Getting ready..."
+msgstr "Preparando..."
+
+#: src/gui/setup.rs
+#, python-brace-format
+msgid "Not everything could be installed: {error}"
+msgstr "No se pudo instalar todo: {error}"
+
+#: src/gui/setup.rs
+msgid "Try again"
+msgstr "Reintentar"
+
+#: src/gui/setup.rs
+msgid "Nothing is installed yet."
+msgstr "Todavía no hay nada instalado."
+
+#: src/gui/setup.rs
+msgid "Install"
+msgstr "Instalar"
+
+#: src/gui/setup.rs
+msgid "Welcome to MimirDLP"
+msgstr "Te damos la bienvenida a MimirDLP"
+
+#: src/gui/setup.rs
+msgid "Show details"
+msgstr "Ver detalles"
+
+#: src/gui/setup.rs
 msgid "yt-dlp, FFmpeg and Deno come with this package and are updated together with MimirDLP, from your software center or with flatpak update."
 msgstr "yt-dlp, FFmpeg y Deno vienen con este paquete y se actualizan junto con MimirDLP, desde tu tienda de software o con flatpak update."
 
@@ -1101,6 +1143,10 @@ msgstr "yt-dlp, FFmpeg y Deno se guardan en {folder} y se actualizan desde aquí
 #: src/gui/setup.rs
 msgid "yt-dlp, FFmpeg and Deno are kept in the bin folder next to this app. Nothing is installed on your system."
 msgstr "yt-dlp, FFmpeg y Deno se guardan en la carpeta bin junto a esta aplicación. No se instala nada en tu sistema."
+
+#: src/gui/setup.rs
+msgid "Hide details"
+msgstr "Ocultar detalles"
 
 #: src/gui/setup.rs
 msgid "Copy diagnostic information"

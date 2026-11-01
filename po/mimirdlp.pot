@@ -1089,6 +1089,48 @@ msgid "Binaries located in: {folder}"
 msgstr ""
 
 #: src/gui/setup.rs
+msgid "To download, MimirDLP needs yt-dlp, FFmpeg and Deno, about 200 MB. They are kept in your user folder."
+msgstr ""
+
+#: src/gui/setup.rs
+msgid "To download, MimirDLP needs yt-dlp, FFmpeg and Deno, about 200 MB. They are kept next to the app; nothing is installed on your system."
+msgstr ""
+
+#: src/gui/setup.rs
+#, python-brace-format
+msgid "Step {step} of {total}: getting {component}..."
+msgstr ""
+
+#: src/gui/setup.rs
+msgid "Getting ready..."
+msgstr ""
+
+#: src/gui/setup.rs
+#, python-brace-format
+msgid "Not everything could be installed: {error}"
+msgstr ""
+
+#: src/gui/setup.rs
+msgid "Try again"
+msgstr ""
+
+#: src/gui/setup.rs
+msgid "Nothing is installed yet."
+msgstr ""
+
+#: src/gui/setup.rs
+msgid "Install"
+msgstr ""
+
+#: src/gui/setup.rs
+msgid "Welcome to MimirDLP"
+msgstr ""
+
+#: src/gui/setup.rs
+msgid "Show details"
+msgstr ""
+
+#: src/gui/setup.rs
 msgid "yt-dlp, FFmpeg and Deno come with this package and are updated together with MimirDLP, from your software center or with flatpak update."
 msgstr ""
 
@@ -1099,6 +1141,10 @@ msgstr ""
 
 #: src/gui/setup.rs
 msgid "yt-dlp, FFmpeg and Deno are kept in the bin folder next to this app. Nothing is installed on your system."
+msgstr ""
+
+#: src/gui/setup.rs
+msgid "Hide details"
 msgstr ""
 
 #: src/gui/setup.rs

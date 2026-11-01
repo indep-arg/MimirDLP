@@ -304,6 +304,14 @@ pub fn all_present(paths: &Paths) -> bool {
         .all(|name| paths.tool(name).is_file())
 }
 
+/// Not one tool is there yet: the app's first launch in this folder.
+pub fn none_present(paths: &Paths) -> bool {
+    !Component::ALL
+        .iter()
+        .flat_map(|c| c.binaries().iter())
+        .any(|name| paths.tool(name).is_file())
+}
+
 /// What is installed, found by running each binary.
 pub fn inspect(component: Component, paths: &Paths) -> Status {
     for name in component.binaries() {
@@ -740,6 +748,17 @@ mod tests {
         assert_eq!(ytdlp_stale_days(&paths), 45);
         let bundled = Paths::bundled(dir.clone(), vec![dir.join("bin")]);
         assert_eq!(ytdlp_stale_days(&bundled), YTDLP_STALE_DAYS_BUNDLED);
+        fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn a_folder_is_new_only_with_no_tool_at_all() {
+        let dir = crate::testing::tempdir();
+        let paths = Paths::new(dir.clone());
+        assert!(none_present(&paths));
+        fs::create_dir_all(&paths.bin_dir).unwrap();
+        fs::write(paths.tool("deno"), "").unwrap();
+        assert!(!none_present(&paths));
         fs::remove_dir_all(dir).unwrap();
     }
 
