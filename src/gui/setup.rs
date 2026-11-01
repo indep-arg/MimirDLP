@@ -34,6 +34,7 @@ pub enum Message {
     ConfirmReinstall,
     CancelReinstall,
     Channel(Channel),
+    CopyDiagnostics,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -175,6 +176,14 @@ impl Setup {
     }
 
     pub fn update(&mut self, message: Message) -> Task<Message> {
+        // Changes nothing, so it works in the Flatpak and while busy too.
+        if matches!(message, Message::CopyDiagnostics) {
+            self.log.push((
+                Level::Ok,
+                tr!("Diagnostic information copied. Paste it into your bug report."),
+            ));
+            return iced::clipboard::write(self.diagnostics());
+        }
         // Nothing is installed or updated from here when the package
         // brought the tools: only reports (the inspection) get through.
         if (self.busy() || self.bundled()) && !matches!(message, Message::Report(_)) {
@@ -231,6 +240,7 @@ impl Setup {
                 return self.install(Component::ALL.to_vec(), Scope::All);
             }
             Message::Channel(channel) => return self.switch_channel(channel),
+            Message::CopyDiagnostics => {}
         }
         Task::none()
     }
@@ -432,6 +442,33 @@ impl Setup {
             .into()
     }
 
+    /// What a bug report needs to know about this copy: its version, the
+    /// system, how it was installed and each tool's version and state.
+    /// Kept in English for whoever reads the report, and free of anything
+    /// personal: no paths, links or user names.
+    pub fn diagnostics(&self) -> String {
+        let install = if self.bundled() {
+            "Flatpak (tools from the package)"
+        } else if self.paths.installed {
+            "installed (files in the user's data folder)"
+        } else {
+            "portable (files next to the app)"
+        };
+        let builds = if self.bundled() {
+            "from the package"
+        } else {
+            match self.channel {
+                Channel::Nightly => "nightly",
+                Channel::Stable => "stable",
+            }
+        };
+        let tools = Component::ALL.map(|component| {
+            let row = &self.rows[index(component)];
+            (component.label(), tool_state(row))
+        });
+        render_diagnostics(&system(), install, builds, &tools)
+    }
+
     /// Nightly or stable yt-dlp, under the component list.
     fn channel_choice(&self) -> Element<'_, Message> {
         column![
@@ -454,11 +491,19 @@ impl Setup {
     /// The contextual actions available, given what is installed right now.
     /// None for tools that came with the package, only what is going on.
     fn actions(&self) -> Element<'_, Message> {
+        let copy = button(text(tr!("Copy diagnostic information")))
+            .padding([8, 20])
+            .style(style::pill_secondary)
+            .on_press(Message::CopyDiagnostics);
         if self.bundled() {
             let busy = self
                 .job
                 .map(|_| text(tr!("Looking at what is installed...")).style(style::muted_text));
-            return row![].push(busy).into();
+            return row![copy]
+                .push(busy)
+                .spacing(10)
+                .align_y(Alignment::Center)
+                .into();
         }
         if self.confirm_reinstall {
             return row![
@@ -524,6 +569,7 @@ impl Setup {
         if has_installed {
             actions = actions.push(action(tr!("Reinstall all"), Message::AskReinstall, false));
         }
+        actions = actions.push(copy);
         if let Some(job) = self.job {
             let busy = match job {
                 Job::Inspecting => tr!("Looking at what is installed..."),
@@ -534,6 +580,78 @@ impl Setup {
         }
         actions.into()
     }
+}
+
+fn render_diagnostics(
+    system: &str,
+    install: &str,
+    builds: &str,
+    tools: &[(&str, String)],
+) -> String {
+    let mut out = format!(
+        "MimirDLP {}
+System: {system}
+Install: {install}
+yt-dlp builds: {builds}
+
+Tools:
+",
+        env!("CARGO_PKG_VERSION")
+    );
+    for (name, state) in tools {
+        out += &format!(
+            "- {name}: {state}
+"
+        );
+    }
+    out
+}
+
+/// One tool's line in the diagnostics, from what the screen knows.
+fn tool_state(row: &Row) -> String {
+    match &row.status {
+        None => "not checked yet".into(),
+        Some(Status::Missing) => "not installed".into(),
+        Some(Status::Broken) => "installed but not responding".into(),
+        Some(Status::Installed { version }) => {
+            let update = match &row.update {
+                None => "updates not checked",
+                Some(UpdateCheck::Current) => "up to date",
+                Some(UpdateCheck::Outdated) => "update available",
+                Some(UpdateCheck::Unknown) => "installed before update tracking",
+                Some(UpdateCheck::Failed(_)) => "update check failed",
+            };
+            format!("{version} ({update})")
+        }
+    }
+}
+
+/// The system and processor, and on Linux the distribution's name (which
+/// says nothing about the user).
+fn system() -> String {
+    let base = format!("{} {}", std::env::consts::OS, std::env::consts::ARCH);
+    #[cfg(target_os = "linux")]
+    {
+        // Inside the Flatpak /etc is the runtime's: the host's is here.
+        let release = ["/run/host/os-release", "/etc/os-release"]
+            .iter()
+            .find_map(|file| std::fs::read_to_string(file).ok())
+            .and_then(|text| pretty_name(&text));
+        if let Some(name) = release {
+            return format!("{base}, {name}");
+        }
+    }
+    base
+}
+
+/// `PRETTY_NAME` from an os-release file, without its quotes.
+#[cfg_attr(not(target_os = "linux"), allow(dead_code))]
+fn pretty_name(os_release: &str) -> Option<String> {
+    os_release
+        .lines()
+        .find_map(|line| line.strip_prefix("PRETTY_NAME="))
+        .map(|value| value.trim().trim_matches('"').to_string())
+        .filter(|name| !name.is_empty())
 }
 
 fn index(component: Component) -> usize {
@@ -724,6 +842,64 @@ mod tests {
             .log
             .iter()
             .any(|(_, line)| line.starts_with("Some components are missing"))
+    }
+
+    /// The report says what a bug report needs and nothing personal: no
+    /// folder, no user name.
+    #[test]
+    fn the_diagnostics_describe_the_copy_without_personal_details() {
+        let dir = crate::testing::tempdir();
+        let mut setup = with_ytdlp("2026.10.30.123456", Some(UpdateCheck::Current));
+        setup.paths = Paths::new(dir.clone());
+        setup.rows[index(Component::Ffmpeg)].status = Some(Status::Broken);
+        let report = setup.diagnostics();
+        assert!(
+            report.starts_with(&format!("MimirDLP {}\n", env!("CARGO_PKG_VERSION"))),
+            "{report}"
+        );
+        for expected in [
+            "Install: portable",
+            "yt-dlp builds: nightly",
+            "- yt-dlp: 2026.10.30.123456 (up to date)",
+            "- FFmpeg: installed but not responding",
+            "- Deno: not checked yet",
+        ] {
+            assert!(report.contains(expected), "{expected} in:\n{report}");
+        }
+        let dir_text = dir.display().to_string();
+        assert!(!report.contains(&dir_text), "{report}");
+        if let Ok(user) = std::env::var("USER") {
+            assert!(!report.contains(&format!("/{user}")), "{report}");
+        }
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn the_distribution_name_is_read_from_os_release() {
+        let text = "NAME=\"Fedora Linux\"\nPRETTY_NAME=\"Fedora Linux 45 (Workstation Edition)\"\nID=fedora\n";
+        assert_eq!(
+            pretty_name(text).as_deref(),
+            Some("Fedora Linux 45 (Workstation Edition)")
+        );
+        assert_eq!(pretty_name("ID=arch\n"), None);
+        assert_eq!(pretty_name("PRETTY_NAME=\"\"\n"), None);
+    }
+
+    /// Copying works in the Flatpak and during a job, where every other
+    /// action is ignored.
+    #[test]
+    fn diagnostics_can_be_copied_while_busy() {
+        let mut setup = with_ytdlp("2026.10.30", None);
+        setup.job = Some(Job::CheckingUpdates);
+        let _ = setup.update(Message::CopyDiagnostics);
+        assert!(
+            setup
+                .log
+                .iter()
+                .any(|(_, l)| l.starts_with("Diagnostic information copied")),
+            "{:?}",
+            setup.log
+        );
     }
 
     /// Choosing the other channel is remembered in `bin/` and replaces an

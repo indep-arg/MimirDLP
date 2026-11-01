@@ -1018,6 +1018,10 @@ msgid "MimirDLP keeps its tools, settings and history next to itself. Move its f
 msgstr ""
 
 #: src/gui/setup.rs
+msgid "Diagnostic information copied. Paste it into your bug report."
+msgstr ""
+
+#: src/gui/setup.rs
 msgid "Checking for updates... (requires internet)"
 msgstr ""
 
@@ -1091,6 +1095,10 @@ msgstr ""
 
 #: src/gui/setup.rs
 msgid "Nightly builds get fixes for sites that changed within a day. Stable releases are tested for longer but come weeks apart."
+msgstr ""
+
+#: src/gui/setup.rs
+msgid "Copy diagnostic information"
 msgstr ""
 
 #: src/gui/setup.rs
