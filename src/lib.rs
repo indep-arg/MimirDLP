@@ -11,6 +11,7 @@ pub mod log;
 pub mod metadata;
 pub mod process;
 pub mod provision;
+pub mod redact;
 pub mod runner;
 
 #[cfg(test)]

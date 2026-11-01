@@ -260,7 +260,10 @@ pub fn run(
             Err(mpsc::RecvTimeoutError::Timeout) => continue,
             Err(mpsc::RecvTimeoutError::Disconnected) => break,
         };
-        if let Some(event) = parse_line(line.trim_end()) {
+        // Before anything is logged: the links in yt-dlp's and FFmpeg's
+        // lines carry the user's IP address.
+        let line = crate::redact::hide_addresses(line.trim_end());
+        if let Some(event) = parse_line(&line) {
             match &event {
                 Event::Log(Level::Error, message) => last_error = Some(message.clone()),
                 Event::Log(_, line) => {
@@ -770,6 +773,27 @@ mod tests {
             assert!(out.join("Live.mkv.part").exists());
             assert!(!out.join("Live.mkv").exists());
             fs::remove_dir_all(out).unwrap();
+        }
+
+        /// What reaches the log never holds the IP address that media
+        /// links carry, on stdout or stderr, in errors as in plain lines.
+        #[test]
+        fn the_log_never_shows_the_ip_address_in_links() {
+            let (dir, paths) = fake_ytdlp(
+                "echo \"[in#0] Opening 'https://r.googlevideo.com/videoplayback/ip/203.0.113.7/id/x' for reading\" >&2\n\
+                 echo '[debug] https://r.example/v?ip=198.51.100.2&sig=1'\n\
+                 echo 'ERROR: unable to download https://r.example/ip/203.0.113.7/x' >&2",
+                1,
+            );
+            let events = collect(&paths, &Cancel::default());
+            let text = format!("{events:?}");
+            assert!(!text.contains("203.0.113.7"), "{text}");
+            assert!(!text.contains("198.51.100.2"), "{text}");
+            assert!(
+                text.contains("/ip/hidden/") && text.contains("?ip=hidden"),
+                "{text}"
+            );
+            fs::remove_dir_all(dir).unwrap();
         }
 
         #[test]

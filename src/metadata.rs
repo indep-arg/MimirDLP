@@ -186,7 +186,8 @@ pub fn fetch(paths: &Paths, url: &str, lookup: &Lookup) -> Result<Metadata, Stri
         // in English.
         return Err(match output.stderr.lines().find(|l| !l.trim().is_empty()) {
             Some(line) => {
-                let line = line.trim_start_matches("ERROR: ");
+                let line = crate::redact::hide_addresses(line.trim_start_matches("ERROR: "));
+                let line = line.as_ref();
                 crate::explain::explain(line, paths.bundled_tools())
                     .unwrap_or_else(|| line.to_string())
             }
