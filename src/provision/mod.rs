@@ -320,12 +320,53 @@ pub fn inspect(component: Component, paths: &Paths) -> Status {
         }
     }
     let main = paths.tool(component.binaries()[0]);
+    // Starting each tool costs time on every launch (seconds for yt-dlp on
+    // Windows, which unpacks itself each run), and downloads wait for it.
+    // A file that hasn't changed since it last answered is taken at its
+    // word; one that changed is asked again.
+    let key = inspected_key(component);
+    let fingerprint = fingerprint(&main);
+    if let (Some(fingerprint), Some(saved)) = (&fingerprint, read_state(paths, &key))
+        && let Some(version) = saved
+            .strip_prefix(fingerprint.as_str())
+            .and_then(|rest| rest.strip_prefix(' '))
+    {
+        return Status::Installed {
+            version: version.to_string(),
+        };
+    }
+    let status = run_inspection(component, &main);
+    if let (Status::Installed { version }, Some(fingerprint)) = (&status, fingerprint) {
+        // Only a cache: not being able to write it only means asking again.
+        let _ = write_state(paths, &key, &format!("{fingerprint} {version}"));
+    }
+    status
+}
+
+/// Where the answer of a component's last successful inspection is kept.
+fn inspected_key(component: Component) -> String {
+    format!("{}_inspected", component.binaries()[0])
+}
+
+/// The file's size and modification time: any replacement changes one.
+fn fingerprint(path: &Path) -> Option<String> {
+    let meta = fs::metadata(path).ok()?;
+    let modified = meta
+        .modified()
+        .ok()?
+        .duration_since(std::time::UNIX_EPOCH)
+        .ok()?;
+    Some(format!("{}:{}", meta.len(), modified.as_nanos()))
+}
+
+/// Runs the tool and reads its version.
+fn run_inspection(component: Component, main: &Path) -> Status {
     let arg = if component == Component::Ffmpeg {
         "-version"
     } else {
         "--version"
     };
-    match run_for_output(&main, arg, Duration::from_secs(30)) {
+    match run_for_output(main, arg, Duration::from_secs(30)) {
         Some(out) => match parse_version(component, &out) {
             Some(version) => Status::Installed { version },
             None => Status::Broken,
@@ -748,6 +789,59 @@ mod tests {
         assert_eq!(ytdlp_stale_days(&paths), 45);
         let bundled = Paths::bundled(dir.clone(), vec![dir.join("bin")]);
         assert_eq!(ytdlp_stale_days(&bundled), YTDLP_STALE_DAYS_BUNDLED);
+        fs::remove_dir_all(dir).unwrap();
+    }
+
+    /// A tool that answered once isn't started again on the next launch
+    /// while its file stays the same; a replaced file is asked again, and
+    /// one that doesn't run is never remembered as installed.
+    #[cfg(unix)]
+    #[test]
+    fn an_unchanged_tool_is_not_started_again() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let _guard = crate::testing::exec_guard();
+        let dir = crate::testing::tempdir();
+        let paths = Paths::new(dir.clone());
+        fs::create_dir_all(&paths.bin_dir).unwrap();
+        let runs = dir.join("runs");
+        let tool = paths.tool("deno");
+        let write_tool = |version: &str| {
+            fs::write(
+                &tool,
+                format!(
+                    "#!/bin/sh\necho run >> {}\necho 'deno {version} (stable)'\n",
+                    runs.display()
+                ),
+            )
+            .unwrap();
+            fs::set_permissions(&tool, fs::Permissions::from_mode(0o755)).unwrap();
+        };
+        let started = || {
+            fs::read_to_string(&runs)
+                .map(|t| t.lines().count())
+                .unwrap_or(0)
+        };
+
+        write_tool("2.9.6");
+        let installed = |v: &str| Status::Installed {
+            version: v.to_string(),
+        };
+        assert_eq!(inspect(Component::Deno, &paths), installed("2.9.6"));
+        assert_eq!(inspect(Component::Deno, &paths), installed("2.9.6"));
+        assert_eq!(started(), 1, "the second look used what the first found");
+
+        // A different file (an update): asked again.
+        std::thread::sleep(std::time::Duration::from_millis(20));
+        write_tool("2.10.0");
+        assert_eq!(inspect(Component::Deno, &paths), installed("2.10.0"));
+        assert_eq!(started(), 2);
+
+        // A file that doesn't answer is checked every time.
+        std::thread::sleep(std::time::Duration::from_millis(20));
+        fs::write(&tool, "#!/bin/sh\nexit 1\n").unwrap();
+        assert_eq!(inspect(Component::Deno, &paths), Status::Broken);
+        assert_eq!(inspect(Component::Deno, &paths), Status::Broken);
         fs::remove_dir_all(dir).unwrap();
     }
 
