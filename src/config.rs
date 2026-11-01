@@ -392,6 +392,8 @@ pub struct Settings {
     /// Seconds or `MIN-MAX`. Empty means don't wait.
     pub wait_for_video: String,
     pub verbose: bool,
+    /// Look for a newer MimirDLP once a day (never in the Flatpak).
+    pub app_updates: bool,
     pub restrict_filenames: bool,
     pub preserve_mtime: bool,
     pub ignore_errors: bool,
@@ -452,6 +454,7 @@ impl Default for Settings {
             // yt-dlp's verbose output is noise in a window with no
             // terminal to scroll back through, so it starts off.
             verbose: false,
+            app_updates: true,
             restrict_filenames: engine.restrict_filenames,
             preserve_mtime: engine.preserve_mtime,
             ignore_errors: engine.ignore_errors,
@@ -808,6 +811,7 @@ impl Settings {
             ("live_from_start", yes(self.live_from_start).into()),
             ("wait_for_video", self.wait_for_video.clone()),
             ("verbose", yes(self.verbose).into()),
+            ("app_updates", yes(self.app_updates).into()),
             ("restrict_filenames", yes(self.restrict_filenames).into()),
             ("preserve_mtime", yes(self.preserve_mtime).into()),
             ("ignore_errors", yes(self.ignore_errors).into()),
@@ -881,6 +885,7 @@ impl Settings {
                 "live_from_start" => s.live_from_start = flag(s.live_from_start),
                 "wait_for_video" => s.wait_for_video = value.to_string(),
                 "verbose" => s.verbose = flag(s.verbose),
+                "app_updates" => s.app_updates = flag(s.app_updates),
                 "restrict_filenames" => s.restrict_filenames = flag(s.restrict_filenames),
                 "preserve_mtime" => s.preserve_mtime = flag(s.preserve_mtime),
                 "ignore_errors" => s.ignore_errors = flag(s.ignore_errors),
@@ -2064,6 +2069,23 @@ youtube b
         // Nothing left to keep: the file is emptied (see `write_file`).
         save_queue(&paths, &[]).unwrap();
         assert!(load_queue(&paths).is_empty());
+        fs::remove_dir_all(dir).unwrap();
+    }
+
+    /// On unless turned off, also for a settings file from before the
+    /// setting existed; turned off, it stays off.
+    #[test]
+    fn looking_for_new_versions_is_on_until_turned_off() {
+        assert!(Settings::default().app_updates);
+        assert!(Settings::parse("verbose=yes\n").app_updates);
+        let dir = tempdir();
+        let paths = Paths::new(dir.clone());
+        let off = Settings {
+            app_updates: false,
+            ..Settings::default()
+        };
+        off.save(&paths).unwrap();
+        assert!(!Settings::load(&paths).app_updates);
         fs::remove_dir_all(dir).unwrap();
     }
 

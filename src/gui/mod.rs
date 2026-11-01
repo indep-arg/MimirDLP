@@ -98,6 +98,10 @@ enum Message {
     Language(&'static str),
     /// From the "yt-dlp is old" notice: go to Setup and check for updates.
     CheckForUpdates,
+    /// The version of a newer MimirDLP release, if the daily look found one.
+    AppUpdate(Option<String>),
+    /// The new-version notice was closed for this session.
+    DismissAppUpdate,
     /// A web address from the About page, opened in the browser.
     OpenLink(&'static str),
     LinkOpened(&'static str, Result<(), String>),
@@ -133,6 +137,8 @@ enum App {
         system_theme: ThemeMode,
         /// Debug builds only: the state is frozen until the capture is taken.
         snapshot_due: bool,
+        /// A newer MimirDLP that the notice offers, until it is closed.
+        app_update: Option<String>,
     },
 }
 
@@ -162,6 +168,9 @@ impl App {
         let saved = Settings::load(&paths);
         // Before anything is shown or logged, so all of it is translated.
         crate::i18n::apply(&saved.language);
+        // Once a day at most, off the main thread; never in the Flatpak.
+        let look_for_update = saved.app_updates && !paths.bundled_tools();
+        let update_paths = paths.clone();
         let settings = SettingsPage::new(paths.clone(), saved);
         let (setup, task) = Setup::new(paths.clone());
         let mut download = Download::new(paths);
@@ -171,6 +180,12 @@ impl App {
             dev_snapshot(),
             iced::system::theme().map(Message::SystemTheme),
         ];
+        if look_for_update {
+            tasks.push(Task::perform(
+                in_background(move || crate::app_update::check(&update_paths)),
+                |latest| Message::AppUpdate(latest.flatten()),
+            ));
+        }
         // Links handed over for a dev run open on the Download screen,
         // queue every one of them (in order), and start right away.
         let dev_urls = download::dev_urls();
@@ -203,6 +218,7 @@ impl App {
             start_when_ready: false,
             system_theme: ThemeMode::None,
             snapshot_due: false,
+            app_update: None,
         };
         (app, Task::batch(tasks))
     }
@@ -255,6 +271,14 @@ impl App {
                 }
             }
             (App::Broken(_), Message::WindowFocused) => Task::none(),
+            (App::Running { app_update, .. }, Message::AppUpdate(latest)) => {
+                *app_update = latest;
+                Task::none()
+            }
+            (App::Running { app_update, .. }, Message::DismissAppUpdate) => {
+                *app_update = None;
+                Task::none()
+            }
             (App::Running { .. }, Message::OpenLink(url)) => {
                 open::open(url).map(move |result| Message::LinkOpened(url, result))
             }
@@ -435,7 +459,8 @@ impl App {
     }
 
     fn view(&self) -> Element<'_, Message> {
-        let (page, setup, download, settings, menu_open, confirming_tools) = match self {
+        let (page, setup, download, settings, menu_open, confirming_tools, app_update) = match self
+        {
             App::Broken(reason) => {
                 return container(text(reason).style(text::danger))
                     .padding(24)
@@ -448,6 +473,7 @@ impl App {
                 settings,
                 menu_open,
                 confirming_tools,
+                app_update,
                 ..
             } => (
                 *page,
@@ -456,6 +482,7 @@ impl App {
                 settings,
                 *menu_open,
                 *confirming_tools,
+                app_update,
             ),
         };
         let can_download = can_download(setup, confirming_tools);
@@ -465,12 +492,14 @@ impl App {
             Page::Setup => setup.view().map(Message::Setup),
             Page::Download => {
                 let screen = download.view().map(Message::Download);
-                match setup.ytdlp_age() {
-                    Some(age) => {
-                        column![stale_notice(age, can_setup, setup.bundled()), screen].into()
-                    }
-                    None => screen,
-                }
+                let notices = column![]
+                    .push(app_update.as_deref().map(update_notice))
+                    .push(
+                        setup
+                            .ytdlp_age()
+                            .map(|age| stale_notice(age, can_setup, setup.bundled())),
+                    );
+                column![notices, screen].into()
             }
             Page::Settings => scrollable(
                 container(
@@ -795,6 +824,27 @@ fn language_picker<'a>(current: &str) -> Element<'a, Message> {
 /// so an old one is the usual reason a download suddenly fails. A bundled
 /// one comes with the package, so the way out is updating MimirDLP itself,
 /// and there is no button for that here.
+/// A newer MimirDLP is out: what it is, a button to its release page and
+/// one to close the notice until the next launch.
+fn update_notice<'a>(version: &str) -> Element<'a, Message> {
+    let notice = row![
+        text(tr!("MimirDLP {version} is available.", version))
+            .size(13)
+            .width(Length::Fill),
+        button(text(tr!("What's new")).size(13))
+            .padding([4, 14])
+            .style(style::pill)
+            .on_press(Message::OpenLink(crate::app_update::RELEASES)),
+        button(text(tr!("Later")).size(13))
+            .padding([4, 14])
+            .style(style::pill_secondary)
+            .on_press(Message::DismissAppUpdate),
+    ]
+    .spacing(12)
+    .align_y(Alignment::Center);
+    container(notice).padding([10, 24]).into()
+}
+
 fn stale_notice<'a>(age: i64, can_update: bool, bundled: bool) -> Element<'a, Message> {
     let warning = if bundled {
         tr!(

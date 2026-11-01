@@ -66,7 +66,9 @@ MimirDLP opens on **Setup** and installs yt-dlp, FFmpeg and Deno (about 200 MB),
 
 To check for updates later, use ☰, **Setup and updates**; only what's out of date is downloaded again. When yt-dlp is more than two weeks old the Download screen reminds you, since an old yt-dlp is the usual reason a site stops working.
 
-The same screen chooses which yt-dlp builds to use. **Nightly**, the default and what yt-dlp recommends, gets fixes for sites that changed within a day. **Stable** releases are tested for longer but come weeks apart, so with them the reminder waits 45 days. Switching replaces the installed yt-dlp right away, with the same signature check as always.
+When a new version of MimirDLP itself is out, the Download screen says so, with a button to its release page. To know, the app looks at that page on GitHub once a day when it starts; nothing about you or your downloads is sent, and nothing is installed by itself. Settings, "Updates" turns it off. The Flatpak doesn't look: Flathub updates it.
+
+The same Setup screen chooses which yt-dlp builds to use. **Nightly**, the default and what yt-dlp recommends, gets fixes for sites that changed within a day. **Stable** releases are tested for longer but come weeks apart, so with them the reminder waits 45 days. Switching replaces the installed yt-dlp right away, with the same signature check as always.
 
 ## Downloading
 

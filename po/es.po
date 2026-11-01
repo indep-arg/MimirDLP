@@ -652,6 +652,19 @@ msgstr "Idioma del sistema"
 
 #: src/gui/mod.rs
 #, python-brace-format
+msgid "MimirDLP {version} is available."
+msgstr "MimirDLP {version} está disponible."
+
+#: src/gui/mod.rs
+msgid "What's new"
+msgstr "Ver novedades"
+
+#: src/gui/mod.rs
+msgid "Later"
+msgstr "Más tarde"
+
+#: src/gui/mod.rs
+#, python-brace-format
 msgid "yt-dlp is {n} day old. Sites change often; if a download fails, update MimirDLP from your software center or with flatpak update."
 msgid_plural "yt-dlp is {n} days old. Sites change often; if a download fails, update MimirDLP from your software center or with flatpak update."
 msgstr[0] "yt-dlp tiene {n} día de antigüedad. Los sitios cambian a menudo; si una descarga falla, actualiza MimirDLP desde tu tienda de software o con flatpak update."
@@ -711,6 +724,14 @@ msgid "Where to save downloads"
 msgstr "Dónde guardar las descargas"
 
 #: src/gui/settings.rs
+msgid "Tell me when a new version of MimirDLP is out"
+msgstr "Avisarme cuando salga una nueva versión de MimirDLP"
+
+#: src/gui/settings.rs
+msgid "Looks at MimirDLP's release page on GitHub once a day, when the app starts. Nothing about you or your downloads is sent, and nothing is installed by itself."
+msgstr "Mira la página de versiones de MimirDLP en GitHub una vez al día, al abrir la aplicación. No se envía nada sobre ti ni sobre tus descargas, y no se instala nada por sí solo."
+
+#: src/gui/settings.rs
 msgid "Show MimirDLP in the applications menu"
 msgstr "Mostrar MimirDLP en el menú de aplicaciones"
 
@@ -749,6 +770,10 @@ msgstr "Extras"
 #: src/gui/settings.rs
 msgid "Desktop"
 msgstr "Escritorio"
+
+#: src/gui/settings.rs
+msgid "Updates"
+msgstr "Actualizaciones"
 
 #: src/gui/settings.rs
 msgid "Signing in"
@@ -1449,6 +1474,7 @@ msgstr "Aplicando SponsorBlock..."
 #: src/runner.rs
 msgid "Moving the file into place..."
 msgstr "Moviendo el archivo a su lugar..."
+
 
 #~ msgid "Playlists, history, file names, speed limits"
 #~ msgstr "Listas, historial, nombres de archivo, límites de velocidad"

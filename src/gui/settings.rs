@@ -117,6 +117,7 @@ pub enum Flag {
     Restrict,
     Mtime,
     IgnoreErrors,
+    AppUpdates,
 }
 
 impl Flag {
@@ -137,6 +138,7 @@ impl Flag {
             Flag::Restrict => &mut s.restrict_filenames,
             Flag::Mtime => &mut s.preserve_mtime,
             Flag::IgnoreErrors => &mut s.ignore_errors,
+            Flag::AppUpdates => &mut s.app_updates,
         }
     }
 }
@@ -361,6 +363,21 @@ impl SettingsPage {
     }
 }
 
+fn updates_section(settings: &Settings) -> Element<'_, Message> {
+    column![
+        switch(settings.app_updates)
+            .label(tr!("Tell me when a new version of MimirDLP is out"))
+            .on_toggle(|v| Message::Toggle(Flag::AppUpdates, v)),
+        text(tr!(
+            "Looks at MimirDLP's release page on GitHub once a day, when the app starts. Nothing about you or your downloads is sent, and nothing is installed by itself."
+        ))
+        .size(13)
+        .style(style::muted_text),
+    ]
+    .spacing(8)
+    .into()
+}
+
 fn desktop_section<'a>(installed: bool) -> Element<'a, Message> {
     column![
         switch(installed)
@@ -481,6 +498,12 @@ fn view<'a>(
         page.push(card(tr!("Desktop"), desktop_section(desktop_entry)))
     } else {
         page
+    };
+    // The Flatpak is updated by Flathub, so it never looks for itself.
+    let page = if paths.bundled_tools() {
+        page
+    } else {
+        page.push(card(tr!("Updates"), updates_section(settings)))
     };
     let page = page.push(advanced_toggle(show_advanced));
     if !show_advanced {
@@ -1107,6 +1130,7 @@ mod tests {
             Flag::Restrict,
             Flag::Mtime,
             Flag::IgnoreErrors,
+            Flag::AppUpdates,
         ];
         let base = Settings::default();
         for flag in flags {

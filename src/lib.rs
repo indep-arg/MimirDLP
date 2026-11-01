@@ -1,5 +1,6 @@
 //! MimirDLP: a portable graphical front end for yt-dlp.
 
+pub mod app_update;
 pub mod config;
 pub mod desktop;
 pub mod engine;

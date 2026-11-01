@@ -651,6 +651,19 @@ msgstr ""
 
 #: src/gui/mod.rs
 #, python-brace-format
+msgid "MimirDLP {version} is available."
+msgstr ""
+
+#: src/gui/mod.rs
+msgid "What's new"
+msgstr ""
+
+#: src/gui/mod.rs
+msgid "Later"
+msgstr ""
+
+#: src/gui/mod.rs
+#, python-brace-format
 msgid "yt-dlp is {n} day old. Sites change often; if a download fails, update MimirDLP from your software center or with flatpak update."
 msgid_plural "yt-dlp is {n} days old. Sites change often; if a download fails, update MimirDLP from your software center or with flatpak update."
 msgstr[0] ""
@@ -710,6 +723,14 @@ msgid "Where to save downloads"
 msgstr ""
 
 #: src/gui/settings.rs
+msgid "Tell me when a new version of MimirDLP is out"
+msgstr ""
+
+#: src/gui/settings.rs
+msgid "Looks at MimirDLP's release page on GitHub once a day, when the app starts. Nothing about you or your downloads is sent, and nothing is installed by itself."
+msgstr ""
+
+#: src/gui/settings.rs
 msgid "Show MimirDLP in the applications menu"
 msgstr ""
 
@@ -747,6 +768,10 @@ msgstr ""
 
 #: src/gui/settings.rs
 msgid "Desktop"
+msgstr ""
+
+#: src/gui/settings.rs
+msgid "Updates"
 msgstr ""
 
 #: src/gui/settings.rs
