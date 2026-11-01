@@ -385,6 +385,9 @@ pub struct Settings {
     pub limit_rate: String,
     pub fragments: String,
     pub sleep: String,
+    /// Tries again after a failed request or fragment. Empty means
+    /// yt-dlp's default.
+    pub retries: String,
     pub live_from_start: bool,
     /// Seconds or `MIN-MAX`. Empty means don't wait.
     pub wait_for_video: String,
@@ -440,6 +443,7 @@ impl Default for Settings {
             limit_rate: String::new(),
             fragments: engine.concurrent_fragments.to_string(),
             sleep: engine.sleep_requests.to_string(),
+            retries: String::new(),
             live_from_start: engine.live_from_start,
             wait_for_video: String::new(),
             // yt-dlp's verbose output is noise in a window with no
@@ -532,6 +536,11 @@ impl Settings {
         if !valid_sleep(&self.sleep) {
             problems.push(tr!(
                 "The sleep between requests should be a number such as 0, 1.5 or 2."
+            ));
+        }
+        if !valid_retries(&self.retries) {
+            problems.push(tr!(
+                "Retries should be a whole number such as 3 or 10, or empty."
             ));
         }
         if !valid_wait(&self.wait_for_video) {
@@ -703,6 +712,7 @@ impl Settings {
         {
             o.sleep_requests = sleep;
         }
+        o.retries = self.retries.trim().parse().ok();
         o.live_from_start = self.live_from_start;
         o.wait_for_video = non_empty(&self.wait_for_video);
         o.verbose = self.verbose;
@@ -783,6 +793,7 @@ impl Settings {
             ("limit_rate", self.limit_rate.clone()),
             ("fragments", self.fragments.clone()),
             ("sleep", self.sleep.clone()),
+            ("retries", self.retries.clone()),
             ("live_from_start", yes(self.live_from_start).into()),
             ("wait_for_video", self.wait_for_video.clone()),
             ("verbose", yes(self.verbose).into()),
@@ -855,6 +866,7 @@ impl Settings {
                 "limit_rate" => s.limit_rate = value.to_string(),
                 "fragments" => s.fragments = value.to_string(),
                 "sleep" => s.sleep = value.to_string(),
+                "retries" => s.retries = value.to_string(),
                 "live_from_start" => s.live_from_start = flag(s.live_from_start),
                 "wait_for_video" => s.wait_for_video = value.to_string(),
                 "verbose" => s.verbose = flag(s.verbose),
@@ -1019,6 +1031,13 @@ pub fn valid_fragments(value: &str) -> bool {
 /// `inf` parses as a number, and yt-dlp takes it: it then sleeps forever.
 pub fn valid_sleep(value: &str) -> bool {
     matches!(value.trim().parse::<f64>(), Ok(n) if n.is_finite() && n >= 0.0)
+}
+
+/// A whole number, 0 included (don't try again). Empty means yt-dlp's
+/// default.
+pub fn valid_retries(value: &str) -> bool {
+    let value = value.trim();
+    value.is_empty() || value.parse::<u32>().is_ok()
 }
 
 /// Seconds, or `MIN-MAX`. Empty means don't wait.
@@ -1463,6 +1482,7 @@ mod tests {
             limit_rate: "2M".into(),
             fragments: "8".into(),
             sleep: "0".into(),
+            retries: "3".into(),
             live_from_start: true,
             wait_for_video: "60-3600".into(),
             ..Settings::default()
@@ -1819,6 +1839,28 @@ youtube b
         );
     }
 
+    /// Empty leaves yt-dlp's default alone; a number, 0 included, is
+    /// passed on.
+    #[test]
+    fn retries_reach_the_engine_only_when_set() {
+        let settings = Settings::default();
+        assert_eq!(settings.to_options(&paths()).retries, None);
+        for (typed, expected) in [("3", Some(3)), (" 0 ", Some(0)), ("", None)] {
+            let settings = Settings {
+                retries: typed.into(),
+                ..Settings::default()
+            };
+            assert_eq!(settings.to_options(&paths()).retries, expected, "{typed:?}");
+            assert!(settings.problems().is_empty(), "{typed:?}");
+        }
+        let bad = Settings {
+            retries: "lots".into(),
+            ..Settings::default()
+        };
+        assert_eq!(bad.to_options(&paths()).retries, None);
+        assert!(bad.problems().iter().any(|p| p.contains("Retries")));
+    }
+
     #[test]
     fn engine_knobs_keep_their_defaults_when_the_text_is_not_a_number() {
         let defaults = Options::default();
@@ -2040,6 +2082,8 @@ youtube b
         assert!(!valid_fragments("0") && !valid_fragments("") && !valid_fragments("2.5"));
         assert!(valid_sleep("0") && valid_sleep("1.5"));
         assert!(!valid_sleep("-1") && !valid_sleep("soon"));
+        assert!(valid_retries("") && valid_retries("0") && valid_retries(" 25 "));
+        assert!(!valid_retries("-1") && !valid_retries("2.5") && !valid_retries("many"));
         assert!(valid_wait("") && valid_wait("60") && valid_wait("60-3600"));
         assert!(!valid_wait("60-") && !valid_wait("a-b"));
         assert!(valid_limit("") && valid_limit("5") && !valid_limit("0") && !valid_limit("x"));

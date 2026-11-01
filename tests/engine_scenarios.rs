@@ -39,6 +39,7 @@ fn scenarios() -> Vec<Scenario> {
                 concurrent_fragments: 8,
                 sleep_requests: 2.5,
                 limit_rate: Some("500K".into()),
+                retries: Some(3),
                 ..Options::default()
             },
             output_dir: None,
@@ -57,6 +58,10 @@ fn scenarios() -> Vec<Scenario> {
                 "deno:<SCRIPT_DIR>/bin/deno",
                 "--limit-rate",
                 "500K",
+                "--retries",
+                "3",
+                "--fragment-retries",
+                "3",
                 "-f",
                 "bestvideo*+bestaudio/best",
                 "-i",

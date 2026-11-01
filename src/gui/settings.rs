@@ -70,6 +70,7 @@ pub enum Field {
     LimitRate,
     Fragments,
     Sleep,
+    Retries,
     WaitForVideo,
     CookiesProfile,
 }
@@ -89,6 +90,7 @@ impl Field {
             Field::LimitRate => &mut s.limit_rate,
             Field::Fragments => &mut s.fragments,
             Field::Sleep => &mut s.sleep,
+            Field::Retries => &mut s.retries,
             Field::WaitForVideo => &mut s.wait_for_video,
             Field::CookiesProfile => &mut s.cookies_profile,
         }
@@ -901,6 +903,10 @@ fn network_section(settings: &Settings) -> Element<'_, Message> {
             tr!("Seconds between requests"),
             text_field("1.5", &settings.sleep, Field::Sleep, 160),
         ),
+        choice(
+            tr!("Retries after a network error"),
+            text_field("10", &settings.retries, Field::Retries, 160),
+        ),
         switch(settings.live_from_start)
             .label(tr!("Record live streams from the start"))
             .on_toggle(|v| Message::Toggle(Flag::LiveFromStart, v)),
@@ -1058,6 +1064,7 @@ mod tests {
             Field::LimitRate,
             Field::Fragments,
             Field::Sleep,
+            Field::Retries,
             Field::WaitForVideo,
             Field::CookiesProfile,
         ];

@@ -212,6 +212,10 @@ msgid "The sleep between requests should be a number such as 0, 1.5 or 2."
 msgstr ""
 
 #: src/config.rs
+msgid "Retries should be a whole number such as 3 or 10, or empty."
+msgstr ""
+
+#: src/config.rs
 msgid "The wait for a stream should be seconds or a range, such as 60 or 60-3600."
 msgstr ""
 
@@ -934,6 +938,10 @@ msgstr ""
 
 #: src/gui/settings.rs
 msgid "Seconds between requests"
+msgstr ""
+
+#: src/gui/settings.rs
+msgid "Retries after a network error"
 msgstr ""
 
 #: src/gui/settings.rs

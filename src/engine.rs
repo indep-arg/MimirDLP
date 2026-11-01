@@ -149,6 +149,9 @@ pub struct Options {
     pub sleep_requests: f64,
     /// yt-dlp rate syntax, e.g. `500K` or `4.2M`.
     pub limit_rate: Option<String>,
+    /// How many times a failed request and a failed fragment are tried
+    /// again. `None` leaves yt-dlp's own default (10).
+    pub retries: Option<u32>,
     pub playlist: Playlist,
     pub archive: Option<Archive>,
     pub max_downloads: Option<u32>,
@@ -184,6 +187,7 @@ impl Default for Options {
             concurrent_fragments: 5,
             sleep_requests: 1.5,
             limit_rate: None,
+            retries: None,
             playlist: Playlist::Auto,
             archive: None,
             max_downloads: None,
@@ -317,6 +321,13 @@ pub fn build_args(
     if let Some(rate) = &o.limit_rate {
         push("--limit-rate");
         push(rate);
+    }
+    if let Some(retries) = o.retries {
+        let retries = retries.to_string();
+        push("--retries");
+        push(&retries);
+        push("--fragment-retries");
+        push(&retries);
     }
     if let Some(dir) = output_dir {
         a.push("-P".into());

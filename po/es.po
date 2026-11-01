@@ -213,6 +213,10 @@ msgid "The sleep between requests should be a number such as 0, 1.5 or 2."
 msgstr "La pausa entre solicitudes debe ser un número como 0, 1.5 o 2."
 
 #: src/config.rs
+msgid "Retries should be a whole number such as 3 or 10, or empty."
+msgstr "Los reintentos deben ser un número entero, como 3 o 10, o quedar vacíos."
+
+#: src/config.rs
 msgid "The wait for a stream should be seconds or a range, such as 60 or 60-3600."
 msgstr "La espera de una transmisión debe ser en segundos o un rango, como 60 o 60-3600."
 
@@ -936,6 +940,10 @@ msgstr "Partes descargadas a la vez"
 #: src/gui/settings.rs
 msgid "Seconds between requests"
 msgstr "Segundos entre solicitudes"
+
+#: src/gui/settings.rs
+msgid "Retries after a network error"
+msgstr "Reintentos tras un error de red"
 
 #: src/gui/settings.rs
 msgid "Record live streams from the start"
