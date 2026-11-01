@@ -13,7 +13,7 @@
 //!   own unless told not to.
 
 use std::ffi::OsStr;
-use std::io::{self, Read};
+use std::io::{self, Read, Write};
 use std::process::{Child, Command, ExitStatus, Stdio};
 use std::thread;
 use std::time::{Duration, Instant};
@@ -89,13 +89,32 @@ pub enum RunError {
 /// loop that only polls `try_wait()` never does. That deadlock was found on
 /// real `yt-dlp -j` output. This is what `Child::wait_with_output()` does
 /// internally, redone by hand so the timeout can still kill the child.
-pub fn run_captured(mut command: Command, limit: Duration) -> Result<Output, RunError> {
+pub fn run_captured(command: Command, limit: Duration) -> Result<Output, RunError> {
+    run_captured_with_input(command, limit, None)
+}
+
+/// [`run_captured`], with `input` written to the child's stdin, which is
+/// then closed.
+pub fn run_captured_with_input(
+    mut command: Command,
+    limit: Duration,
+    input: Option<&str>,
+) -> Result<Output, RunError> {
     let mut child = command
-        .stdin(Stdio::null())
+        .stdin(if input.is_some() {
+            Stdio::piped()
+        } else {
+            Stdio::null()
+        })
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()
         .map_err(RunError::Spawn)?;
+    if let (Some(input), Some(mut stdin)) = (input, child.stdin.take()) {
+        // A few bytes, far below the pipe buffer, so this can't block. The
+        // pipe closes when `stdin` is dropped, which is the end of input.
+        let _ = stdin.write_all(input.as_bytes());
+    }
     let drain = |pipe: Option<Box<dyn Read + Send>>| {
         pipe.map(|mut pipe| {
             thread::spawn(move || {
@@ -149,6 +168,21 @@ mod tests {
 
     fn alive(pid: &str) -> bool {
         fs::read_to_string(format!("/proc/{pid}/stat")).is_ok_and(|stat| !stat.contains(") Z "))
+    }
+
+    /// The input reaches the child's stdin, and closing it ends the input,
+    /// so a child that reads to the end doesn't wait forever.
+    #[test]
+    fn input_is_written_to_stdin_and_closed() {
+        let _guard = crate::testing::exec_guard();
+        let dir = crate::testing::tempdir();
+        let tool = script(&dir, "cat");
+        let out = run_captured_with_input(command(&tool), Duration::from_secs(10), Some("hello\n"))
+            .unwrap();
+        assert_eq!(out.stdout, "hello\n");
+        let out = run_captured(command(&tool), Duration::from_secs(10)).unwrap();
+        assert_eq!(out.stdout, "", "no input means an empty stdin");
+        fs::remove_dir_all(dir).unwrap();
     }
 
     #[test]

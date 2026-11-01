@@ -271,6 +271,14 @@ msgid "YouTube wants to make sure you're not a bot. Use the cookies of a browser
 msgstr "YouTube quiere asegurarse de que no eres un bot. Usa las cookies de un navegador donde hayas iniciado sesión en YouTube: Ajustes, Opciones avanzadas, Inicio de sesión."
 
 #: src/explain.rs
+msgid "The video password isn't right. Check it in Settings, Advanced options, Signing in, and add the link again."
+msgstr "La contraseña del video no es correcta. Revísala en Ajustes, Opciones avanzadas, Inicio de sesión, y vuelve a agregar el enlace."
+
+#: src/explain.rs
+msgid "This video is protected by a password. Type it in Settings, Advanced options, Signing in, and add the link again."
+msgstr "Este video está protegido con contraseña. Escríbela en Ajustes, Opciones avanzadas, Inicio de sesión, y vuelve a agregar el enlace."
+
+#: src/explain.rs
 msgid "Only the channel's members can watch this video. The Flatpak can't read your browser's cookies to sign in; the portable version can."
 msgstr "Solo los miembros del canal pueden ver este video. El Flatpak no puede leer las cookies de tu navegador para iniciar sesión; la versión portable sí."
 
@@ -707,10 +715,6 @@ msgid "Signing in, playlists, history, file names, speed limits"
 msgstr "Inicio de sesión, listas, historial, nombres de archivo, límites de velocidad"
 
 #: src/gui/settings.rs
-msgid "Playlists, history, file names, speed limits"
-msgstr "Listas, historial, nombres de archivo, límites de velocidad"
-
-#: src/gui/settings.rs
 msgid "These apply to every link you queue from now on. Links already in the queue keep what they were queued with."
 msgstr "Se aplican a cada enlace que agregues a partir de ahora. Los enlaces que ya están en la cola conservan los ajustes con los que se agregaron."
 
@@ -912,6 +916,18 @@ msgstr "Borrar historial"
 #: src/gui/settings.rs
 msgid "The history is empty."
 msgstr "El historial está vacío."
+
+#: src/gui/settings.rs
+msgid "Video password"
+msgstr "Contraseña del video"
+
+#: src/gui/settings.rs
+msgid "none"
+msgstr "ninguna"
+
+#: src/gui/settings.rs
+msgid "For videos the site protects with a password, such as on Vimeo. It is used for the links you add next and is never saved: it is forgotten when the app closes."
+msgstr "Para videos que el sitio protege con contraseña, como en Vimeo. Se usa para los enlaces que agregues a continuación y nunca se guarda: se olvida al cerrar la aplicación."
 
 #: src/gui/settings.rs
 msgid "Use cookies from"
@@ -1349,6 +1365,9 @@ msgstr "Aplicando SponsorBlock..."
 #: src/runner.rs
 msgid "Moving the file into place..."
 msgstr "Moviendo el archivo a su lugar..."
+
+#~ msgid "Playlists, history, file names, speed limits"
+#~ msgstr "Listas, historial, nombres de archivo, límites de velocidad"
 
 #~ msgid "the thumbnail fetch was interrupted"
 #~ msgstr "la descarga de la miniatura se interrumpió"

@@ -2070,6 +2070,49 @@ fn scenarios() -> Vec<Scenario> {
             exit: 0,
             fake_exit: 0,
         },
+        // The password itself is not in the argv: yt-dlp reads it from
+        // stdin (engine::stdin_config), where other programs can't see it.
+        Scenario {
+            name: "video_password",
+            options: Options {
+                video_password: Some("hunter2".into()),
+                ..Options::default()
+            },
+            output_dir: None,
+            urls: &["https://vimeo.com/123"],
+            argv: &[
+                "--ignore-config",
+                "--verbose",
+                "--socket-timeout",
+                "30",
+                "--sleep-requests",
+                "1.5",
+                "--concurrent-fragments",
+                "5",
+                "--ffmpeg-location",
+                "<SCRIPT_DIR>/bin/ffmpeg",
+                "--js-runtimes",
+                "deno:<SCRIPT_DIR>/bin/deno",
+                "--config-locations",
+                "-",
+                "-f",
+                "bestvideo*+bestaudio/best",
+                "--embed-thumbnail",
+                "--convert-thumbnails",
+                "jpg",
+                "--remux-video",
+                "webm>mkv",
+                "--merge-output-format",
+                "mkv",
+                "--restrict-filenames",
+                "--output",
+                "%(title)s [%(id)s].%(ext)s",
+                "--",
+                "https://vimeo.com/123",
+            ],
+            exit: 0,
+            fake_exit: 0,
+        },
     ]
 }
 
@@ -2165,4 +2208,23 @@ fn tools_from_separate_folders_reach_their_own_flags() {
     let differing: Vec<_> = argv.iter().zip(&same_dir).filter(|(a, b)| a != b).collect();
     assert_eq!(argv.len(), same_dir.len());
     assert_eq!(differing.len(), 2, "only the two tool paths differ");
+}
+
+/// The stdin config holds the password in yt-dlp's config syntax, quoted
+/// so that spaces, quotes and backslashes survive (yt-dlp splits it like a
+/// shell), and nothing else asks for stdin.
+#[test]
+fn the_video_password_goes_to_stdin_quoted() {
+    use mimirdlp::engine::{password_config, stdin_config};
+    assert_eq!(stdin_config(&Options::default()), None);
+    let options = Options {
+        video_password: Some(r#"a b"c\d"#.into()),
+        ..Options::default()
+    };
+    assert_eq!(
+        stdin_config(&options).as_deref(),
+        Some("--video-password \"a b\\\"c\\\\d\"\n")
+    );
+    // A line break would end the config line early.
+    assert_eq!(password_config("x\ny"), "--video-password \"xy\"\n");
 }

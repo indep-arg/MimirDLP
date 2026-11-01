@@ -8,7 +8,7 @@
 //! `--progress` and `--no-quiet` keep the rest of the output flowing.
 
 use std::ffi::OsString;
-use std::io::{BufRead, BufReader, Read};
+use std::io::{BufRead, BufReader, Read, Write};
 use std::path::Path;
 use std::process::{Child, Stdio};
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -151,9 +151,14 @@ pub fn run(
         return;
     }
     let tool = paths.tool("yt-dlp");
+    let stdin_config = engine::stdin_config(options);
     let spawned = process::command(&tool)
         .args(&args)
-        .stdin(Stdio::null())
+        .stdin(if stdin_config.is_some() {
+            Stdio::piped()
+        } else {
+            Stdio::null()
+        })
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn();
@@ -170,6 +175,12 @@ pub fn run(
             return;
         }
     };
+
+    if let (Some(config), Some(mut stdin)) = (&stdin_config, child.stdin.take()) {
+        // Small enough for the pipe buffer. Dropping `stdin` closes it,
+        // and yt-dlp reads up to that end.
+        let _ = stdin.write_all(config.as_bytes());
+    }
 
     let (tx, rx) = mpsc::channel();
     let readers: Vec<_> = [
@@ -576,6 +587,47 @@ mod tests {
                 )))
             );
             fs::remove_dir_all(dir).unwrap();
+        }
+
+        /// The real yt-dlp reads the password from stdin; the stand-in
+        /// saves what it was given there and on its command line.
+        #[test]
+        fn the_video_password_reaches_yt_dlp_on_stdin_only() {
+            let dir = crate::testing::tempdir();
+            let stdin_file = dir.join("stdin");
+            let argv_file = dir.join("argv");
+            let (dir2, paths) = fake_ytdlp(
+                &format!(
+                    "echo \"$@\" > {}\ncat > {}",
+                    argv_file.display(),
+                    stdin_file.display()
+                ),
+                0,
+            );
+            let options = Options {
+                video_password: Some("hunter2".into()),
+                ..Options::default()
+            };
+            let _writing = crate::testing::exec_guard();
+            let mut events = Vec::new();
+            run(
+                &paths,
+                &options,
+                None,
+                &["https://vimeo.com/123".into()],
+                &Cancel::default(),
+                &mut |e| events.push(e),
+            );
+            assert_eq!(events.last(), Some(&Event::Finished(Finish::Completed)));
+            assert_eq!(
+                fs::read_to_string(&stdin_file).unwrap(),
+                "--video-password \"hunter2\"\n"
+            );
+            let argv = fs::read_to_string(&argv_file).unwrap();
+            assert!(!argv.contains("hunter2"), "{argv}");
+            assert!(argv.contains("--config-locations -"), "{argv}");
+            fs::remove_dir_all(dir).unwrap();
+            fs::remove_dir_all(dir2).unwrap();
         }
 
         #[test]

@@ -270,6 +270,14 @@ msgid "YouTube wants to make sure you're not a bot. Use the cookies of a browser
 msgstr ""
 
 #: src/explain.rs
+msgid "The video password isn't right. Check it in Settings, Advanced options, Signing in, and add the link again."
+msgstr ""
+
+#: src/explain.rs
+msgid "This video is protected by a password. Type it in Settings, Advanced options, Signing in, and add the link again."
+msgstr ""
+
+#: src/explain.rs
 msgid "Only the channel's members can watch this video. The Flatpak can't read your browser's cookies to sign in; the portable version can."
 msgstr ""
 
@@ -706,10 +714,6 @@ msgid "Signing in, playlists, history, file names, speed limits"
 msgstr ""
 
 #: src/gui/settings.rs
-msgid "Playlists, history, file names, speed limits"
-msgstr ""
-
-#: src/gui/settings.rs
 msgid "These apply to every link you queue from now on. Links already in the queue keep what they were queued with."
 msgstr ""
 
@@ -910,6 +914,18 @@ msgstr ""
 
 #: src/gui/settings.rs
 msgid "The history is empty."
+msgstr ""
+
+#: src/gui/settings.rs
+msgid "Video password"
+msgstr ""
+
+#: src/gui/settings.rs
+msgid "none"
+msgstr ""
+
+#: src/gui/settings.rs
+msgid "For videos the site protects with a password, such as on Vimeo. It is used for the links you add next and is never saved: it is forgotten when the app closes."
 msgstr ""
 
 #: src/gui/settings.rs

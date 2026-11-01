@@ -7,6 +7,8 @@ use tr::tr;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Problem {
     NotABot,
+    WrongPassword,
+    PasswordNeeded,
     MembersOnly,
     SignIn,
     GeoBlocked,
@@ -29,6 +31,23 @@ enum Problem {
 /// it.
 const RULES: &[(Problem, &[&str])] = &[
     (Problem::NotABot, &["not a bot"]),
+    (
+        Problem::WrongPassword,
+        &[
+            "wrong password",
+            "wrong video password",
+            "incorrect password",
+        ],
+    ),
+    (
+        Problem::PasswordNeeded,
+        &[
+            "--video-password",
+            "protected by a password",
+            "password-protected",
+            "password protected",
+        ],
+    ),
     (
         Problem::MembersOnly,
         &["members-only", "available to this channel's members"],
@@ -126,6 +145,12 @@ pub fn explain(error: &str, bundled_tools: bool) -> Option<String> {
         Problem::NotABot => tr!(
             "YouTube wants to make sure you're not a bot. Use the cookies of a browser where you're signed in to YouTube: Settings, Advanced options, Signing in."
         ),
+        Problem::WrongPassword => tr!(
+            "The video password isn't right. Check it in Settings, Advanced options, Signing in, and add the link again."
+        ),
+        Problem::PasswordNeeded => tr!(
+            "This video is protected by a password. Type it in Settings, Advanced options, Signing in, and add the link again."
+        ),
         Problem::MembersOnly if bundled_tools => tr!(
             "Only the channel's members can watch this video. The Flatpak can't read your browser's cookies to sign in; the portable version can."
         ),
@@ -199,9 +224,10 @@ mod tests {
                 Problem::SignIn,
             ),
             (
-                "[vimeo] 123: This video is private. Use --video-password",
-                Problem::SignIn,
+                "[vimeo] 123: This video is protected by a password, use the --video-password option",
+                Problem::PasswordNeeded,
             ),
+            ("[vimeo] 123: Wrong password", Problem::WrongPassword),
             (
                 "[youtube] abc: Video unavailable. The uploader has not made this video available in your country",
                 Problem::GeoBlocked,
@@ -282,16 +308,16 @@ mod tests {
         assert_eq!(explain("", false), None);
     }
 
-    /// The portable copy can point to the sign-in settings and to updating
-    /// yt-dlp; the Flatpak has neither, so it must not send people looking
-    /// for them.
+    /// The portable copy can point to browser cookies and to updating
+    /// yt-dlp; the Flatpak has neither (only the video password), so it
+    /// must not send people looking for them.
     #[test]
     fn the_advice_fits_where_the_app_runs() {
         let bot = "Sign in to confirm you're not a bot";
         let portable = explain(bot, false).unwrap();
         let flatpak = explain(bot, true).unwrap();
-        assert!(portable.contains("Signing in"), "{portable}");
-        assert!(!flatpak.contains("Signing in"), "{flatpak}");
+        assert!(portable.contains("cookies"), "{portable}");
+        assert!(!flatpak.contains("cookies"), "{flatpak}");
 
         let forbidden = "HTTP Error 403: Forbidden";
         assert!(
@@ -309,7 +335,7 @@ mod tests {
             for piece in *pieces {
                 let flatpak = explain(piece, true).unwrap();
                 assert!(
-                    !flatpak.contains("Signing in") && !flatpak.contains("Setup and updates"),
+                    !flatpak.contains("Use the cookies") && !flatpak.contains("Setup and updates"),
                     "{problem:?} sends the Flatpak to a setting it lacks: {flatpak}"
                 );
             }

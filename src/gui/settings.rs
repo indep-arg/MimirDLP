@@ -73,6 +73,7 @@ pub enum Field {
     Retries,
     WaitForVideo,
     CookiesProfile,
+    VideoPassword,
 }
 
 impl Field {
@@ -93,6 +94,7 @@ impl Field {
             Field::Retries => &mut s.retries,
             Field::WaitForVideo => &mut s.wait_for_video,
             Field::CookiesProfile => &mut s.cookies_profile,
+            Field::VideoPassword => &mut s.video_password,
         }
     }
 }
@@ -376,17 +378,13 @@ fn desktop_section<'a>(installed: bool) -> Element<'a, Message> {
 
 /// The row that folds the less common sections in and out, like an
 /// Adwaita expander row.
-fn advanced_toggle<'a>(open: bool, sign_in: bool) -> Element<'a, Message> {
+fn advanced_toggle<'a>(open: bool) -> Element<'a, Message> {
     let (label, hint) = if open {
         (tr!("Hide advanced options"), "\u{2212}")
     } else {
         (tr!("Advanced options"), "+")
     };
-    let contents = if sign_in {
-        tr!("Signing in, playlists, history, file names, speed limits")
-    } else {
-        tr!("Playlists, history, file names, speed limits")
-    };
+    let contents = tr!("Signing in, playlists, history, file names, speed limits");
     button(
         row![
             column![
@@ -484,18 +482,14 @@ fn view<'a>(
     } else {
         page
     };
-    // Browser cookies are left out of the Flatpak: its sandbox can't read
-    // the browsers' folders (Settings::cookies ignores them there too).
-    let sign_in = !paths.bundled_tools();
-    let page = page.push(advanced_toggle(show_advanced, sign_in));
+    let page = page.push(advanced_toggle(show_advanced));
     if !show_advanced {
         return page.into();
     }
-    let page = if sign_in {
-        page.push(card(tr!("Signing in"), sign_in_section(settings)))
-    } else {
-        page
-    };
+    // Browser cookies are left out of the Flatpak: its sandbox can't read
+    // the browsers' folders (Settings::cookies ignores them there too).
+    let cookies = !paths.bundled_tools();
+    let page = page.push(card(tr!("Signing in"), sign_in_section(settings, cookies)));
     page.push(card(
         tr!("Automation and naming"),
         automation_section(settings, history),
@@ -849,17 +843,39 @@ fn history_list_view(lines: &[String]) -> Element<'_, Message> {
 }
 
 /// Cookies from a browser the user is signed in with, for videos that need
-/// an account (age restricted, members only, private).
-fn sign_in_section(settings: &Settings) -> Element<'_, Message> {
-    let mut body = rows![choice(
+/// an account (age restricted, members only, private), when `cookies` can
+/// be read at all; and the password of a protected video.
+fn sign_in_section(settings: &Settings, cookies: bool) -> Element<'_, Message> {
+    let mut body = rows![
+        choice(
+            tr!("Video password"),
+            entry(&tr!("none"), &settings.video_password)
+                .secure(true)
+                .on_input(|v| Message::Text(Field::VideoPassword, v))
+                .padding(8)
+                .width(240)
+                .into(),
+        ),
+        text(tr!(
+            "For videos the site protects with a password, such as on Vimeo. \
+             It is used for the links you add next and is never saved: it is \
+             forgotten when the app closes."
+        ))
+        .size(13)
+        .style(style::muted_text),
+    ];
+    if !cookies {
+        return body.into();
+    }
+    body = body.push(choice(
         tr!("Use cookies from"),
         dropdown(
             Browser::ALL,
             Some(settings.cookies_browser),
-            Message::Browser
+            Message::Browser,
         )
         .into(),
-    )];
+    ));
     if settings.cookies_browser != Browser::None {
         body = body
             .push(choice(
@@ -1067,6 +1083,7 @@ mod tests {
             Field::Retries,
             Field::WaitForVideo,
             Field::CookiesProfile,
+            Field::VideoPassword,
         ];
         for field in fields {
             let mut s = Settings::default();

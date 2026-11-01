@@ -395,6 +395,9 @@ pub struct Settings {
     pub restrict_filenames: bool,
     pub preserve_mtime: bool,
     pub ignore_errors: bool,
+    /// `--video-password`. Kept only while the app runs: never written to
+    /// the settings file or the queue.
+    pub video_password: String,
     /// Sign in with a browser's cookies.
     pub cookies_browser: Browser,
     /// That browser's profile, by name or path. Empty means the one used
@@ -452,6 +455,7 @@ impl Default for Settings {
             restrict_filenames: engine.restrict_filenames,
             preserve_mtime: engine.preserve_mtime,
             ignore_errors: engine.ignore_errors,
+            video_password: String::new(),
             cookies_browser: Browser::None,
             cookies_profile: String::new(),
         }
@@ -720,7 +724,14 @@ impl Settings {
         o.preserve_mtime = self.preserve_mtime;
         o.ignore_errors = self.ignore_errors;
         o.cookies_from_browser = self.cookies(paths);
+        o.video_password = self.video_password();
         o
+    }
+
+    /// The video password, if one was typed. Taken as typed: spaces can be
+    /// part of a password.
+    pub fn video_password(&self) -> Option<String> {
+        (!self.video_password.is_empty()).then(|| self.video_password.clone())
     }
 
     /// `--cookies-from-browser`'s value: `BROWSER` or `BROWSER:PROFILE`.
@@ -2053,6 +2064,43 @@ youtube b
         // Nothing left to keep: the file is emptied (see `write_file`).
         save_queue(&paths, &[]).unwrap();
         assert!(load_queue(&paths).is_empty());
+        fs::remove_dir_all(dir).unwrap();
+    }
+
+    /// The video password reaches yt-dlp but never the disk: neither the
+    /// settings file nor the queue holds it.
+    #[test]
+    fn the_video_password_is_used_but_never_saved() {
+        let dir = tempdir();
+        let paths = Paths::new(dir.clone());
+        let settings = Settings {
+            video_password: " secret pass ".into(),
+            ..Settings::default()
+        };
+        assert_eq!(
+            settings.to_options(&paths).video_password.as_deref(),
+            Some(" secret pass "),
+            "taken as typed"
+        );
+        assert_eq!(Settings::default().to_options(&paths).video_password, None);
+
+        settings.save(&paths).unwrap();
+        save_queue(
+            &paths,
+            &[SavedItem {
+                url: "https://vimeo.com/123".into(),
+                settings: settings.clone(),
+                failed: None,
+            }],
+        )
+        .unwrap();
+        for file in fs::read_dir(&dir).unwrap() {
+            let file = file.unwrap().path();
+            let text = fs::read_to_string(&file).unwrap_or_default();
+            assert!(!text.contains("secret"), "{} holds it", file.display());
+        }
+        assert_eq!(Settings::load(&paths).video_password, "");
+        assert_eq!(load_queue(&paths)[0].settings.video_password, "");
         fs::remove_dir_all(dir).unwrap();
     }
 

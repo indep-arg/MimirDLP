@@ -161,6 +161,11 @@ pub struct Options {
     /// `--cookies-from-browser`: `BROWSER[:PROFILE]`, for videos that need
     /// the user to be signed in (age restricted, members only...).
     pub cookies_from_browser: Option<String>,
+    /// `--video-password`, for a video the site protects with one (Vimeo
+    /// and others). Never on the command line, where any program on the
+    /// computer can read it: yt-dlp reads it from stdin, see
+    /// [`stdin_config`].
+    pub video_password: Option<String>,
 }
 
 impl Default for Options {
@@ -194,6 +199,7 @@ impl Default for Options {
             live_from_start: false,
             wait_for_video: None,
             cookies_from_browser: None,
+            video_password: None,
         }
     }
 }
@@ -286,6 +292,27 @@ impl ToolPaths {
     }
 }
 
+/// Makes yt-dlp read more options from stdin, in its config file syntax.
+/// `--ignore-config` still allows that: it only skips the files yt-dlp
+/// would look for on its own.
+pub const STDIN_CONFIG: [&str; 2] = ["--config-locations", "-"];
+
+/// What yt-dlp is to read from stdin, when [`build_args`] asked it to.
+pub fn stdin_config(o: &Options) -> Option<String> {
+    o.video_password.as_deref().map(password_config)
+}
+
+/// `--video-password` as a line of a yt-dlp config file, which yt-dlp
+/// splits like a shell (Python's `shlex`): inside double quotes only `\`
+/// and `"` need escaping. Its verbose log shows the value as PRIVATE.
+pub fn password_config(password: &str) -> String {
+    let quoted = password
+        .replace(['\r', '\n'], "")
+        .replace('\\', "\\\\")
+        .replace('"', "\\\"");
+    format!("--video-password \"{quoted}\"\n")
+}
+
 /// The arguments for yt-dlp, not including the program itself.
 pub fn build_args(
     o: &Options,
@@ -317,6 +344,11 @@ pub fn build_args(
     if let Some(browser) = &o.cookies_from_browser {
         push("--cookies-from-browser");
         push(browser);
+    }
+    if o.video_password.is_some() {
+        // The rest of the configuration comes from stdin: stdin_config.
+        push(STDIN_CONFIG[0]);
+        push(STDIN_CONFIG[1]);
     }
     if let Some(rate) = &o.limit_rate {
         push("--limit-rate");

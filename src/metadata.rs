@@ -28,6 +28,9 @@ pub struct Lookup {
     /// `--no-playlist`: a `watch?v=...&list=...` link is then the video,
     /// not the playlist, exactly as the download will treat it.
     pub single_video: bool,
+    /// A protected video can't be looked up without its password either.
+    /// Handed over on stdin, like the download does.
+    pub video_password: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -157,12 +160,19 @@ pub fn fetch(paths: &Paths, url: &str, lookup: &Lookup) -> Result<Metadata, Stri
     if lookup.single_video {
         command.arg("--no-playlist");
     }
+    let stdin_config = lookup
+        .video_password
+        .as_deref()
+        .map(crate::engine::password_config);
+    if stdin_config.is_some() {
+        command.args(crate::engine::STDIN_CONFIG);
+    }
     command
         // "--" as in the download itself, so a link can never be an option.
         .arg("--")
         .arg(url);
 
-    let output = match process::run_captured(command, TIMEOUT) {
+    let output = match process::run_captured_with_input(command, TIMEOUT, stdin_config.as_deref()) {
         Ok(output) => output,
         Err(RunError::TimedOut) => return Err(tr!("Timed out looking up this link.")),
         Err(RunError::Spawn(e)) => {
@@ -341,6 +351,7 @@ mod tests {
         let lookup = Lookup {
             cookies: Some("firefox:work".into()),
             single_video: true,
+            video_password: None,
         };
         fetch(&paths, "https://example.com/watch?v=a&list=b", &lookup).unwrap();
         let args = fs::read_to_string(&argv).unwrap();
@@ -400,6 +411,57 @@ mod tests {
         );
         assert_eq!(meta.title, "big");
         assert_eq!(meta.duration, Some(5.0));
+        fs::remove_dir_all(dir).unwrap();
+    }
+
+    /// A protected video's lookup gets the password the same way as the
+    /// download: on stdin, never on the command line.
+    #[cfg(unix)]
+    #[test]
+    fn the_lookup_hands_the_video_password_over_on_stdin() {
+        use std::fs;
+        use std::os::unix::fs::PermissionsExt;
+
+        let _guard = crate::testing::exec_guard();
+        let dir = crate::testing::tempdir();
+        let paths = Paths::new(dir.clone());
+        fs::create_dir_all(&paths.bin_dir).unwrap();
+        let (argv, stdin) = (dir.join("argv"), dir.join("stdin"));
+        let script = paths.tool("yt-dlp");
+        fs::write(
+            &script,
+            format!(
+                "#!/bin/sh\necho \"$@\" > {}\ncat > {}\necho '{{\"title\": \"x\"}}'\n",
+                argv.display(),
+                stdin.display()
+            ),
+        )
+        .unwrap();
+        fs::set_permissions(&script, fs::Permissions::from_mode(0o755)).unwrap();
+
+        let lookup = Lookup {
+            video_password: Some("hunter2".into()),
+            ..Lookup::default()
+        };
+        fetch(&paths, "https://vimeo.com/123", &lookup).unwrap();
+        assert_eq!(
+            fs::read_to_string(&stdin).unwrap(),
+            "--video-password \"hunter2\"\n"
+        );
+        let args = fs::read_to_string(&argv).unwrap();
+        assert!(
+            args.contains("--config-locations -") && !args.contains("hunter2"),
+            "{args}"
+        );
+
+        // Without a password, stdin stays empty and isn't asked for.
+        fetch(&paths, "https://vimeo.com/123", &Lookup::default()).unwrap();
+        assert_eq!(fs::read_to_string(&stdin).unwrap(), "");
+        assert!(
+            !fs::read_to_string(&argv)
+                .unwrap()
+                .contains("--config-locations")
+        );
         fs::remove_dir_all(dir).unwrap();
     }
 
