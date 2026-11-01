@@ -26,36 +26,51 @@ use setup::Setup;
 const MIN_SIZE: iced::Size = iced::Size::new(720.0, 520.0);
 
 pub fn run() -> iced::Result {
+    // iced reads every font installed on the system the first time it lays
+    // out text, which is the first frame. Started here it overlaps with
+    // creating the window and setting up the GPU instead of following it.
+    std::thread::spawn(|| {
+        let _ = iced::advanced::graphics::text::font_system();
+    });
     // The window opens as it was closed. Only Windows gets its place back
     // (see `remember_window`); on Linux the desktop chooses it.
     let saved = Paths::for_current_exe()
         .ok()
         .and_then(|paths| WindowState::load(&paths));
+    START_MAXIMIZED.store(
+        saved.is_some_and(|w| w.maximized),
+        std::sync::atomic::Ordering::SeqCst,
+    );
+    iced::application(App::boot, App::update, App::view)
+        .title("MimirDLP")
+        .theme(App::theme)
+        .subscription(App::subscription)
+        .window(window_settings(saved))
+        .run()
+}
+
+/// The main window, as it was when it was last closed (`saved`).
+fn window_settings(saved: Option<WindowState>) -> window::Settings {
     let (width, height) = saved.map_or(WindowState::DEFAULT_SIZE, |w| (w.width, w.height));
     let size = iced::Size::new(width.max(MIN_SIZE.width), height.max(MIN_SIZE.height));
     let position = match saved.and_then(|w| w.position) {
         Some((x, y)) => window::Position::Specific(iced::Point::new(x, y)),
         None => window::Position::Default,
     };
-    iced::application(App::boot, App::update, App::view)
-        .title("MimirDLP")
-        .theme(App::theme)
-        .subscription(App::subscription)
-        .window(window::Settings {
-            size,
-            position,
-            maximized: saved.is_some_and(|w| w.maximized),
-            min_size: Some(MIN_SIZE),
-            // Rendered from branding/logo.svg (rsvg-convert -w 256 -h 256).
-            icon: window::icon::from_file_data(include_bytes!("../../branding/icon.png"), None)
-                .ok(),
-            // Closing is handled in `update`, so typed settings are saved
-            // and a running download is stopped first.
-            exit_on_close_request: false,
-            platform_specific: platform_settings(),
-            ..window::Settings::default()
-        })
-        .run()
+    window::Settings {
+        size,
+        position,
+        maximized: saved.is_some_and(|w| w.maximized),
+        min_size: Some(MIN_SIZE),
+        // Rendered from branding/logo.svg (rsvg-convert -w 256 -h 256).
+        icon: window::icon::from_file_data(include_bytes!("../../branding/icon.png"), None).ok(),
+        // Closing is handled in `update`, so typed settings are saved
+        // and a running download is stopped first.
+        exit_on_close_request: false,
+        visible: !hidden_until_drawn(),
+        platform_specific: platform_settings(),
+        ..window::Settings::default()
+    }
 }
 
 /// On Wayland a program can't hand its window an icon: the desktop finds it
@@ -73,6 +88,47 @@ fn platform_settings() -> window::settings::PlatformSpecific {
 #[cfg(not(target_os = "linux"))]
 fn platform_settings() -> window::settings::PlatformSpecific {
     window::settings::PlatformSpecific::default()
+}
+
+/// Windows paints a new window white until the app draws its first frame,
+/// which can take up to a second (setting up the GPU, the first text). So
+/// there the window starts hidden and is shown once a frame has been
+/// drawn, or after [`REVEAL_DEADLINE_MS`] in any case. Debug builds can try
+/// it elsewhere with `YTP_DEV_HIDDEN_START=1`.
+fn hidden_until_drawn() -> bool {
+    cfg!(windows) || (cfg!(debug_assertions) && std::env::var_os("YTP_DEV_HIDDEN_START").is_some())
+}
+
+/// The latest the window is shown, even if no frame was reported drawn.
+const REVEAL_DEADLINE_MS: u64 = 1500;
+
+/// Frames seen while the window is hidden. The first is reported before it
+/// is drawn, so the second means the first is on screen.
+static FRAMES_WHILE_HIDDEN: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
+static REVEALED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+/// The window was closed maximized, so it is shown maximized again.
+static START_MAXIMIZED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+/// Shows the window started hidden, once, and gives it the focus (Windows
+/// shows a window without activating it the first time).
+fn reveal_window() -> Task<Message> {
+    if !hidden_until_drawn() || REVEALED.swap(true, std::sync::atomic::Ordering::SeqCst) {
+        return Task::none();
+    }
+    window::latest().then(|id| match id {
+        Some(id) => {
+            let show = window::set_mode::<Message>(id, window::Mode::Windowed);
+            // winit keeps a hidden window's maximized state; asked again in
+            // case a platform doesn't.
+            let show = if START_MAXIMIZED.load(std::sync::atomic::Ordering::SeqCst) {
+                show.chain(window::maximize(id, true))
+            } else {
+                show
+            };
+            show.chain(window::gain_focus(id))
+        }
+        None => Task::none(),
+    })
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -109,6 +165,10 @@ enum Message {
     CloseRequested(window::Id),
     /// The window got the focus: a link copied meanwhile may be offered.
     WindowFocused,
+    /// A frame was drawn while the window is still hidden.
+    FrameWhileHidden,
+    /// [`REVEAL_DEADLINE_MS`] passed: show the window anyway.
+    RevealWindow,
     /// Debug builds only, see [`dev_snapshot`].
     SnapshotDue,
     SnapshotFrame,
@@ -145,6 +205,17 @@ enum App {
 
 impl App {
     fn boot() -> (Self, Task<Message>) {
+        let (app, task) = Self::boot_app();
+        // The deadline for showing a window started hidden.
+        let deadline = if hidden_until_drawn() {
+            Task::perform(delay(REVEAL_DEADLINE_MS), |_| Message::RevealWindow)
+        } else {
+            Task::none()
+        };
+        (app, Task::batch([task, deadline]))
+    }
+
+    fn boot_app() -> (Self, Task<Message>) {
         let paths = match Paths::for_current_exe() {
             Ok(paths) => paths,
             Err(e) => {
@@ -225,6 +296,20 @@ impl App {
     }
 
     fn update(&mut self, message: Message) -> Task<Message> {
+        // Before anything else, and for the broken screen too: a hidden
+        // window must always be shown in the end.
+        match message {
+            Message::FrameWhileHidden => {
+                let seen = FRAMES_WHILE_HIDDEN.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+                return if seen >= 1 {
+                    reveal_window()
+                } else {
+                    Task::none()
+                };
+            }
+            Message::RevealWindow => return reveal_window(),
+            _ => {}
+        }
         match (self, message) {
             (_, Message::Snapshot(shot)) => save_snapshot(shot),
             (
@@ -455,6 +540,8 @@ impl App {
                 }
                 Task::none()
             }
+            // Handled before this match.
+            (_, Message::FrameWhileHidden | Message::RevealWindow) => Task::none(),
             (App::Broken(_), _) => Task::none(),
         }
     }
@@ -564,6 +651,11 @@ impl App {
 
     fn subscription(&self) -> Subscription<Message> {
         let close = window::close_requests().map(Message::CloseRequested);
+        let close = if hidden_until_drawn() && !REVEALED.load(std::sync::atomic::Ordering::SeqCst) {
+            Subscription::batch([close, window::frames().map(|_| Message::FrameWhileHidden)])
+        } else {
+            close
+        };
         match self {
             App::Running { snapshot_due, .. } => {
                 let theme = iced::system::theme_changes().map(Message::SystemTheme);
@@ -1098,6 +1190,29 @@ fn save_snapshot(shot: window::Screenshot) -> Task<Message> {
 
 #[cfg(test)]
 mod tests {
+    /// Windows paints a new window white until the first frame, so there
+    /// it starts hidden (shown by `reveal_window`); everywhere else it is
+    /// shown at once. Size and maximized state come from the last close,
+    /// never below the minimum.
+    #[test]
+    fn the_window_opens_as_it_was_closed_and_hidden_only_on_windows() {
+        let fresh = super::window_settings(None);
+        assert_eq!(fresh.visible, !cfg!(windows));
+        assert!(!fresh.maximized);
+        assert_eq!(fresh.min_size, Some(super::MIN_SIZE));
+
+        let saved = crate::config::WindowState {
+            width: 10.0,
+            height: 10.0,
+            maximized: true,
+            position: None,
+        };
+        let restored = super::window_settings(Some(saved));
+        assert!(restored.maximized);
+        assert_eq!(restored.size, super::MIN_SIZE, "never below the minimum");
+        assert_eq!(restored.visible, !cfg!(windows));
+    }
+
     /// `run` drops a failed icon with `.ok()`, so make sure it decodes.
     #[test]
     fn the_window_icon_decodes() {
@@ -1105,5 +1220,18 @@ mod tests {
             iced::window::icon::from_file_data(include_bytes!("../../branding/icon.png"), None)
                 .is_ok()
         );
+    }
+}
+
+#[cfg(test)]
+mod font_timing {
+    /// Not part of the normal run: how long iced takes to read every font
+    /// installed on this system, the first time text is laid out.
+    #[test]
+    #[ignore = "a measurement, not a check"]
+    fn time_loading_the_system_fonts() {
+        let started = std::time::Instant::now();
+        let _ = iced::advanced::graphics::text::font_system();
+        eprintln!("font system ready in {:?}", started.elapsed());
     }
 }
