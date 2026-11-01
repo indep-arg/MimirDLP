@@ -172,9 +172,14 @@ pub fn fetch(paths: &Paths, url: &str, lookup: &Lookup) -> Result<Metadata, Stri
     };
 
     if !output.status.success() {
-        // yt-dlp's own words, which stay in English.
+        // A known problem in plain words, or else yt-dlp's own, which stay
+        // in English.
         return Err(match output.stderr.lines().find(|l| !l.trim().is_empty()) {
-            Some(line) => line.trim_start_matches("ERROR: ").to_string(),
+            Some(line) => {
+                let line = line.trim_start_matches("ERROR: ");
+                crate::explain::explain(line, paths.bundled_tools())
+                    .unwrap_or_else(|| line.to_string())
+            }
             None => tr!("yt-dlp could not look up this link."),
         });
     }
@@ -395,6 +400,35 @@ mod tests {
         );
         assert_eq!(meta.title, "big");
         assert_eq!(meta.duration, Some(5.0));
+        fs::remove_dir_all(dir).unwrap();
+    }
+
+    /// A failed lookup shows a known problem in plain words, and anything
+    /// else in yt-dlp's own, without its "ERROR: " prefix.
+    #[cfg(unix)]
+    #[test]
+    fn a_failed_lookup_explains_known_errors() {
+        use std::fs;
+        use std::os::unix::fs::PermissionsExt;
+
+        let _guard = crate::testing::exec_guard();
+        let dir = crate::testing::tempdir();
+        let paths = Paths::new(dir.clone());
+        fs::create_dir_all(&paths.bin_dir).unwrap();
+        let script = paths.tool("yt-dlp");
+        let fail_with = |line: &str| {
+            fs::write(
+                &script,
+                format!("#!/bin/sh\necho \"ERROR: {line}\" >&2\nexit 1\n"),
+            )
+            .unwrap();
+            fs::set_permissions(&script, fs::Permissions::from_mode(0o755)).unwrap();
+            fetch(&paths, "https://example.com/v", &Lookup::default()).unwrap_err()
+        };
+
+        let geo = "[youtube] abc: This video is not available in your country";
+        assert_eq!(fail_with(geo), crate::explain::explain(geo, false).unwrap());
+        assert_eq!(fail_with("[x] abc: odd failure"), "[x] abc: odd failure");
         fs::remove_dir_all(dir).unwrap();
     }
 }

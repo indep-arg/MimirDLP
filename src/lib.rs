@@ -3,6 +3,7 @@
 pub mod config;
 pub mod desktop;
 pub mod engine;
+pub mod explain;
 pub mod gui;
 pub mod i18n;
 pub mod log;

@@ -19,6 +19,7 @@ use std::time::Duration;
 use tr::tr;
 
 use crate::engine::{self, Options, Outcome};
+use crate::explain;
 use crate::log::Level;
 use crate::process;
 use crate::provision::Paths;
@@ -234,6 +235,9 @@ pub fn run(
         }
     }
 
+    // The card says what went wrong in plain words when the error is a
+    // known one. yt-dlp's own line is already in the log.
+    let last_error = last_error.map(|e| explain::explain(&e, paths.bundled_tools()).unwrap_or(e));
     let code = cancel
         .take()
         .and_then(|mut child| child.wait().ok())
@@ -539,14 +543,36 @@ mod tests {
             fs::remove_dir_all(dir).unwrap();
         }
 
+        /// An error nothing explains is passed on in yt-dlp's own words.
         #[test]
         fn a_failure_carries_the_last_error_line() {
-            let (dir, paths) = fake_ytdlp("echo 'ERROR: this video is unavailable' >&2", 1);
+            let (dir, paths) = fake_ytdlp("echo 'ERROR: the extractor broke' >&2", 1);
             let events = collect(&paths, &Cancel::default());
             assert_eq!(
                 events.last(),
                 Some(&Event::Finished(Finish::Failed(
-                    "this video is unavailable".into()
+                    "the extractor broke".into()
+                )))
+            );
+            fs::remove_dir_all(dir).unwrap();
+        }
+
+        /// A known error reaches the card in plain words, while the log
+        /// keeps yt-dlp's own line for whoever wants the details.
+        #[test]
+        fn a_known_error_is_explained_and_the_log_keeps_the_original() {
+            let raw =
+                "[youtube] abc: Sign in to confirm you're not a bot. Use --cookies-from-browser";
+            let (dir, paths) = fake_ytdlp(&format!("echo \"ERROR: {raw}\" >&2"), 1);
+            let events = collect(&paths, &Cancel::default());
+            assert!(
+                events.contains(&Event::Log(Level::Error, raw.into())),
+                "{events:?}"
+            );
+            assert_eq!(
+                events.last(),
+                Some(&Event::Finished(Finish::Failed(
+                    crate::explain::explain(raw, false).unwrap()
                 )))
             );
             fs::remove_dir_all(dir).unwrap();

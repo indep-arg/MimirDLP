@@ -746,7 +746,7 @@ fn item_card(item: &QueueItem) -> Element<'_, Message> {
             .size(13)
             .style(style::muted_text)
             .into(),
-        MetaState::Failed(e) => text(tr!("Could not look this link up ({e})", e))
+        MetaState::Failed(e) => text(tr!("Could not look this link up: {e}", e))
             .size(13)
             .style(text::warning)
             .into(),

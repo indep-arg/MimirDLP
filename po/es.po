@@ -258,6 +258,78 @@ msgstr "Categoría de SponsorBlock desconocida: {bare}"
 msgid "'{bare}' can only be marked, not removed."
 msgstr "«{bare}» solo se puede marcar, no recortar."
 
+#: src/explain.rs
+msgid "YouTube wants to make sure you're not a bot. Wait a while and try again."
+msgstr "YouTube quiere asegurarse de que no eres un bot. Espera un rato y vuelve a intentarlo."
+
+#: src/explain.rs
+msgid "YouTube wants to make sure you're not a bot. Use the cookies of a browser where you're signed in to YouTube: Settings, Advanced options, Signing in."
+msgstr "YouTube quiere asegurarse de que no eres un bot. Usa las cookies de un navegador donde hayas iniciado sesión en YouTube: Ajustes, Opciones avanzadas, Inicio de sesión."
+
+#: src/explain.rs
+msgid "Only the channel's members can watch this video. The Flatpak can't read your browser's cookies to sign in; the portable version can."
+msgstr "Solo los miembros del canal pueden ver este video. El Flatpak no puede leer las cookies de tu navegador para iniciar sesión; la versión portable sí."
+
+#: src/explain.rs
+msgid "Only the channel's members can watch this video. Use the cookies of a browser where you're signed in with a member account: Settings, Advanced options, Signing in."
+msgstr "Solo los miembros del canal pueden ver este video. Usa las cookies de un navegador donde hayas iniciado sesión con una cuenta de miembro: Ajustes, Opciones avanzadas, Inicio de sesión."
+
+#: src/explain.rs
+msgid "This video needs you signed in (it's private or age-restricted). The Flatpak can't read your browser's cookies to sign in; the portable version can."
+msgstr "Este video requiere iniciar sesión (es privado o tiene restricción de edad). El Flatpak no puede leer las cookies de tu navegador para iniciar sesión; la versión portable sí."
+
+#: src/explain.rs
+msgid "This video needs you signed in (it's private or age-restricted). Use the cookies of a browser where you're signed in: Settings, Advanced options, Signing in."
+msgstr "Este video requiere iniciar sesión (es privado o tiene restricción de edad). Usa las cookies de un navegador donde hayas iniciado sesión: Ajustes, Opciones avanzadas, Inicio de sesión."
+
+#: src/explain.rs
+msgid "This video isn't available in your country."
+msgstr "Este video no está disponible en tu país."
+
+#: src/explain.rs
+msgid "This stream or premiere hasn't started yet. Try again when it starts, or set a wait for scheduled streams in Settings, Advanced options."
+msgstr "Esta transmisión o estreno todavía no empezó. Vuelve a intentarlo cuando empiece, o configura una espera para transmisiones programadas en Ajustes, Opciones avanzadas."
+
+#: src/explain.rs
+msgid "The site got too many requests from you and is refusing more for now. Wait a while (an hour usually does it) and try again."
+msgstr "El sitio recibió demasiadas solicitudes tuyas y por ahora rechaza más. Espera un rato (en general basta con una hora) y vuelve a intentarlo."
+
+#: src/explain.rs
+msgid "The site refused the download (error 403). A newer yt-dlp usually fixes it, and it comes with the next update of the app."
+msgstr "El sitio rechazó la descarga (error 403). Un yt-dlp más nuevo suele solucionarlo, y llega con la próxima actualización de la aplicación."
+
+#: src/explain.rs
+msgid "The site refused the download (error 403). Update yt-dlp in ☰, Setup and updates, and try again."
+msgstr "El sitio rechazó la descarga (error 403). Actualiza yt-dlp en ☰, Instalación y actualizaciones, y vuelve a intentarlo."
+
+#: src/explain.rs
+msgid "Nothing was found at this link (error 404). Check that it's right and that the video still exists."
+msgstr "No se encontró nada en este enlace (error 404). Comprueba que sea correcto y que el video todavía exista."
+
+#: src/explain.rs
+msgid "The site had a problem on its side. Try again later."
+msgstr "El sitio tuvo un problema de su lado. Vuelve a intentarlo más tarde."
+
+#: src/explain.rs
+msgid "The quality or format you picked isn't available for this video. Pick another one on its card."
+msgstr "La calidad o el formato que elegiste no está disponible para este video. Elige otro en su tarjeta."
+
+#: src/explain.rs
+msgid "yt-dlp doesn't support this site or kind of link."
+msgstr "yt-dlp no admite este sitio o este tipo de enlace."
+
+#: src/explain.rs
+msgid "The disk is full. Free some space and try again."
+msgstr "El disco está lleno. Libera espacio y vuelve a intentarlo."
+
+#: src/explain.rs
+msgid "This video is unavailable: it was removed or made private, or the link is wrong."
+msgstr "Este video no está disponible: se eliminó o se hizo privado, o el enlace es incorrecto."
+
+#: src/explain.rs
+msgid "Couldn't reach the site. Check your internet connection and try again."
+msgstr "No se pudo conectar con el sitio. Comprueba tu conexión a internet y vuelve a intentarlo."
+
 #: src/gui/download.rs
 msgid "Stopping the download..."
 msgstr "Deteniendo la descarga..."
@@ -416,8 +488,8 @@ msgstr "Consultando este enlace..."
 
 #: src/gui/download.rs
 #, python-brace-format
-msgid "Could not look this link up ({e})"
-msgstr "No se pudo consultar este enlace ({e})"
+msgid "Could not look this link up: {e}"
+msgstr "No se pudo consultar este enlace: {e}"
 
 #: src/gui/download.rs
 #, python-brace-format
