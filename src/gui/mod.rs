@@ -53,17 +53,17 @@ pub fn run() -> iced::Result {
         .run()
 }
 
-/// The CPU (tiny-skia) draws the window unless the GPU is asked for, which
-/// is the default everywhere but Windows (Settings, "Draw with the graphics
-/// card"). There, with wgpu choosing, the driver reserved about 330 MB
-/// (160 MB of it in RAM) for a window of a few cards and buttons; tiny-skia
-/// takes 12 MB at rest, under 50 MB maximized, and less CPU than wgpu while
-/// a download redraws the progress bar (measured with
-/// scripts/stress-launch.ps1 and an RTX 3070). Asked for on Windows, the GPU
-/// draws through DirectX 12, which reserved 134 MB where wgpu's own choice,
-/// Vulkan, took 330. Elsewhere wgpu picks: Vulkan, or OpenGL without it.
-/// When the GPU can't be used at all, iced falls back to tiny-skia by
-/// itself. `ICED_BACKEND` and `WGPU_BACKEND` still decide when set.
+/// The GPU draws the window unless turned off (Settings, "Draw with the
+/// graphics card"); then the CPU does, with tiny-skia.
+///
+/// On Windows it is DirectX 12. Left to choose, wgpu took Vulkan, whose
+/// driver held about 160 MB of RAM for a window of a few cards and buttons
+/// (330 MB reserved); DirectX 12 holds about 57 MB at rest (135 reserved),
+/// measured with an RTX 3070. tiny-skia needs only 11 MB, but drew some
+/// parts wrong where the GPU didn't. Elsewhere wgpu picks: Vulkan, or
+/// OpenGL without it. When the GPU can't be used at all, iced falls back to
+/// tiny-skia by itself. `ICED_BACKEND` and `WGPU_BACKEND` still decide when
+/// set.
 fn choose_renderer(gpu: bool) {
     let default = |key: &str, value: &str| {
         if std::env::var_os(key).is_none() {
@@ -129,20 +129,15 @@ fn hidden_until_drawn() -> bool {
 }
 
 /// The latest the window is shown, even if no frame was reported drawn.
-const REVEAL_DEADLINE_MS: u64 = 1500;
-
+///
 /// On Windows no frame is reported while the window is hidden, so in
-/// practice the deadline is when it is shown: 1.5 s on every launch, with
-/// either renderer (measured). The CPU renderer has its first frame ready
-/// right away, and the window was dark from the first look at 250 ms; the
-/// GPU one still needs the time for building its pipelines.
-fn reveal_deadline_ms() -> u64 {
-    if cfg!(windows) && style::drawn_on_the_cpu() {
-        250
-    } else {
-        REVEAL_DEADLINE_MS
-    }
-}
+/// practice this is when it is shown. It counts from the app's start, which
+/// comes after the GPU is set up (about 0.6 s with DirectX 12), and the
+/// first frame was ready by then: measured with DirectX 12 and with the CPU
+/// renderer, the window was dark from the first look at any deadline down
+/// to 30 ms, never white. It was 1.5 s, which only kept the window from
+/// showing until then.
+const REVEAL_DEADLINE_MS: u64 = 300;
 
 /// Frames seen while the window is hidden. The first is reported before it
 /// is drawn, so the second means the first is on screen.
@@ -250,7 +245,7 @@ impl App {
         let (app, task) = Self::boot_app();
         // The deadline for showing a window started hidden.
         let deadline = if hidden_until_drawn() {
-            Task::perform(delay(reveal_deadline_ms()), |_| Message::RevealWindow)
+            Task::perform(delay(REVEAL_DEADLINE_MS), |_| Message::RevealWindow)
         } else {
             Task::none()
         };

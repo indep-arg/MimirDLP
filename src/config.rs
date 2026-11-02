@@ -394,9 +394,8 @@ pub struct Settings {
     pub verbose: bool,
     /// Look for a newer MimirDLP once a day (never in the Flatpak).
     pub app_updates: bool,
-    /// Draw the window with the graphics card. Off on Windows, where the
-    /// CPU renderer needs a fraction of the memory (see `gui::run`); read
-    /// at startup only.
+    /// Draw the window with the graphics card; off, the CPU draws it, with
+    /// far less memory (see `gui::choose_renderer`). Read at startup only.
     pub gpu: bool,
     pub restrict_filenames: bool,
     pub preserve_mtime: bool,
@@ -459,7 +458,7 @@ impl Default for Settings {
             // terminal to scroll back through, so it starts off.
             verbose: false,
             app_updates: true,
-            gpu: !cfg!(windows),
+            gpu: true,
             restrict_filenames: engine.restrict_filenames,
             preserve_mtime: engine.preserve_mtime,
             ignore_errors: engine.ignore_errors,
@@ -2099,12 +2098,12 @@ youtube b
         fs::remove_dir_all(dir).unwrap();
     }
 
-    /// The GPU draws by default everywhere but Windows, and the choice
-    /// survives a save either way.
+    /// The GPU draws unless turned off, also for a settings file from
+    /// before the setting existed, and the choice survives a save.
     #[test]
-    fn drawing_with_the_gpu_is_off_on_windows_until_turned_on() {
-        assert_eq!(Settings::default().gpu, !cfg!(windows));
-        assert_eq!(Settings::parse("verbose=yes\n").gpu, !cfg!(windows));
+    fn drawing_with_the_gpu_is_on_until_turned_off() {
+        assert!(Settings::default().gpu);
+        assert!(Settings::parse("verbose=yes\n").gpu);
         for gpu in [true, false] {
             let s = Settings {
                 gpu,
