@@ -119,8 +119,7 @@ const REVEAL_DEADLINE_MS: u64 = 1500;
 /// right away, and the window was dark from the first look at 250 ms; the
 /// GPU one still needs the time for building its pipelines.
 fn reveal_deadline_ms() -> u64 {
-    let on_the_cpu = std::env::var("ICED_BACKEND").is_ok_and(|backend| backend == "tiny-skia");
-    if cfg!(windows) && on_the_cpu {
+    if cfg!(windows) && style::drawn_on_the_cpu() {
         250
     } else {
         REVEAL_DEADLINE_MS
