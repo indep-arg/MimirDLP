@@ -10,7 +10,7 @@
   </developer>
   <description>
     <p>
-      A graphical front end for yt-dlp. Paste a link and it looks the video up before anything is downloaded, showing the title, thumbnail and length (for a playlist, its name and how many videos it has). Then pick video or audio, the format and the quality.
+      Front end for yt-dlp. Paste a link and it looks the video up before anything is downloaded, showing the title, thumbnail and length (for a playlist, its name and how many videos it has). Then pick video or audio, the format and the quality.
     </p>
     <p>
       Several links can be queued at once, each with its own format and progress bar. They run one after another. A failed download can be retried, a stopped one resumes from the partial file, and whatever was still waiting is back the next time you open the app.
@@ -109,11 +109,6 @@
     <release version="0.4.1" date="2026-10-11">
       <description>
         <p>Corrects the description of what the package includes, and no longer repeats the title in the Download header bar.</p>
-      </description>
-    </release>
-    <release version="0.4.0" date="2026-10-11">
-      <description>
-        <p>Ready to run as a Flatpak, with yt-dlp, FFmpeg and Deno included in the package. Clearer wording in Spanish.</p>
       </description>
     </release>
     <release version="0.3.0" date="2026-10-10">
