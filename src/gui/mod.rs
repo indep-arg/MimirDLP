@@ -26,17 +26,12 @@ use setup::Setup;
 const MIN_SIZE: iced::Size = iced::Size::new(720.0, 520.0);
 
 pub fn run() -> iced::Result {
-    // On Windows the window is drawn on the CPU. With wgpu the GPU driver
-    // reserved about 330 MB (160 MB of it in RAM) for a window of a few cards
-    // and buttons; tiny-skia takes 12 MB at rest, under 50 MB maximized, and
-    // less CPU than wgpu while a download redraws the progress bar (measured
-    // with scripts/stress-launch.ps1 and an RTX 3070). The window looks the
-    // same. `ICED_BACKEND` still decides when set.
-    #[cfg(windows)]
-    if std::env::var_os("ICED_BACKEND").is_none() {
-        // SAFETY: first thing in `main`, before any thread exists.
-        unsafe { std::env::set_var("ICED_BACKEND", "tiny-skia") };
-    }
+    let paths = Paths::for_current_exe().ok();
+    choose_renderer(
+        paths
+            .as_ref()
+            .map_or(Settings::default().gpu, |paths| Settings::load(paths).gpu),
+    );
     // iced reads every font installed on the system the first time it lays
     // out text, which is the first frame. Started here it overlaps with
     // creating the window and setting up the GPU instead of following it.
@@ -45,9 +40,7 @@ pub fn run() -> iced::Result {
     });
     // The window opens as it was closed. Only Windows gets its place back
     // (see `remember_window`); on Linux the desktop chooses it.
-    let saved = Paths::for_current_exe()
-        .ok()
-        .and_then(|paths| WindowState::load(&paths));
+    let saved = paths.as_ref().and_then(WindowState::load);
     START_MAXIMIZED.store(
         saved.is_some_and(|w| w.maximized),
         std::sync::atomic::Ordering::SeqCst,
@@ -58,6 +51,31 @@ pub fn run() -> iced::Result {
         .subscription(App::subscription)
         .window(window_settings(saved))
         .run()
+}
+
+/// The CPU (tiny-skia) draws the window unless the GPU is asked for, which
+/// is the default everywhere but Windows (Settings, "Draw with the graphics
+/// card"). There, with wgpu choosing, the driver reserved about 330 MB
+/// (160 MB of it in RAM) for a window of a few cards and buttons; tiny-skia
+/// takes 12 MB at rest, under 50 MB maximized, and less CPU than wgpu while
+/// a download redraws the progress bar (measured with
+/// scripts/stress-launch.ps1 and an RTX 3070). Asked for on Windows, the GPU
+/// draws through DirectX 12, which reserved 134 MB where wgpu's own choice,
+/// Vulkan, took 330. Elsewhere wgpu picks: Vulkan, or OpenGL without it.
+/// When the GPU can't be used at all, iced falls back to tiny-skia by
+/// itself. `ICED_BACKEND` and `WGPU_BACKEND` still decide when set.
+fn choose_renderer(gpu: bool) {
+    let default = |key: &str, value: &str| {
+        if std::env::var_os(key).is_none() {
+            // SAFETY: first thing in `main`, before any thread exists.
+            unsafe { std::env::set_var(key, value) };
+        }
+    };
+    if !gpu {
+        default("ICED_BACKEND", "tiny-skia");
+    } else if cfg!(windows) {
+        default("WGPU_BACKEND", "dx12");
+    }
 }
 
 /// The main window, as it was when it was last closed (`saved`).

@@ -113,8 +113,8 @@ const SHADOW: Shadow = Shadow {
     blur_radius: 12.0,
 };
 
-/// Whether the window is drawn on the CPU (tiny-skia), as on Windows.
-/// `gui::run` decides that before anything is drawn.
+/// Whether the window is drawn on the CPU (tiny-skia), the default on
+/// Windows. `gui::choose_renderer` decides that before anything is drawn.
 pub fn drawn_on_the_cpu() -> bool {
     static CPU: std::sync::LazyLock<bool> = std::sync::LazyLock::new(|| {
         std::env::var("ICED_BACKEND").is_ok_and(|backend| backend == "tiny-skia")
