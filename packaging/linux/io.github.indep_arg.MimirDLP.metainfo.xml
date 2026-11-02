@@ -66,6 +66,18 @@
     <internet>always</internet>
   </requires>
   <releases>
+    <release version="0.8.0" date="2026-11-01">
+      <description>
+        <ul>
+          <li>On Windows the app uses much less memory: the window is drawn with DirectX 12 instead of Vulkan.</li>
+          <li>On Windows the window opens in about half a second instead of one and a half.</li>
+          <li>A setting to draw the window with the processor instead of the graphics card, for computers whose graphics card gives trouble.</li>
+          <li>On Windows, "Show in folder" now selects the file when its path has spaces, instead of opening Documents.</li>
+          <li>Closing the app no longer leaves a white rectangle behind for a moment on Windows.</li>
+          <li>A settings file saved with a byte order mark no longer loses its first setting.</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.7.0" date="2026-11-01">
       <description>
         <ul>

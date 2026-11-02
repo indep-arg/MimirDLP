@@ -1,6 +1,6 @@
 [package]
 name = "mimirdlp"
-version = "0.7.0"
+version = "0.8.0"
 description = "A portable GUI around yt-dlp: Mimir's well of downloads."
 edition = "2024"
 # The oldest Rust that can build MimirDLP, kept close to the latest stable
