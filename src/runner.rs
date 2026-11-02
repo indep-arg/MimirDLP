@@ -554,22 +554,36 @@ mod tests {
         assert!(flags.iter().any(|f| f == "--no-quiet"));
     }
 
-    #[cfg(unix)]
     mod process {
         use super::*;
         use std::fs;
-        use std::os::unix::fs::PermissionsExt;
 
-        /// A stand-in for yt-dlp that prints the given script and exits with
-        /// the given code.
-        fn fake_ytdlp(body: &str, exit: i32) -> (std::path::PathBuf, Paths) {
+        /// A stand-in for yt-dlp that runs `script` (see
+        /// `tests/support/stand_in.rs` for what it understands).
+        fn fake_ytdlp(script: &str) -> (std::path::PathBuf, Paths) {
             let dir = crate::testing::tempdir();
             let paths = Paths::new(dir.clone());
-            fs::create_dir_all(&paths.bin_dir).unwrap();
-            let script = paths.tool("yt-dlp");
-            fs::write(&script, format!("#!/bin/sh\n{body}\nexit {exit}\n")).unwrap();
-            fs::set_permissions(&script, fs::Permissions::from_mode(0o755)).unwrap();
+            crate::testing::stand_in(&paths, "yt-dlp", script);
             (dir, paths)
+        }
+
+        /// Whether the process `pid` is still running.
+        fn alive(pid: &str) -> bool {
+            #[cfg(unix)]
+            {
+                std::path::Path::new(&format!("/proc/{pid}")).exists()
+                    && !fs::read_to_string(format!("/proc/{pid}/stat"))
+                        .unwrap_or_default()
+                        .contains(") Z ")
+            }
+            #[cfg(windows)]
+            {
+                let listed = std::process::Command::new("tasklist")
+                    .args(["/FI", &format!("PID eq {pid}"), "/FO", "CSV", "/NH"])
+                    .output()
+                    .unwrap();
+                String::from_utf8_lossy(&listed.stdout).contains(&format!("\"{pid}\""))
+            }
         }
 
         fn collect(paths: &Paths, cancel: &Cancel) -> Vec<Event> {
@@ -607,11 +621,10 @@ mod tests {
         #[test]
         fn a_successful_run_reports_progress_the_file_and_completion() {
             let (dir, paths) = fake_ytdlp(
-                "echo '[ytp] downloading|10|100|NA|NA|NA'\n\
-                 echo '[ytp-pp] started|Merger' >&2\n\
-                 echo '[ytp-file] /tmp/out.mkv'\n\
-                 echo 'ERROR: not fatal here' >&2",
-                0,
+                "out [ytp] downloading|10|100|NA|NA|NA\n\
+                 err [ytp-pp] started|Merger\n\
+                 out [ytp-file] /tmp/out.mkv\n\
+                 err ERROR: not fatal here",
             );
             let events = collect(&paths, &Cancel::default());
             assert!(events.iter().any(|e| matches!(e, Event::Progress(_))));
@@ -623,7 +636,7 @@ mod tests {
         /// An error nothing explains is passed on in yt-dlp's own words.
         #[test]
         fn a_failure_carries_the_last_error_line() {
-            let (dir, paths) = fake_ytdlp("echo 'ERROR: the extractor broke' >&2", 1);
+            let (dir, paths) = fake_ytdlp("err ERROR: the extractor broke\nexit 1");
             let events = collect(&paths, &Cancel::default());
             assert_eq!(
                 events.last(),
@@ -640,7 +653,7 @@ mod tests {
         fn a_known_error_is_explained_and_the_log_keeps_the_original() {
             let raw =
                 "[youtube] abc: Sign in to confirm you're not a bot. Use --cookies-from-browser";
-            let (dir, paths) = fake_ytdlp(&format!("echo \"ERROR: {raw}\" >&2"), 1);
+            let (dir, paths) = fake_ytdlp(&format!("err ERROR: {raw}\nexit 1"));
             let events = collect(&paths, &Cancel::default());
             assert!(
                 events.contains(&Event::Log(Level::Error, raw.into())),
@@ -662,14 +675,11 @@ mod tests {
             let dir = crate::testing::tempdir();
             let stdin_file = dir.join("stdin");
             let argv_file = dir.join("argv");
-            let (dir2, paths) = fake_ytdlp(
-                &format!(
-                    "echo \"$@\" > {}\ncat > {}",
-                    argv_file.display(),
-                    stdin_file.display()
-                ),
-                0,
-            );
+            let (dir2, paths) = fake_ytdlp(&format!(
+                "args-to {}\nstdin-to {}",
+                argv_file.display(),
+                stdin_file.display()
+            ));
             let options = Options {
                 video_password: Some("hunter2".into()),
                 ..Options::default()
@@ -691,20 +701,14 @@ mod tests {
             );
             let argv = fs::read_to_string(&argv_file).unwrap();
             assert!(!argv.contains("hunter2"), "{argv}");
-            assert!(argv.contains("--config-locations -"), "{argv}");
+            assert!(argv.contains("--config-locations\n-\n"), "{argv}");
             fs::remove_dir_all(dir).unwrap();
             fs::remove_dir_all(dir2).unwrap();
         }
 
         /// A stand-in ffmpeg in `bin/` that writes its output file.
         fn fake_ffmpeg(paths: &Paths) {
-            let ffmpeg = paths.tool("ffmpeg");
-            fs::write(
-                &ffmpeg,
-                "#!/bin/sh\nfor last; do :; done\necho saved > \"$last\"\n",
-            )
-            .unwrap();
-            fs::set_permissions(&ffmpeg, fs::Permissions::from_mode(0o755)).unwrap();
+            crate::testing::stand_in(paths, "ffmpeg", "write-last-arg saved");
         }
 
         /// Runs a stand-in yt-dlp that announces `live`, starts writing
@@ -713,16 +717,14 @@ mod tests {
         fn stop_a_recording(live: &str) -> (Vec<Event>, std::path::PathBuf) {
             let out = crate::testing::tempdir();
             let destination = out.join("Live.mkv");
-            let (dir, paths) = fake_ytdlp(
-                &format!(
-                    "echo '[ytp-live] {live}'\n\
-                     echo '[download] Destination: {0}'\n\
-                     echo recorded > '{0}.part'\n\
-                     echo started\nsleep 60",
-                    destination.display()
-                ),
-                0,
-            );
+            let (dir, paths) = fake_ytdlp(&format!(
+                "out [ytp-live] {live}\n\
+                 out [download] Destination: {0}\n\
+                 write {0}.part|recorded\n\
+                 out started\n\
+                 sleep 60",
+                destination.display()
+            ));
             fake_ffmpeg(&paths);
             let cancel = Cancel::default();
             let _writing = crate::testing::exec_guard();
@@ -780,10 +782,10 @@ mod tests {
         #[test]
         fn the_log_never_shows_the_ip_address_in_links() {
             let (dir, paths) = fake_ytdlp(
-                "echo \"[in#0] Opening 'https://r.googlevideo.com/videoplayback/ip/203.0.113.7/id/x' for reading\" >&2\n\
-                 echo '[debug] https://r.example/v?ip=198.51.100.2&sig=1'\n\
-                 echo 'ERROR: unable to download https://r.example/ip/203.0.113.7/x' >&2",
-                1,
+                "err [in#0] Opening 'https://r.googlevideo.com/videoplayback/ip/203.0.113.7/id/x' for reading\n\
+                 out [debug] https://r.example/v?ip=198.51.100.2&sig=1\n\
+                 err ERROR: unable to download https://r.example/ip/203.0.113.7/x\n\
+                 exit 1",
             );
             let events = collect(&paths, &Cancel::default());
             let text = format!("{events:?}");
@@ -798,7 +800,7 @@ mod tests {
 
         #[test]
         fn exit_101_is_not_a_failure() {
-            let (dir, paths) = fake_ytdlp("echo '[download] limit reached'", 101);
+            let (dir, paths) = fake_ytdlp("out [download] limit reached\nexit 101");
             let events = collect(&paths, &Cancel::default());
             assert_eq!(
                 events.last(),
@@ -810,7 +812,7 @@ mod tests {
 
         #[test]
         fn cancelling_stops_the_child_and_reports_it_as_cancelled() {
-            let (dir, paths) = fake_ytdlp("echo 'started'\nsleep 60", 0);
+            let (dir, paths) = fake_ytdlp("out started\nsleep 60");
             let cancel = Cancel::default();
             let started = std::time::Instant::now();
             let events = collect_cancelling_on(&paths, &cancel, Some("started"));
@@ -825,10 +827,9 @@ mod tests {
         #[test]
         fn output_that_is_not_utf8_does_not_end_the_download() {
             let (dir, paths) = fake_ytdlp(
-                "printf '[download] Destination: /home/Jos\\351/v.mkv\\n'\n\
-                 i=0; while [ $i -lt 3000 ]; do echo '[ytp] downloading|10|100|NA|NA|NA'; i=$((i+1)); done\n\
-                 echo '[ytp-file] /tmp/out.mkv'",
-                0,
+                "out-raw [download] Destination: /home/Jos\\xe9/v.mkv\n\
+                 repeat 3000 out [ytp] downloading|10|100|NA|NA|NA\n\
+                 out [ytp-file] /tmp/out.mkv",
             );
             let events = collect(&paths, &Cancel::default());
             assert!(
@@ -846,42 +847,44 @@ mod tests {
 
         /// The real yt-dlp is a PyInstaller bootloader with the actual
         /// program as its child (checked with `ps` on yt-dlp_linux), so
-        /// killing only the direct child left the download running.
+        /// killing only the direct child left the download running. On
+        /// Windows it is `taskkill /T` that has to reach it.
         #[test]
         fn cancelling_also_stops_what_yt_dlp_started() {
             let dir = crate::testing::tempdir();
             let pid_file = dir.join("grandchild.pid");
-            let (dir2, paths) = fake_ytdlp(
-                &format!(
-                    "sh -c 'echo $$ > {0}; exec sleep 60' &\n\
-                     while [ ! -s {0} ]; do sleep 0.05; done\n\
-                     echo started\nwait",
-                    pid_file.display()
-                ),
-                0,
-            );
+            let (dir2, paths) = fake_ytdlp(&format!(
+                "spawn-sleeper {}\nout started\nsleep 60",
+                pid_file.display()
+            ));
             let cancel = Cancel::default();
             let events = collect_cancelling_on(&paths, &cancel, Some("started"));
             assert_eq!(events.last(), Some(&Event::Finished(Finish::Cancelled)));
             let pid = fs::read_to_string(&pid_file).unwrap().trim().to_string();
-            // Give the kernel a moment to deliver the signal.
-            let mut alive = true;
+            // Give the system a moment to finish it off.
+            let mut still_running = true;
             for _ in 0..20 {
-                alive = std::path::Path::new(&format!("/proc/{pid}")).exists()
-                    && !fs::read_to_string(format!("/proc/{pid}/stat"))
-                        .unwrap_or_default()
-                        .contains(") Z ");
-                if !alive {
+                still_running = alive(&pid);
+                if !still_running {
                     break;
                 }
                 thread::sleep(std::time::Duration::from_millis(50));
             }
-            if alive {
-                let _ = std::process::Command::new("kill")
-                    .args(["-9", &pid])
+            if still_running {
+                let (program, args) = if cfg!(windows) {
+                    ("taskkill", ["/F", "/PID"])
+                } else {
+                    ("kill", ["-9", "--"])
+                };
+                let _ = std::process::Command::new(program)
+                    .args(args)
+                    .arg(&pid)
                     .status();
             }
-            assert!(!alive, "the grandchild (pid {pid}) survived the cancel");
+            assert!(
+                !still_running,
+                "the grandchild (pid {pid}) survived the cancel"
+            );
             fs::remove_dir_all(dir).unwrap();
             fs::remove_dir_all(dir2).unwrap();
         }
@@ -890,7 +893,7 @@ mod tests {
         /// not wait for it to finish on its own.
         #[test]
         fn a_cancel_that_arrives_before_the_start_is_honoured() {
-            let (dir, paths) = fake_ytdlp("echo started\nsleep 8", 0);
+            let (dir, paths) = fake_ytdlp("out started\nsleep 8");
             let cancel = Cancel::default();
             cancel.cancel();
             let started = std::time::Instant::now();
@@ -902,6 +905,42 @@ mod tests {
             );
             assert_eq!(events.last(), Some(&Event::Finished(Finish::Cancelled)));
             fs::remove_dir_all(dir).unwrap();
+        }
+
+        /// Windows hands a program one command line, which it splits into
+        /// arguments again by its own rules; spaces, quotes, a trailing
+        /// backslash or `%` and `^` must still arrive as they were sent.
+        #[test]
+        fn awkward_arguments_reach_yt_dlp_unchanged() {
+            let dir = crate::testing::tempdir();
+            let argv_file = dir.join("argv");
+            let out = dir.join("My Videos & more %TEMP% ^ ñandú");
+            let (dir2, paths) = fake_ytdlp(&format!("args-to {}", argv_file.display()));
+            let urls = [
+                r#"https://example.com/a b?x="1"&y=%PATH%^"#.to_string(),
+                r"C:\ends with a backslash\".to_string(),
+                "https://example.com/日本".to_string(),
+            ];
+            let _writing = crate::testing::exec_guard();
+            let mut events = Vec::new();
+            run(
+                &paths,
+                &Options::default(),
+                Some(&out),
+                &urls,
+                &Cancel::default(),
+                &mut |e| events.push(e),
+            );
+            assert_eq!(events.last(), Some(&Event::Finished(Finish::Completed)));
+            let argv = fs::read_to_string(&argv_file).unwrap();
+            let argv: Vec<&str> = argv.lines().collect();
+            assert!(
+                argv.ends_with(&urls.each_ref().map(String::as_str)),
+                "{argv:?}"
+            );
+            assert!(argv.contains(&out.to_str().unwrap()), "{argv:?}");
+            fs::remove_dir_all(dir).unwrap();
+            fs::remove_dir_all(dir2).unwrap();
         }
 
         #[test]

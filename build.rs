@@ -1,6 +1,7 @@
-//! Windows only: embeds the icon and the version information into the
-//! .exe, so Explorer, the taskbar and the file's Properties show MimirDLP's
-//! own instead of a blank program. Every other target skips it.
+//! Hands the compiler's path to the tests (see below), and on Windows
+//! embeds the icon and the version information into the .exe, so Explorer,
+//! the taskbar and the file's Properties show MimirDLP's own instead of a
+//! blank program. Every other target skips the icon.
 //!
 //! `rc.exe` comes with the Windows SDK, which the MSVC toolchain needs for
 //! linking anyway, so a Windows build that can link can also do this. A
@@ -9,6 +10,11 @@
 
 fn main() {
     println!("cargo:rerun-if-changed=branding/icon.ico");
+    // The tests build a stand-in for the tools with this same compiler
+    // (`testing::stand_in`), on every platform.
+    if let Ok(rustc) = std::env::var("RUSTC") {
+        println!("cargo:rustc-env=MIMIRDLP_RUSTC={rustc}");
+    }
     if std::env::var("CARGO_CFG_TARGET_OS").as_deref() != Ok("windows") {
         return;
     }
