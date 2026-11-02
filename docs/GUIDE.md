@@ -129,3 +129,5 @@ cargo test --all-targets --locked
 ```
 
 If you touched what gets asked of yt-dlp, also run the real-download tests, which check the resulting files with ffprobe: `cargo test --test e2e -- --ignored` (a couple of minutes, needs internet).
+
+On Windows, `scripts/stress-launch.ps1` opens and closes a build many times and reports slow starts, hangs on close, crashes, processes left behind, idle CPU and memory. Its header lists the options.
