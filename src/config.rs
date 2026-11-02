@@ -827,6 +827,9 @@ impl Settings {
 
     pub(crate) fn parse(text: &str) -> Settings {
         let mut s = Settings::default();
+        // A file saved by a Windows editor can start with a byte order
+        // mark, which isn't whitespace to trim(): the first key was lost.
+        let text = text.strip_prefix('\u{feff}').unwrap_or(text);
         for (key, value) in text.lines().filter_map(|line| line.split_once('=')) {
             let value = value.trim();
             let flag = |current: bool| match value {
@@ -2087,6 +2090,16 @@ youtube b
         off.save(&paths).unwrap();
         assert!(!Settings::load(&paths).app_updates);
         fs::remove_dir_all(dir).unwrap();
+    }
+
+    /// Saved as "UTF-8 with BOM" (PowerShell 5's Set-Content and some
+    /// editors on Windows do that), the first setting used to be ignored
+    /// and then written back empty.
+    #[test]
+    fn a_byte_order_mark_does_not_cost_the_first_setting() {
+        let s = Settings::parse("\u{feff}output_dir=D:\\Videos\nverbose=yes\n");
+        assert_eq!(s.output_dir, "D:\\Videos");
+        assert!(s.verbose);
     }
 
     /// The video password reaches yt-dlp but never the disk: neither the
