@@ -348,7 +348,13 @@ impl App {
                 let _ = settings.save();
                 download.shutdown();
                 let paths = settings.paths().clone();
-                remember_window(id, paths).then(|()| iced::exit())
+                // Exiting takes a moment (well over 100 ms with the GPU
+                // renderer), and a window that isn't redrawn meanwhile shows
+                // up as a white ghost on Windows. Hidden first, it is simply
+                // gone.
+                remember_window(id, paths)
+                    .then(move |()| window::set_mode::<Message>(id, window::Mode::Hidden))
+                    .chain(iced::exit())
             }
             (App::Broken(_), Message::CloseRequested(_)) => iced::exit(),
             (App::Running { snapshot_due, .. }, Message::SnapshotDue) => {
