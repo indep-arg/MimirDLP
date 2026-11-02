@@ -26,6 +26,17 @@ use setup::Setup;
 const MIN_SIZE: iced::Size = iced::Size::new(720.0, 520.0);
 
 pub fn run() -> iced::Result {
+    // On Windows the window is drawn on the CPU. With wgpu the GPU driver
+    // reserved about 330 MB (160 MB of it in RAM) for a window of a few cards
+    // and buttons; tiny-skia takes 12 MB at rest, under 50 MB maximized, and
+    // less CPU than wgpu while a download redraws the progress bar (measured
+    // with scripts/stress-launch.ps1 and an RTX 3070). The window looks the
+    // same. `ICED_BACKEND` still decides when set.
+    #[cfg(windows)]
+    if std::env::var_os("ICED_BACKEND").is_none() {
+        // SAFETY: first thing in `main`, before any thread exists.
+        unsafe { std::env::set_var("ICED_BACKEND", "tiny-skia") };
+    }
     // iced reads every font installed on the system the first time it lays
     // out text, which is the first frame. Started here it overlaps with
     // creating the window and setting up the GPU instead of following it.
@@ -101,6 +112,20 @@ fn hidden_until_drawn() -> bool {
 
 /// The latest the window is shown, even if no frame was reported drawn.
 const REVEAL_DEADLINE_MS: u64 = 1500;
+
+/// On Windows no frame is reported while the window is hidden, so in
+/// practice the deadline is when it is shown: 1.5 s on every launch, with
+/// either renderer (measured). The CPU renderer has its first frame ready
+/// right away, and the window was dark from the first look at 250 ms; the
+/// GPU one still needs the time for building its pipelines.
+fn reveal_deadline_ms() -> u64 {
+    let on_the_cpu = std::env::var("ICED_BACKEND").is_ok_and(|backend| backend == "tiny-skia");
+    if cfg!(windows) && on_the_cpu {
+        250
+    } else {
+        REVEAL_DEADLINE_MS
+    }
+}
 
 /// Frames seen while the window is hidden. The first is reported before it
 /// is drawn, so the second means the first is on screen.
@@ -208,7 +233,7 @@ impl App {
         let (app, task) = Self::boot_app();
         // The deadline for showing a window started hidden.
         let deadline = if hidden_until_drawn() {
-            Task::perform(delay(REVEAL_DEADLINE_MS), |_| Message::RevealWindow)
+            Task::perform(delay(reveal_deadline_ms()), |_| Message::RevealWindow)
         } else {
             Task::none()
         };
