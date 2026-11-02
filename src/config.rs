@@ -394,6 +394,10 @@ pub struct Settings {
     pub verbose: bool,
     /// Look for a newer MimirDLP once a day (never in the Flatpak).
     pub app_updates: bool,
+    /// Draw the window with the graphics card. Off on Windows, where the
+    /// CPU renderer needs a fraction of the memory (see `gui::run`); read
+    /// at startup only.
+    pub gpu: bool,
     pub restrict_filenames: bool,
     pub preserve_mtime: bool,
     pub ignore_errors: bool,
@@ -455,6 +459,7 @@ impl Default for Settings {
             // terminal to scroll back through, so it starts off.
             verbose: false,
             app_updates: true,
+            gpu: !cfg!(windows),
             restrict_filenames: engine.restrict_filenames,
             preserve_mtime: engine.preserve_mtime,
             ignore_errors: engine.ignore_errors,
@@ -812,6 +817,7 @@ impl Settings {
             ("wait_for_video", self.wait_for_video.clone()),
             ("verbose", yes(self.verbose).into()),
             ("app_updates", yes(self.app_updates).into()),
+            ("gpu", yes(self.gpu).into()),
             ("restrict_filenames", yes(self.restrict_filenames).into()),
             ("preserve_mtime", yes(self.preserve_mtime).into()),
             ("ignore_errors", yes(self.ignore_errors).into()),
@@ -827,6 +833,9 @@ impl Settings {
 
     pub(crate) fn parse(text: &str) -> Settings {
         let mut s = Settings::default();
+        // A file saved by a Windows editor can start with a byte order
+        // mark, which isn't whitespace to trim(): the first key was lost.
+        let text = text.strip_prefix('\u{feff}').unwrap_or(text);
         for (key, value) in text.lines().filter_map(|line| line.split_once('=')) {
             let value = value.trim();
             let flag = |current: bool| match value {
@@ -886,6 +895,7 @@ impl Settings {
                 "wait_for_video" => s.wait_for_video = value.to_string(),
                 "verbose" => s.verbose = flag(s.verbose),
                 "app_updates" => s.app_updates = flag(s.app_updates),
+                "gpu" => s.gpu = flag(s.gpu),
                 "restrict_filenames" => s.restrict_filenames = flag(s.restrict_filenames),
                 "preserve_mtime" => s.preserve_mtime = flag(s.preserve_mtime),
                 "ignore_errors" => s.ignore_errors = flag(s.ignore_errors),
@@ -2087,6 +2097,31 @@ youtube b
         off.save(&paths).unwrap();
         assert!(!Settings::load(&paths).app_updates);
         fs::remove_dir_all(dir).unwrap();
+    }
+
+    /// The GPU draws by default everywhere but Windows, and the choice
+    /// survives a save either way.
+    #[test]
+    fn drawing_with_the_gpu_is_off_on_windows_until_turned_on() {
+        assert_eq!(Settings::default().gpu, !cfg!(windows));
+        assert_eq!(Settings::parse("verbose=yes\n").gpu, !cfg!(windows));
+        for gpu in [true, false] {
+            let s = Settings {
+                gpu,
+                ..Settings::default()
+            };
+            assert_eq!(Settings::parse(&s.serialize()).gpu, gpu);
+        }
+    }
+
+    /// Saved as "UTF-8 with BOM" (PowerShell 5's Set-Content and some
+    /// editors on Windows do that), the first setting used to be ignored
+    /// and then written back empty.
+    #[test]
+    fn a_byte_order_mark_does_not_cost_the_first_setting() {
+        let s = Settings::parse("\u{feff}output_dir=D:\\Videos\nverbose=yes\n");
+        assert_eq!(s.output_dir, "D:\\Videos");
+        assert!(s.verbose);
     }
 
     /// The video password reaches yt-dlp but never the disk: neither the

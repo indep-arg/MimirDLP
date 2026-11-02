@@ -1017,6 +1017,14 @@ msgid "Verbose log (for troubleshooting)"
 msgstr ""
 
 #: src/gui/settings.rs
+msgid "Draw with the graphics card"
+msgstr ""
+
+#: src/gui/settings.rs
+msgid "Off, the processor draws the window: it uses much less memory and works on any computer. Takes effect the next time MimirDLP starts."
+msgstr ""
+
+#: src/gui/settings.rs
 msgid "Leave it empty to use your Downloads folder."
 msgstr ""
 

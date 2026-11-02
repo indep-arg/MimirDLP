@@ -113,6 +113,28 @@ const SHADOW: Shadow = Shadow {
     blur_radius: 12.0,
 };
 
+/// Whether the window is drawn on the CPU (tiny-skia), the default on
+/// Windows. `gui::choose_renderer` decides that before anything is drawn.
+pub fn drawn_on_the_cpu() -> bool {
+    static CPU: std::sync::LazyLock<bool> = std::sync::LazyLock::new(|| {
+        std::env::var("ICED_BACKEND").is_ok_and(|backend| backend == "tiny-skia")
+    });
+    *CPU
+}
+
+/// The shadow of what floats over the screen, but none when drawing on the
+/// CPU: iced's tiny-skia repaints only what changed and leaves the blur
+/// outside it, so each redraw darkened it again until the menu and its
+/// surroundings turned black (iced 0.14 on Windows). The outline is enough
+/// to set them apart.
+fn floating_shadow() -> Shadow {
+    if drawn_on_the_cpu() {
+        Shadow::default()
+    } else {
+        SHADOW
+    }
+}
+
 /// Adwaita's card: a lighter surface than the window (white in light mode),
 /// 12 px corners and a hairline outline instead of a shadow.
 pub fn card(theme: &Theme) -> container::Style {
@@ -179,7 +201,7 @@ pub fn header_bar(theme: &Theme) -> container::Style {
 /// The menu floats over the screen, so it gets a shadow too.
 pub fn popover(theme: &Theme) -> container::Style {
     container::Style {
-        shadow: SHADOW,
+        shadow: floating_shadow(),
         ..card(theme)
     }
 }
@@ -313,7 +335,7 @@ pub fn dropdown_menu(theme: &Theme) -> menu::Style {
         text_color: text,
         selected_text_color: text,
         selected_background: Color { a: 0.10, ..text }.into(),
-        shadow: SHADOW,
+        shadow: floating_shadow(),
     }
 }
 

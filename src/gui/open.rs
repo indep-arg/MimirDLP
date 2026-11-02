@@ -30,9 +30,25 @@ pub fn open(target: impl Into<OsString>) -> Task<Result<(), String>> {
 /// platform can do it.
 #[cfg(windows)]
 pub fn reveal(path: &Path) -> Task<Result<(), String>> {
-    let mut arg = OsString::from("/select,");
-    arg.push(path);
-    Task::done(spawn(&arg, None).map_err(|e| e.to_string()))
+    Task::done(select_in_explorer(path).map_err(|e| e.to_string()))
+}
+
+#[cfg(windows)]
+fn select_in_explorer(path: &Path) -> std::io::Result<()> {
+    use std::os::windows::process::CommandExt;
+    std::process::Command::new("explorer")
+        .raw_arg(select_argument(path))
+        .spawn()?;
+    Ok(())
+}
+
+/// `/select,"C:\a b\file"`: only the path is quoted. `arg` would quote the
+/// whole `/select,...` when the path has a space, and explorer then ignores
+/// it and opens Documents instead (checked on Windows 11). A Windows path
+/// can't hold a `"`, so nothing inside needs escaping.
+#[cfg(any(windows, test))]
+fn select_argument(path: &Path) -> String {
+    format!("/select,\"{}\"", path.display())
 }
 
 #[cfg(unix)]
@@ -163,5 +179,23 @@ mod wayland {
                 state.0 = Some(token);
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The quotes go around the path only, or explorer opens Documents.
+    #[test]
+    fn explorer_gets_the_path_quoted_after_select() {
+        assert_eq!(
+            select_argument(Path::new(r"C:\My Videos\a b [x].mp4")),
+            r#"/select,"C:\My Videos\a b [x].mp4""#
+        );
+        assert_eq!(
+            select_argument(Path::new(r"C:\Vídeos\canción.mp3")),
+            r#"/select,"C:\Vídeos\canción.mp3""#
+        );
     }
 }

@@ -46,7 +46,8 @@ jobs:
         run: cargo test --all-targets --locked
 
   # The Windows build can only be checked here: there is no Windows machine
-  # in the loop. The unix only tests are cfg'd out and skipped.
+  # in the loop. The tests that start a tool use the stand-in program, so
+  # they run here too; the few about Unix file permissions are skipped.
   rust-windows:
     runs-on: windows-latest
     timeout-minutes: 30
@@ -87,3 +88,13 @@ jobs:
             exit 1
           }
           "ProductName: $($info.ProductName), FileVersion: $($info.FileVersion)"
+
+      # Opens the window and closes it like a user would, three times: a
+      # crash at startup, a window that never shows, a close that hangs or
+      # a process left behind fails the job. No tools are installed
+      # (YTP_DEV_ACTION=none), so nothing is downloaded.
+      - name: Launch and close the app
+        shell: pwsh
+        env:
+          YTP_DEV_ACTION: none
+        run: ./scripts/stress-launch.ps1 -Exe target/debug/mimirdlp.exe -Runs 3 -State cold -StartTimeoutSeconds 60

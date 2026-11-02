@@ -26,6 +26,12 @@ use setup::Setup;
 const MIN_SIZE: iced::Size = iced::Size::new(720.0, 520.0);
 
 pub fn run() -> iced::Result {
+    let paths = Paths::for_current_exe().ok();
+    choose_renderer(
+        paths
+            .as_ref()
+            .map_or(Settings::default().gpu, |paths| Settings::load(paths).gpu),
+    );
     // iced reads every font installed on the system the first time it lays
     // out text, which is the first frame. Started here it overlaps with
     // creating the window and setting up the GPU instead of following it.
@@ -34,9 +40,7 @@ pub fn run() -> iced::Result {
     });
     // The window opens as it was closed. Only Windows gets its place back
     // (see `remember_window`); on Linux the desktop chooses it.
-    let saved = Paths::for_current_exe()
-        .ok()
-        .and_then(|paths| WindowState::load(&paths));
+    let saved = paths.as_ref().and_then(WindowState::load);
     START_MAXIMIZED.store(
         saved.is_some_and(|w| w.maximized),
         std::sync::atomic::Ordering::SeqCst,
@@ -47,6 +51,31 @@ pub fn run() -> iced::Result {
         .subscription(App::subscription)
         .window(window_settings(saved))
         .run()
+}
+
+/// The CPU (tiny-skia) draws the window unless the GPU is asked for, which
+/// is the default everywhere but Windows (Settings, "Draw with the graphics
+/// card"). There, with wgpu choosing, the driver reserved about 330 MB
+/// (160 MB of it in RAM) for a window of a few cards and buttons; tiny-skia
+/// takes 12 MB at rest, under 50 MB maximized, and less CPU than wgpu while
+/// a download redraws the progress bar (measured with
+/// scripts/stress-launch.ps1 and an RTX 3070). Asked for on Windows, the GPU
+/// draws through DirectX 12, which reserved 134 MB where wgpu's own choice,
+/// Vulkan, took 330. Elsewhere wgpu picks: Vulkan, or OpenGL without it.
+/// When the GPU can't be used at all, iced falls back to tiny-skia by
+/// itself. `ICED_BACKEND` and `WGPU_BACKEND` still decide when set.
+fn choose_renderer(gpu: bool) {
+    let default = |key: &str, value: &str| {
+        if std::env::var_os(key).is_none() {
+            // SAFETY: first thing in `main`, before any thread exists.
+            unsafe { std::env::set_var(key, value) };
+        }
+    };
+    if !gpu {
+        default("ICED_BACKEND", "tiny-skia");
+    } else if cfg!(windows) {
+        default("WGPU_BACKEND", "dx12");
+    }
 }
 
 /// The main window, as it was when it was last closed (`saved`).
@@ -101,6 +130,19 @@ fn hidden_until_drawn() -> bool {
 
 /// The latest the window is shown, even if no frame was reported drawn.
 const REVEAL_DEADLINE_MS: u64 = 1500;
+
+/// On Windows no frame is reported while the window is hidden, so in
+/// practice the deadline is when it is shown: 1.5 s on every launch, with
+/// either renderer (measured). The CPU renderer has its first frame ready
+/// right away, and the window was dark from the first look at 250 ms; the
+/// GPU one still needs the time for building its pipelines.
+fn reveal_deadline_ms() -> u64 {
+    if cfg!(windows) && style::drawn_on_the_cpu() {
+        250
+    } else {
+        REVEAL_DEADLINE_MS
+    }
+}
 
 /// Frames seen while the window is hidden. The first is reported before it
 /// is drawn, so the second means the first is on screen.
@@ -208,7 +250,7 @@ impl App {
         let (app, task) = Self::boot_app();
         // The deadline for showing a window started hidden.
         let deadline = if hidden_until_drawn() {
-            Task::perform(delay(REVEAL_DEADLINE_MS), |_| Message::RevealWindow)
+            Task::perform(delay(reveal_deadline_ms()), |_| Message::RevealWindow)
         } else {
             Task::none()
         };
@@ -323,7 +365,13 @@ impl App {
                 let _ = settings.save();
                 download.shutdown();
                 let paths = settings.paths().clone();
-                remember_window(id, paths).then(|()| iced::exit())
+                // Exiting takes a moment (well over 100 ms with the GPU
+                // renderer), and a window that isn't redrawn meanwhile shows
+                // up as a white ghost on Windows. Hidden first, it is simply
+                // gone.
+                remember_window(id, paths)
+                    .then(move |()| window::set_mode::<Message>(id, window::Mode::Hidden))
+                    .chain(iced::exit())
             }
             (App::Broken(_), Message::CloseRequested(_)) => iced::exit(),
             (App::Running { snapshot_due, .. }, Message::SnapshotDue) => {

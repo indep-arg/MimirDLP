@@ -283,27 +283,22 @@ mod tests {
 
     /// Pasting many links used to start one yt-dlp per link at once, each
     /// a PyInstaller program unpacking itself. Lookups now take turns.
-    #[cfg(unix)]
     #[test]
     fn lookups_run_a_few_at_a_time_not_all_at_once() {
         use std::fs;
-        use std::os::unix::fs::PermissionsExt;
 
         let _guard = crate::testing::exec_guard();
         let dir = crate::testing::tempdir();
         let paths = Paths::new(dir.clone());
-        fs::create_dir_all(&paths.bin_dir).unwrap();
         let log = dir.join("log");
-        let script = paths.tool("yt-dlp");
-        fs::write(
-            &script,
-            format!(
-                "#!/bin/sh\necho s >> {0}\nsleep 0.3\necho e >> {0}\necho '{{\"title\": \"x\"}}'\n",
+        crate::testing::stand_in(
+            &paths,
+            "yt-dlp",
+            &format!(
+                "append {0}|s\nsleep 0.3\nappend {0}|e\nout {{\"title\": \"x\"}}",
                 log.display()
             ),
-        )
-        .unwrap();
-        fs::set_permissions(&script, fs::Permissions::from_mode(0o755)).unwrap();
+        );
 
         let workers: Vec<_> = (0..8)
             .map(|_| {
@@ -327,27 +322,19 @@ mod tests {
 
     /// The lookup treats the link the way its download will: same cookies,
     /// same single-video choice.
-    #[cfg(unix)]
     #[test]
     fn the_lookup_asks_what_the_download_will_ask() {
         use std::fs;
-        use std::os::unix::fs::PermissionsExt;
 
         let _guard = crate::testing::exec_guard();
         let dir = crate::testing::tempdir();
         let paths = Paths::new(dir.clone());
-        fs::create_dir_all(&paths.bin_dir).unwrap();
         let argv = dir.join("argv");
-        let script = paths.tool("yt-dlp");
-        fs::write(
-            &script,
-            format!(
-                "#!/bin/sh\nfor a in \"$@\"; do echo \"$a\"; done > {}\necho '{{\"title\": \"x\"}}'\n",
-                argv.display()
-            ),
-        )
-        .unwrap();
-        fs::set_permissions(&script, fs::Permissions::from_mode(0o755)).unwrap();
+        crate::testing::stand_in(
+            &paths,
+            "yt-dlp",
+            &format!("args-to {}\nout {{\"title\": \"x\"}}", argv.display()),
+        );
 
         let lookup = Lookup {
             cookies: Some("firefox:work".into()),
@@ -383,26 +370,21 @@ mod tests {
     /// the child block on a full pipe forever, since try_wait() alone never
     /// drains it. Regression test for that deadlock, not just a parsing check.
     /// (`process::run_captured` does the draining now.)
-    #[cfg(unix)]
     #[test]
     fn a_response_bigger_than_the_pipe_buffer_does_not_deadlock() {
         use std::fs;
-        use std::os::unix::fs::PermissionsExt;
 
         let _guard = crate::testing::exec_guard();
         let dir = crate::testing::tempdir();
         let paths = Paths::new(dir.clone());
-        fs::create_dir_all(&paths.bin_dir).unwrap();
-        let script = paths.tool("yt-dlp");
-        fs::write(
-            &script,
-            "#!/bin/sh\n\
-             printf '{\"title\": \"big\", \"duration\": 5, \"pad\": \"'\n\
-             head -c 200000 /dev/zero | tr '\\0' 'a'\n\
-             printf '\"}\\n'\n",
-        )
-        .unwrap();
-        fs::set_permissions(&script, fs::Permissions::from_mode(0o755)).unwrap();
+        crate::testing::stand_in(
+            &paths,
+            "yt-dlp",
+            &format!(
+                "out {{\"title\": \"big\", \"duration\": 5, \"pad\": \"{}\"}}",
+                "a".repeat(200_000)
+            ),
+        );
 
         let started = std::time::Instant::now();
         let meta = fetch(&paths, "https://example.com/video", &Lookup::default()).unwrap();
@@ -417,28 +399,23 @@ mod tests {
 
     /// A protected video's lookup gets the password the same way as the
     /// download: on stdin, never on the command line.
-    #[cfg(unix)]
     #[test]
     fn the_lookup_hands_the_video_password_over_on_stdin() {
         use std::fs;
-        use std::os::unix::fs::PermissionsExt;
 
         let _guard = crate::testing::exec_guard();
         let dir = crate::testing::tempdir();
         let paths = Paths::new(dir.clone());
-        fs::create_dir_all(&paths.bin_dir).unwrap();
         let (argv, stdin) = (dir.join("argv"), dir.join("stdin"));
-        let script = paths.tool("yt-dlp");
-        fs::write(
-            &script,
-            format!(
-                "#!/bin/sh\necho \"$@\" > {}\ncat > {}\necho '{{\"title\": \"x\"}}'\n",
+        crate::testing::stand_in(
+            &paths,
+            "yt-dlp",
+            &format!(
+                "args-to {}\nstdin-to {}\nout {{\"title\": \"x\"}}",
                 argv.display(),
                 stdin.display()
             ),
-        )
-        .unwrap();
-        fs::set_permissions(&script, fs::Permissions::from_mode(0o755)).unwrap();
+        );
 
         let lookup = Lookup {
             video_password: Some("hunter2".into()),
@@ -451,7 +428,7 @@ mod tests {
         );
         let args = fs::read_to_string(&argv).unwrap();
         assert!(
-            args.contains("--config-locations -") && !args.contains("hunter2"),
+            args.contains("--config-locations\n-\n") && !args.contains("hunter2"),
             "{args}"
         );
 
@@ -468,24 +445,15 @@ mod tests {
 
     /// A failed lookup shows a known problem in plain words, and anything
     /// else in yt-dlp's own, without its "ERROR: " prefix.
-    #[cfg(unix)]
     #[test]
     fn a_failed_lookup_explains_known_errors() {
         use std::fs;
-        use std::os::unix::fs::PermissionsExt;
 
         let _guard = crate::testing::exec_guard();
         let dir = crate::testing::tempdir();
         let paths = Paths::new(dir.clone());
-        fs::create_dir_all(&paths.bin_dir).unwrap();
-        let script = paths.tool("yt-dlp");
         let fail_with = |line: &str| {
-            fs::write(
-                &script,
-                format!("#!/bin/sh\necho \"ERROR: {line}\" >&2\nexit 1\n"),
-            )
-            .unwrap();
-            fs::set_permissions(&script, fs::Permissions::from_mode(0o755)).unwrap();
+            crate::testing::stand_in(&paths, "yt-dlp", &format!("err ERROR: {line}\nexit 1"));
             fetch(&paths, "https://example.com/v", &Lookup::default()).unwrap_err()
         };
 

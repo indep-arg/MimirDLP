@@ -281,25 +281,17 @@ mod tests {
     /// A stand-in ffmpeg that writes its last argument (the output), so
     /// the whole save can be followed: every recorded stream is an input,
     /// the result is renamed into place and the leftovers are removed.
-    #[cfg(unix)]
     #[test]
     fn a_recording_is_copied_into_one_file_and_the_leftovers_go() {
-        use std::os::unix::fs::PermissionsExt;
-
         let _guard = crate::testing::exec_guard();
         let dir = tempdir();
-        let ffmpeg = dir.join("ffmpeg");
+        let tools = tempdir();
+        let ffmpeg = tools.join(format!("ffmpeg{}", std::env::consts::EXE_SUFFIX));
         let args = dir.join("args");
-        fs::write(
+        crate::testing::stand_in_at(
             &ffmpeg,
-            format!(
-                "#!/bin/sh\nfor a in \"$@\"; do echo \"$a\"; done > {}\n\
-                 for last; do :; done\necho saved > \"$last\"\n",
-                args.display()
-            ),
-        )
-        .unwrap();
-        fs::set_permissions(&ffmpeg, fs::Permissions::from_mode(0o755)).unwrap();
+            &format!("args-to {}\nwrite-last-arg saved", args.display()),
+        );
         let video = dir.join("Live [id].f299.mp4");
         let audio = dir.join("Live [id].f140.m4a");
         for leftover in [
@@ -328,25 +320,19 @@ mod tests {
             .map(|e| e.unwrap().file_name().to_string_lossy().into_owned())
             .collect();
         left.sort();
-        assert_eq!(left, ["Live [id].mkv", "args", "ffmpeg"]);
+        assert_eq!(left, ["Live [id].mkv", "args"]);
         fs::remove_dir_all(dir).unwrap();
+        fs::remove_dir_all(tools).unwrap();
     }
 
     /// A failed copy leaves the recorded files alone, so nothing is lost.
-    #[cfg(unix)]
     #[test]
     fn a_failed_save_keeps_what_was_recorded() {
-        use std::os::unix::fs::PermissionsExt;
-
         let _guard = crate::testing::exec_guard();
         let dir = tempdir();
-        let ffmpeg = dir.join("ffmpeg");
-        fs::write(
-            &ffmpeg,
-            "#!/bin/sh\necho 'Invalid data found' >&2\nexit 1\n",
-        )
-        .unwrap();
-        fs::set_permissions(&ffmpeg, fs::Permissions::from_mode(0o755)).unwrap();
+        let tools = tempdir();
+        let ffmpeg = tools.join(format!("ffmpeg{}", std::env::consts::EXE_SUFFIX));
+        crate::testing::stand_in_at(&ffmpeg, "err Invalid data found\nexit 1");
         let destination = dir.join("Live.mkv");
         fs::write(dir.join("Live.mkv.part"), b"data").unwrap();
 
@@ -354,5 +340,6 @@ mod tests {
         assert!(error.contains("Invalid data found"), "{error}");
         assert!(dir.join("Live.mkv.part").exists());
         fs::remove_dir_all(dir).unwrap();
+        fs::remove_dir_all(tools).unwrap();
     }
 }

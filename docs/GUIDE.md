@@ -98,6 +98,7 @@ If the SponsorBlock server can't be reached, yt-dlp fails the download instead o
 - A video protected by a password (on Vimeo, for example) needs it in Settings, "Advanced options", "Signing in", before its link is added. The password is never saved, neither in the settings nor in the queue, and isn't put on yt-dlp's command line, where other programs could read it: it is handed over privately and forgotten when the app closes.
 - A live stream records until it ends, or until you press **Stop and save** (the Stop button turns into it once yt-dlp says the link is live). What was recorded so far is then copied into a normal file with FFmpeg, without re-encoding, and the card links to it. Stopping a video that isn't live still keeps its partial file, so starting again resumes it.
 - On an unstable connection, "Retries after a network error" (Settings, "Advanced options") lets yt-dlp try a failed part again more times. Empty keeps yt-dlp's default of 10.
+- On Windows the processor draws the window: it needs a fraction of the memory a graphics card does (about 12 MB instead of over 100) and works on any computer, remote desktops and virtual machines included. "Draw with the graphics card" (Settings, "Advanced options") switches to the graphics card, through DirectX 12, from the next launch. On Linux it is on by default, with Vulkan or, without it, OpenGL. Either way, a graphics card that can't be used falls back to the processor.
 - yt-dlp's own configuration files (`yt-dlp.conf`, `~/.config/yt-dlp/config` and the like) are ignored: yt-dlp would otherwise read one even from the download folder, and such a file can run commands. Everything the app does is set in its Settings.
 
 ## When something goes wrong
@@ -128,4 +129,6 @@ cargo clippy --all-targets --locked -- -D warnings
 cargo test --all-targets --locked
 ```
 
-If you touched what gets asked of yt-dlp, also run the real-download tests, which check the resulting files with ffprobe: `cargo test --test e2e -- --ignored` (a couple of minutes, needs internet).
+If you touched what gets asked of yt-dlp, also run the real-download tests, which check the resulting files with ffprobe: `cargo test --test e2e -- --ignored` (a couple of minutes, needs internet). The "Real downloads" workflow runs them on Linux and Windows from the Actions tab.
+
+On Windows, `scripts/stress-launch.ps1` opens and closes a build many times and reports slow starts, hangs on close, crashes, processes left behind, idle CPU and memory. Its header lists the options.

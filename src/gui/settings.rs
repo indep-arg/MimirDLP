@@ -118,6 +118,7 @@ pub enum Flag {
     Mtime,
     IgnoreErrors,
     AppUpdates,
+    Gpu,
 }
 
 impl Flag {
@@ -139,6 +140,7 @@ impl Flag {
             Flag::Mtime => &mut s.preserve_mtime,
             Flag::IgnoreErrors => &mut s.ignore_errors,
             Flag::AppUpdates => &mut s.app_updates,
+            Flag::Gpu => &mut s.gpu,
         }
     }
 }
@@ -1023,6 +1025,19 @@ fn network_section(settings: &Settings) -> Element<'_, Message> {
             settings.verbose,
             |v| Message::Toggle(Flag::Verbose, v)
         ),
+        column![
+            toggle_row(
+                tr!("Draw with the graphics card"),
+                settings.gpu,
+                |v| Message::Toggle(Flag::Gpu, v)
+            ),
+            text(tr!(
+                "Off, the processor draws the window: it uses much less memory and works on any computer. Takes effect the next time MimirDLP starts."
+            ))
+            .size(style::CAPTION)
+            .style(style::muted_text),
+        ]
+        .spacing(8),
     ]
     .into()
 }
@@ -1201,6 +1216,7 @@ mod tests {
             Flag::Mtime,
             Flag::IgnoreErrors,
             Flag::AppUpdates,
+            Flag::Gpu,
         ];
         let base = Settings::default();
         for flag in flags {

@@ -1548,25 +1548,13 @@ mod tests {
     /// on. They used to be read when the item's turn came instead, so a
     /// change made while the queue waited rewrote items already in it.
     /// Checked black box: a stand-in yt-dlp records the argv it was given.
-    #[cfg(unix)]
     #[test]
     fn a_queued_link_keeps_the_settings_it_was_queued_with() {
-        use std::os::unix::fs::PermissionsExt;
         let _guard = crate::testing::exec_guard();
         let dir = tempdir();
         let paths = Paths::new(dir.clone());
-        std::fs::create_dir_all(&paths.bin_dir).unwrap();
         let argv = dir.join("argv");
-        let script = paths.tool("yt-dlp");
-        std::fs::write(
-            &script,
-            format!(
-                "#!/bin/sh\nfor a in \"$@\"; do echo \"$a\"; done > {}\n",
-                argv.display()
-            ),
-        )
-        .unwrap();
-        std::fs::set_permissions(&script, std::fs::Permissions::from_mode(0o755)).unwrap();
+        crate::testing::stand_in(&paths, "yt-dlp", &format!("args-to {}", argv.display()));
 
         let mut screen = Download::new(paths);
         let queued_with = Settings::default();
