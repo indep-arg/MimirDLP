@@ -1,4 +1,4 @@
-name: Real downloads
+name: E2E
 
 # tests/e2e.rs on Linux and Windows: real downloads from YouTube, with the
 # files checked by ffprobe. Started by hand (Actions, "Run workflow"), not on
