@@ -26,12 +26,11 @@ use setup::Setup;
 const MIN_SIZE: iced::Size = iced::Size::new(720.0, 520.0);
 
 pub fn run() -> iced::Result {
-    let paths = Paths::for_current_exe().ok();
-    choose_renderer(
-        paths
-            .as_ref()
-            .map_or(Settings::default().gpu, |paths| Settings::load(paths).gpu),
-    );
+    // Found and read once, here: the renderer has to be chosen before
+    // anything else, and the app then starts from the same two.
+    let paths = Paths::for_current_exe().map_err(|e| e.to_string());
+    let settings = paths.as_ref().map(Settings::load).unwrap_or_default();
+    choose_renderer(settings.gpu);
     // iced reads every font installed on the system the first time it lays
     // out text, which is the first frame. Started here it overlaps with
     // creating the window and setting up the GPU instead of following it.
@@ -40,17 +39,21 @@ pub fn run() -> iced::Result {
     });
     // The window opens as it was closed. Only Windows gets its place back
     // (see `remember_window`); on Linux the desktop chooses it.
-    let saved = paths.as_ref().and_then(WindowState::load);
+    let saved = paths.as_ref().ok().and_then(WindowState::load);
     START_MAXIMIZED.store(
         saved.is_some_and(|w| w.maximized),
         std::sync::atomic::Ordering::SeqCst,
     );
-    iced::application(App::boot, App::update, App::view)
-        .title("MimirDLP")
-        .theme(App::theme)
-        .subscription(App::subscription)
-        .window(window_settings(saved))
-        .run()
+    iced::application(
+        move || App::boot(paths.clone(), settings.clone()),
+        App::update,
+        App::view,
+    )
+    .title("MimirDLP")
+    .theme(App::theme)
+    .subscription(App::subscription)
+    .window(window_settings(saved))
+    .run()
 }
 
 /// The GPU draws the window unless turned off (Settings, "Draw with the
@@ -123,9 +126,10 @@ fn platform_settings() -> window::settings::PlatformSpecific {
 /// which can take up to a second (setting up the GPU, the first text). So
 /// there the window starts hidden and is shown once a frame has been
 /// drawn, or after [`REVEAL_DEADLINE_MS`] in any case. Debug builds can try
-/// it elsewhere with `YTP_DEV_HIDDEN_START=1`.
+/// it elsewhere with `MIMIRDLP_DEV_HIDDEN_START=1`.
 fn hidden_until_drawn() -> bool {
-    cfg!(windows) || (cfg!(debug_assertions) && std::env::var_os("YTP_DEV_HIDDEN_START").is_some())
+    cfg!(windows)
+        || (cfg!(debug_assertions) && std::env::var_os("MIMIRDLP_DEV_HIDDEN_START").is_some())
 }
 
 /// The latest the window is shown, even if no frame was reported drawn.
@@ -241,8 +245,8 @@ enum App {
 }
 
 impl App {
-    fn boot() -> (Self, Task<Message>) {
-        let (app, task) = Self::boot_app();
+    fn boot(paths: Result<Paths, String>, saved: Settings) -> (Self, Task<Message>) {
+        let (app, task) = Self::boot_app(paths, saved);
         // The deadline for showing a window started hidden.
         let deadline = if hidden_until_drawn() {
             Task::perform(delay(REVEAL_DEADLINE_MS), |_| Message::RevealWindow)
@@ -252,8 +256,8 @@ impl App {
         (app, Task::batch([task, deadline]))
     }
 
-    fn boot_app() -> (Self, Task<Message>) {
-        let paths = match Paths::for_current_exe() {
+    fn boot_app(paths: Result<Paths, String>, saved: Settings) -> (Self, Task<Message>) {
+        let paths = match paths {
             Ok(paths) => paths,
             Err(e) => {
                 crate::i18n::apply("");
@@ -274,7 +278,6 @@ impl App {
         {
             let _ = crate::desktop::refresh(&data, &exe);
         }
-        let saved = Settings::load(&paths);
         // Before anything is shown or logged, so all of it is translated.
         crate::i18n::apply(&saved.language);
         // Once a day at most, off the main thread; never in the Flatpak.
@@ -761,11 +764,10 @@ fn can_download(setup: &Setup, confirming_tools: bool) -> bool {
 
 const HEADER_HEIGHT: f32 = 52.0;
 
-/// GNOME's header bar: a back button off the main screen, the title in the
-/// middle, and the menu that leads everywhere else.
-/// With the tools bundled, Setup only lists them, so it is "Components".
-/// The bar across the top: back, the screen's title (or `center`, the
-/// Download screen's link field) and the menu.
+/// GNOME's header bar: a back button off the main screen, the screen's
+/// title (or `center`, the Download screen's link field) and the menu that
+/// leads everywhere else. With the tools bundled, Setup only lists them, so
+/// its title is "Components".
 fn header_bar<'a>(
     page: Page,
     can_go_back: bool,
@@ -1129,19 +1131,19 @@ fn choice<'a, Message: 'a>(label: String, control: Element<'a, Message>) -> Elem
         .into()
 }
 
-/// Debug builds only: `YTP_DEV_NO_CLIPBOARD=1` never offers what is on the
+/// Debug builds only: `MIMIRDLP_DEV_NO_CLIPBOARD=1` never offers what is on the
 /// clipboard, so screenshots don't show whatever the developer copied.
 fn dev_no_clipboard() -> bool {
-    cfg!(debug_assertions) && std::env::var_os("YTP_DEV_NO_CLIPBOARD").is_some()
+    cfg!(debug_assertions) && std::env::var_os("MIMIRDLP_DEV_NO_CLIPBOARD").is_some()
 }
 
-/// Debug builds only: `YTP_DEV_PAGE=setup|download|settings|about` opens on
-/// that page, even with `YTP_DEV_DOWNLOAD` set.
+/// Debug builds only: `MIMIRDLP_DEV_PAGE=setup|download|settings|about` opens on
+/// that page, even with `MIMIRDLP_DEV_DOWNLOAD` set.
 fn dev_page() -> Option<Page> {
     if !cfg!(debug_assertions) {
         return None;
     }
-    match std::env::var("YTP_DEV_PAGE").ok()?.as_str() {
+    match std::env::var("MIMIRDLP_DEV_PAGE").ok()?.as_str() {
         "setup" => Some(Page::Setup),
         "download" => Some(Page::Download),
         "settings" => Some(Page::Settings),
@@ -1150,14 +1152,14 @@ fn dev_page() -> Option<Page> {
     }
 }
 
-/// Debug builds only: `YTP_DEV_MENU=1` opens with the header bar's menu
+/// Debug builds only: `MIMIRDLP_DEV_MENU=1` opens with the header bar's menu
 /// open, so it can be snapshotted.
 fn dev_menu() -> bool {
-    cfg!(debug_assertions) && std::env::var_os("YTP_DEV_MENU").is_some()
+    cfg!(debug_assertions) && std::env::var_os("MIMIRDLP_DEV_MENU").is_some()
 }
 
-/// Debug builds only: `YTP_DEV_SNAPSHOT=out.rgba` captures the window after
-/// `YTP_DEV_SNAPSHOT_AFTER` milliseconds (default 1500), writes the raw
+/// Debug builds only: `MIMIRDLP_DEV_SNAPSHOT=out.rgba` captures the window after
+/// `MIMIRDLP_DEV_SNAPSHOT_AFTER` milliseconds (default 1500), writes the raw
 /// RGBA pixels plus `out.rgba.size`, and quits. Used to check the UI.
 ///
 /// A screenshot re-renders the last drawn frame, whose text belongs to the
@@ -1165,20 +1167,20 @@ fn dev_menu() -> bool {
 /// redraw, therefore loses text. So the state is frozen first, and the
 /// capture waits for the next drawn frame.
 fn dev_snapshot() -> Task<Message> {
-    if !cfg!(debug_assertions) || std::env::var_os("YTP_DEV_SNAPSHOT").is_none() {
+    if !cfg!(debug_assertions) || std::env::var_os("MIMIRDLP_DEV_SNAPSHOT").is_none() {
         return Task::none();
     }
-    let after = std::env::var("YTP_DEV_SNAPSHOT_AFTER")
+    let after = std::env::var("MIMIRDLP_DEV_SNAPSHOT_AFTER")
         .ok()
         .and_then(|ms| ms.parse().ok())
         .unwrap_or(1500);
     Task::perform(delay(after), |_| Message::SnapshotDue)
 }
 
-/// Debug builds only: `YTP_DEV_STOP_AFTER=<ms>` presses Stop on its own,
+/// Debug builds only: `MIMIRDLP_DEV_STOP_AFTER=<ms>` presses Stop on its own,
 /// to check that cancelling a real download works.
 fn dev_stop() -> Task<Message> {
-    let after = match std::env::var("YTP_DEV_STOP_AFTER")
+    let after = match std::env::var("MIMIRDLP_DEV_STOP_AFTER")
         .ok()
         .map(|ms| ms.parse())
     {
@@ -1227,7 +1229,7 @@ fn amount(done: u64, total: Option<u64>) -> (String, f32) {
 }
 
 fn save_snapshot(shot: window::Screenshot) -> Task<Message> {
-    if let Some(out) = std::env::var_os("YTP_DEV_SNAPSHOT") {
+    if let Some(out) = std::env::var_os("MIMIRDLP_DEV_SNAPSHOT") {
         let size = format!("{}x{}", shot.size.width, shot.size.height);
         let mut size_file = out.clone();
         size_file.push(".size");

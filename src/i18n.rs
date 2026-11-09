@@ -1,6 +1,7 @@
-//! Translations, the gettext way: every text a user sees is written in English inside `tr!("...")`, `po/mimirdlp.pot`
-//! lists them all (`tests/translations.rs` keeps it current), and each
-//! language is a `po/<code>.po` file, translated on Weblate.
+//! Translations, the gettext way: every text a user sees is written in
+//! English inside `tr!("...")`, `po/mimirdlp.pot` lists them all
+//! (`tests/translations.rs` keeps it current), and each language is a
+//! `po/<code>.po` file, translated on Weblate.
 //!
 //! The `.po` files are compiled into the binary, so the application stays
 //! one portable file. A text without a translation (missing, empty, or

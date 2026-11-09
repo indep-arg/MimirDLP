@@ -76,8 +76,8 @@ impl Channel {
     }
 }
 
-impl std::fmt::Display for Channel {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for Channel {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(&match self {
             Channel::Nightly => tr!("Nightly (recommended)"),
             Channel::Stable => tr!("Stable"),
@@ -162,10 +162,10 @@ impl Paths {
 
     /// Portable when the executable's folder (symlinks resolved) can be
     /// written to, installed otherwise, and bundled inside MimirDLP's own
-    /// Flatpak. `YTP_APP_DIR` picks the folder instead, for development
+    /// Flatpak. `MIMIRDLP_APP_DIR` picks the folder instead, for development
     /// (`cargo run` would use `target/debug/`).
     pub fn for_current_exe() -> io::Result<Self> {
-        if let Some(dir) = std::env::var_os("YTP_APP_DIR") {
+        if let Some(dir) = std::env::var_os("MIMIRDLP_APP_DIR") {
             return Ok(Paths::new(PathBuf::from(dir)));
         }
         if in_own_flatpak(std::env::var_os("FLATPAK_ID").as_deref()) {

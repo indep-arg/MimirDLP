@@ -5,7 +5,7 @@
   idle CPU, memory and handle counts.
 
 .DESCRIPTION
-  Every run starts the exe with YTP_APP_DIR pointing at a throwaway folder, so
+  Every run starts the exe with MIMIRDLP_APP_DIR pointing at a throwaway folder, so
   the settings of the copy you use every day are never touched. The tools
   (yt-dlp, ffmpeg, deno) are reused through a junction, so nothing of them is
   copied or downloaded per run.
@@ -88,9 +88,9 @@ function Get-Descendants([int]$rootId) {
 }
 
 function Start-App([string]$dir) {
-    $env:YTP_APP_DIR = $dir
+    $env:MIMIRDLP_APP_DIR = $dir
     try { Start-Process -FilePath $Exe -PassThru }
-    finally { Remove-Item Env:\YTP_APP_DIR -ErrorAction SilentlyContinue }
+    finally { Remove-Item Env:\MIMIRDLP_APP_DIR -ErrorAction SilentlyContinue }
 }
 
 # Waits for the window to be on screen; returns milliseconds, or $null.

@@ -14,8 +14,12 @@ on:
         description: "Existing tag to release (e.g. v0.1.0)"
         required: true
 
+# contents: the release itself. id-token and attestations: the signed
+# statement that each archive was built here, from this commit.
 permissions:
   contents: write
+  id-token: write
+  attestations: write
 
 concurrency:
   group: release-app-${{ github.event.inputs.tag || github.ref_name }}
@@ -123,18 +127,29 @@ jobs:
           echo "name=$NAME" >> "$GITHUB_OUTPUT"
           ls -lh dist
 
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
+      - name: Attest the archive
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
-          tag_name: ${{ steps.vars.outputs.tag }}
-          name: MimirDLP ${{ steps.vars.outputs.version }}
-          generate_release_notes: true
-          files: |
-            dist/${{ steps.package.outputs.name }}.tar.gz
-            dist/${{ steps.package.outputs.name }}.tar.gz.sha256
+          subject-path: dist/${{ steps.package.outputs.name }}.tar.gz
 
-  # Runs after the Linux job so the release already exists and both assets
-  # end up on the same one.
+      # A draft: nobody sees it, and "releases/latest" (what the app asks
+      # for new versions) doesn't point at it, until the Windows build is
+      # on it too. Run again for a tag already released, this only replaces
+      # the files.
+      - name: Create the draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.vars.outputs.tag }}
+          VERSION: ${{ steps.vars.outputs.version }}
+          NAME: ${{ steps.package.outputs.name }}
+        run: |
+          if ! gh release view "$TAG" > /dev/null 2>&1; then
+            gh release create "$TAG" --draft --verify-tag --generate-notes --title "MimirDLP $VERSION"
+          fi
+          gh release upload "$TAG" --clobber "dist/$NAME.tar.gz" "dist/$NAME.tar.gz.sha256"
+
+  # Runs after the Linux job so the draft already exists, adds the Windows
+  # build to it and only then publishes it.
   windows:
     needs: release
     runs-on: windows-latest
@@ -194,10 +209,17 @@ jobs:
           "name=$name" >> $env:GITHUB_OUTPUT
           Get-ChildItem dist
 
-      - name: Add to the release
-        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
+      - name: Attest the archive
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
-          tag_name: ${{ steps.vars.outputs.tag }}
-          files: |
-            dist/${{ steps.package.outputs.name }}.zip
-            dist/${{ steps.package.outputs.name }}.zip.sha256
+          subject-path: dist/${{ steps.package.outputs.name }}.zip
+
+      - name: Add to the release and publish it
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.vars.outputs.tag }}
+          NAME: ${{ steps.package.outputs.name }}
+        run: |
+          gh release upload "$TAG" --clobber "dist/$NAME.zip" "dist/$NAME.zip.sha256"
+          gh release edit "$TAG" --draft=false

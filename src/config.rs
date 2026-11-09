@@ -967,7 +967,19 @@ fn write_file(file: &std::path::Path, text: &str) -> std::io::Result<()> {
 /// The queue as it was last saved. A block without a link is skipped.
 pub fn load_queue(paths: &Paths) -> Vec<SavedItem> {
     let text = fs::read_to_string(paths.app_dir.join(QUEUE_NAME)).unwrap_or_default();
-    text.split(ITEM_MARK)
+    // A block starts at a line that is the mark and nothing else: the same
+    // text inside a value (a name template, a link) is part of that value.
+    let mut blocks: Vec<String> = Vec::new();
+    for line in text.lines() {
+        if line.trim() == ITEM_MARK {
+            blocks.push(String::new());
+        } else if let Some(block) = blocks.last_mut() {
+            block.push_str(line);
+            block.push('\n');
+        }
+    }
+    blocks
+        .iter()
         .filter_map(|block| {
             let value = |key: &str| {
                 block
@@ -2078,6 +2090,35 @@ youtube b
         // Nothing left to keep: the file is emptied (see `write_file`).
         save_queue(&paths, &[]).unwrap();
         assert!(load_queue(&paths).is_empty());
+        fs::remove_dir_all(dir).unwrap();
+    }
+
+    /// The mark only separates items on a line of its own. Inside a link
+    /// or a name template it used to cut the item in two, losing the link
+    /// or every setting written after it.
+    #[test]
+    fn the_item_mark_inside_a_value_does_not_split_the_queue() {
+        let dir = tempdir();
+        let paths = Paths::new(dir.clone());
+        let items = vec![
+            SavedItem {
+                url: "https://example.com/a[item]b".into(),
+                settings: Settings {
+                    template: Template::Custom,
+                    custom_template: "%(title)s [item].%(ext)s".into(),
+                    limit_rate: "500K".into(),
+                    ..Settings::default()
+                },
+                failed: Some("no [item] here".into()),
+            },
+            SavedItem {
+                url: "https://example.com/c".into(),
+                settings: Settings::default(),
+                failed: None,
+            },
+        ];
+        save_queue(&paths, &items).unwrap();
+        assert_eq!(load_queue(&paths), items);
         fs::remove_dir_all(dir).unwrap();
     }
 

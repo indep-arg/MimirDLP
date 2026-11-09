@@ -99,7 +99,7 @@ mod tests {
         let link = "[generic] Extracting URL: https://example.com/zip=1&tip=2";
         assert_eq!(hide_addresses(link), link);
         assert!(matches!(
-            hide_addresses("[ytp] downloading|1|2|NA|NA|NA"),
+            hide_addresses("[mimirdlp] downloading|1|2|NA|NA|NA"),
             std::borrow::Cow::Borrowed(_)
         ));
     }

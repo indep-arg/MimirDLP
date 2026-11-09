@@ -74,7 +74,7 @@ The same Setup screen chooses which yt-dlp builds to use. **Nightly**, the defau
 
 Works on any site yt-dlp supports. On the Download screen, paste one link or several (separated by spaces or new lines). A link you copied elsewhere appears in the empty box when you switch to MimirDLP; it's only queued when you press Add, and one you clear isn't put back. Each link is looked up and added to the queue as a card, where you can pick its format and quality until it starts.
 
-Press Download and they run one at a time, each with its own progress bar. A finished card gets its own "Open folder" straight to that file. Stop also stops the FFmpeg that yt-dlp may have started, and keeps the partial file so starting again resumes it. Closing the window does the same.
+Press Download and they run one at a time, each with its own progress bar. A finished card can open its file or show it in its folder, any card can copy its link, and a failed one says why, with Retry under it. Stop also stops the FFmpeg that yt-dlp may have started, and keeps the partial file so starting again resumes it. Closing the window does the same.
 
 Subtitles, thumbnails, SponsorBlock, file naming and everything else that isn't on the card lives in **Settings** (in the ☰ menu), and applies to whatever you queue next; links already in the queue keep what they were queued with. Anything yt-dlp would refuse (an empty custom format string, an invalid SponsorBlock category list, a malformed speed limit) is caught before yt-dlp is started: that card is marked failed with the reason, the rest of the queue carries on, and Retry runs it again once it's fixed.
 
@@ -117,7 +117,7 @@ Requires a current stable [Rust toolchain](https://rustup.rs).
 cargo build --release
 ```
 
-The binary lands in `target/release/`. Run it in place with `cargo run`; `YTP_APP_DIR=<dir> cargo run` points it at a scratch folder instead of the executable's own directory, which is convenient during development.
+The binary lands in `target/release/`. Run it in place with `cargo run`; `MIMIRDLP_APP_DIR=<dir> cargo run` points it at a scratch folder instead of the executable's own directory, which is convenient during development.
 
 ## Contributing
 

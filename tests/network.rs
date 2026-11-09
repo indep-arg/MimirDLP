@@ -6,7 +6,7 @@ use mimirdlp::provision::{self, Component, Event, Paths, Status, UpdateCheck};
 #[test]
 #[ignore = "downloads about 200 MB from GitHub"]
 fn installs_every_component_from_upstream() {
-    let dir = std::env::temp_dir().join(format!("ytp-network-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("mimirdlp-network-{}", std::process::id()));
     let paths = Paths::new(dir.clone());
     let mut last_percent = None;
     let mut emit = |event: Event| match event {

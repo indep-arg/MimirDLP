@@ -22,6 +22,7 @@ pub enum Icon {
     New,
     Ok,
     OpenFolder,
+    Play,
     Queued,
     Remove,
     Retry,
@@ -33,7 +34,7 @@ pub enum Icon {
 
 impl Icon {
     #[cfg(test)]
-    pub const ALL: [Icon; 20] = [
+    pub const ALL: [Icon; 21] = [
         Icon::Add,
         Icon::Back,
         Icon::Copy,
@@ -47,6 +48,7 @@ impl Icon {
         Icon::New,
         Icon::Ok,
         Icon::OpenFolder,
+        Icon::Play,
         Icon::Queued,
         Icon::Remove,
         Icon::Retry,
@@ -71,6 +73,7 @@ impl Icon {
             Icon::New => include_bytes!("../../assets/icons/sparkles.svg"),
             Icon::Ok => include_bytes!("../../assets/icons/circle-check.svg"),
             Icon::OpenFolder => include_bytes!("../../assets/icons/folder-open.svg"),
+            Icon::Play => include_bytes!("../../assets/icons/play.svg"),
             Icon::Queued => include_bytes!("../../assets/icons/clock.svg"),
             Icon::Remove => include_bytes!("../../assets/icons/x.svg"),
             Icon::Retry => include_bytes!("../../assets/icons/rotate-ccw.svg"),

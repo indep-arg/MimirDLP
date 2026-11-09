@@ -4,7 +4,7 @@
 
 # MimirDLP
 
-Download videos and music from YouTube and most other sites, with a simple window instead of a command line.
+A window for [yt-dlp](https://github.com/yt-dlp/yt-dlp): paste a link, choose video or audio, press Download.
 
 [![Latest release](https://img.shields.io/github/v/release/indep-arg/MimirDLP?label=release&color=3584e4)](https://github.com/indep-arg/MimirDLP/releases/latest)
 ![Platform: Windows | Linux](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-3584e4)
@@ -15,42 +15,39 @@ Download videos and music from YouTube and most other sites, with a simple windo
 
 </div>
 
-## Download
+## Install
 
-<p align="left">
-  <a href="https://github.com/indep-arg/MimirDLP/releases/latest"><img src="https://img.shields.io/badge/Download_for-Windows-3584e4?style=for-the-badge" alt="Download for Windows"/></a>
-  <a href="https://github.com/indep-arg/MimirDLP/releases/latest"><img src="https://img.shields.io/badge/Download_for-Linux-3584e4?style=for-the-badge" alt="Download for Linux"/></a>
-</p>
+Get the file for your system from the [latest release](https://github.com/indep-arg/MimirDLP/releases/latest), extract it wherever you like and run `mimirdlp`. There is no installer.
 
-| System  | File      | Works on |
-|---------|-----------|----------|
+| System  | File      | Needs |
+|---------|-----------|-------|
 | Windows | `.zip`    | Windows 10 or later |
-| Linux   | `.tar.gz` | Any distribution with glibc 2.39 or newer |
+| Linux   | `.tar.gz` | glibc 2.39 or newer: Ubuntu 24.04, Mint 22, Fedora 40, Debian 13, Arch, openSUSE Tumbleweed |
 
-On Linux that means Ubuntu 24.04, Linux Mint 22, Fedora 40, Debian 13 or later, and rolling distributions like Arch or openSUSE Tumbleweed. Not sure about yours? Run `ldd --version` in a terminal: the first line shows your glibc version.
+Not sure about your Linux? `ldd --version` prints the glibc version on its first line.
 
-1. Download the file for your system from the [release page](https://github.com/indep-arg/MimirDLP/releases/latest).
-2. Extract it anywhere. There's no installer.
-3. Run `mimirdlp`.
+The first time it opens, MimirDLP downloads yt-dlp, FFmpeg and Deno (about 200 MB) into its own folder. Nothing is added to your system. If that folder can't be written to (`Program Files`, for example), it uses your user folder instead.
 
-Everything it needs stays in that folder, or in your user folder if it's somewhere it can't write to (like `Program Files`).
+Windows may warn that the app is unknown, because it isn't code signed yet: choose **More info**, then **Run anyway**.
 
-## How to use it
+## Use
 
-1. The first time you open MimirDLP, it downloads the tools it needs by itself (about 200 MB).
-2. Copy a link and switch to MimirDLP: it shows up in the box by itself (or paste it with Ctrl+V). Press **Add**, then pick video or audio and the quality.
+1. Copy a link and switch to MimirDLP: the link is already in the box (Ctrl+V works too). Press **Add**.
+2. Choose video or audio, and the quality, on the card that appears.
 3. Press **Download**.
 
-Subtitles, SponsorBlock, playlists and signed-in downloads are in **Settings**, in the ☰ menu. It runs on [yt-dlp](https://github.com/yt-dlp/yt-dlp), so it works wherever yt-dlp does.
+It works on every site yt-dlp supports. Subtitles, SponsorBlock, playlists and signed-in downloads are under **Settings**, in the ☰ menu.
 
-## Something not working?
+## When a site stops working
 
-Open ☰, **Setup and updates**, and check for updates first: an old yt-dlp is the usual reason a site stops working. More help, every option explained, and how to build it yourself are in the [guide](docs/GUIDE.md).
+It is nearly always an old yt-dlp. Open ☰, **Setup and updates**, and press **Check for updates**.
+
+The [guide](docs/GUIDE.md) covers the rest: every option, common problems and building from source.
 
 ## Languages
 
-English and Spanish so far, following your system's language (or pick one in the ☰ menu). Translations are done on [Weblate](https://hosted.weblate.org/engage/mimirdlp/): anyone can help there, no programming needed. More in [translating](docs/TRANSLATING.md).
+English and Spanish so far. MimirDLP follows your system's language, and the ☰ menu lets you pick another. Translations are done on [Weblate](https://hosted.weblate.org/engage/mimirdlp/), where anyone can help without touching code; see [translating](docs/TRANSLATING.md).
 
 ## License
 
-[MIT](LICENSE). yt-dlp, FFmpeg and Deno have their own licenses. Use it responsibly and within the law and each site's terms; you are responsible for what you download.
+[MIT](LICENSE). yt-dlp, FFmpeg and Deno have their own licenses. What you download is your responsibility: respect the law and each site's terms.

@@ -48,6 +48,10 @@ pub enum Message {
     Stop,
     OpenFolder,
     OpenItemFolder(String),
+    /// Opens a finished file with the system's player.
+    OpenFile(String),
+    /// Copies an item's link to the clipboard.
+    CopyLink(u64),
     /// What opening a folder came to.
     FolderOpened(Result<(), String>),
     /// Shows or hides the activity log, which is folded away by default.
@@ -272,9 +276,24 @@ impl Download {
             Message::OpenItemFolder(path) => {
                 return super::open::reveal(Path::new(&path)).map(Message::FolderOpened);
             }
+            Message::OpenFile(path) => {
+                if Path::new(&path).is_file() {
+                    return super::open::open(path).map(Message::FolderOpened);
+                }
+                self.log((Level::Warn, tr!("The file isn't there any more.")));
+            }
+            Message::CopyLink(id) => {
+                if let Some(item) = self.items.iter().find(|i| i.id == id) {
+                    let url = item.url.clone();
+                    // Its own link is not offered back in the link field.
+                    self.offered = Some(url.clone());
+                    self.log((Level::Ok, tr!("Link copied: {url}", url = url.clone())));
+                    return iced::clipboard::write(url);
+                }
+            }
             Message::FolderOpened(result) => {
                 if let Err(e) = result {
-                    self.log((Level::Warn, tr!("Could not open the folder: {e}", e)));
+                    self.log((Level::Warn, tr!("Could not open it: {e}", e)));
                 }
             }
             Message::Report(event) => return self.report(event),
@@ -327,10 +346,9 @@ impl Download {
         self.problem = None;
     }
 
-    /// Validates and queues what was pasted (one link, or several
-    /// separated by spaces or line breaks), then kicks off a metadata
-    /// lookup for each. A lookup failure (handled in `MetadataFetched`)
-    /// never removes the item; it just leaves a plainer card.
+    /// Queues what was pasted (one link, or several separated by spaces or
+    /// line breaks) and starts a lookup for each. What isn't a link stays
+    /// in the box; a failed lookup only leaves a plainer card.
     fn add_url(&mut self, settings: &Settings) -> Task<Message> {
         let input = std::mem::take(&mut self.url_input);
         let mut rejected = Vec::new();
@@ -454,11 +472,9 @@ impl Download {
         self.run_next()
     }
 
-    /// Starts the next `Queued` item. An item whose per-item configuration
-    /// turns out to be invalid (checked against *its own* kind/quality, not
-    /// just the global defaults) is marked `Failed` and skipped, so one bad
-    /// item doesn't block the rest of the queue. Does nothing if a download
-    /// is already running or nothing is left to start.
+    /// Starts the next queued item, unless one is already running. An item
+    /// whose own settings yt-dlp would refuse is marked failed and skipped,
+    /// so it doesn't hold up the rest of the queue.
     fn run_next(&mut self) -> Task<Message> {
         if self.running() {
             return Task::none();
@@ -637,6 +653,7 @@ impl Download {
                 // Adwaita's status page: what this screen is for, said once.
                 container(
                     column![
+                        icon::tinted(Icon::Download, 48.0, style::muted),
                         text(tr!("Download a video"))
                             .size(style::TITLE)
                             .font(style::BOLD),
@@ -693,8 +710,13 @@ impl Download {
         } else {
             tr!("Ready: {done} of {total} done", done, total)
         };
+        let summary = text(summary).size(style::CAPTION).style(style::muted_text);
+        // An empty bar under a queue nobody started yet says nothing.
+        if !self.running() && done == 0 {
+            return summary.into();
+        }
         column![
-            text(summary).size(style::CAPTION).style(style::muted_text),
+            summary,
             progress_bar(0.0..=1.0, queue_fraction(&self.items))
                 .girth(6)
                 .style(style::progress),
@@ -721,16 +743,18 @@ impl Download {
             .style(style::pill_danger)
             .on_press(Message::Stop)
         } else {
+            // Greyed out until there is something to download.
+            let waiting = self.items.iter().any(|i| i.status == ItemStatus::Queued);
             button(icon::labeled(
                 Icon::Download,
                 tr!("Download"),
                 style::TEXT,
                 On::Color,
-                true,
+                waiting,
             ))
             .padding(style::BUTTON_LARGE)
             .style(style::pill)
-            .on_press(Message::Start)
+            .on_press_maybe(waiting.then_some(Message::Start))
         };
         let open_folder = iced::widget::button(icon::labeled(
             Icon::OpenFolder,
@@ -739,7 +763,7 @@ impl Download {
             On::Plain,
             true,
         ))
-        .padding(style::BUTTON_LARGE)
+        .padding(style::BUTTON)
         .style(style::pill_secondary)
         .on_press(Message::OpenFolder);
         let log_label = if self.show_log {
@@ -754,7 +778,7 @@ impl Download {
             On::Plain,
             true,
         ))
-        .padding(style::BUTTON_LARGE)
+        .padding(style::BUTTON)
         .style(style::flat(self.show_log))
         .on_press(Message::ToggleLog);
         let mut actions = row![button, open_folder]
@@ -769,7 +793,7 @@ impl Download {
                     On::Plain,
                     true,
                 ))
-                .padding(style::BUTTON_LARGE)
+                .padding(style::BUTTON)
                 .style(style::pill_secondary)
                 .on_press(Message::ClearFinished),
             );
@@ -782,12 +806,10 @@ impl Download {
     }
 }
 
-/// One card in the queue: a thumbnail (or a placeholder while it loads or
-/// on a failed lookup), the title, the two quick per-item pickers, whatever
-/// metadata resolved, and this item's own status/progress.
-/// One link of the queue: its thumbnail, title and details, the choices it
-/// downloads with, where it is at, and the actions it allows. `live` is
-/// set while it is the live stream being recorded.
+/// One link of the queue: its thumbnail (a placeholder while it loads, or
+/// when the lookup failed), title and details, the choices it downloads
+/// with, where it is at, and the actions it allows. `live` is set while it
+/// is the live stream being recorded.
 fn item_card(item: &QueueItem, live: bool) -> Element<'_, Message> {
     let id = item.id;
     // 16:9, like nearly every thumbnail.
@@ -917,27 +939,49 @@ fn item_card(item: &QueueItem, live: bool) -> Element<'_, Message> {
         ItemStatus::Completed { path: Some(_) } => {
             status(Icon::Ok, success, tr!("Completed")).into()
         }
-        ItemStatus::Failed(reason) => status(Icon::Failed, danger, tr!("Failed: {reason}", reason))
-            .width(Length::Fill)
-            .into(),
+        // The reason in ordinary text under a short red heading, which
+        // reads better than a whole paragraph in red, and the way out
+        // right under it.
+        ItemStatus::Failed(reason) => column![
+            status(Icon::Failed, danger, tr!("Failed")),
+            text(reason.as_str()).size(style::CAPTION),
+            button(icon::labeled(
+                Icon::Retry,
+                tr!("Retry"),
+                style::CAPTION,
+                On::Plain,
+                true,
+            ))
+            .padding(style::BUTTON_SMALL)
+            .style(style::pill_secondary)
+            .on_press(Message::RetryItem(id)),
+        ]
+        .spacing(style::SPACE_S)
+        .width(Length::Fill)
+        .into(),
     };
 
-    // Only what applies is shown, rather than greyed-out buttons.
-    let mut actions = column![].spacing(style::SPACE_XS);
+    // Only what applies is shown, rather than greyed-out buttons. Side by
+    // side, so four of them don't make the card taller than its text.
+    let mut actions = row![].spacing(style::SPACE_XS);
     if let ItemStatus::Completed { path: Some(path) } = &item.status {
-        actions = actions.push(icon::button(
-            Icon::OpenFolder,
-            tr!("Open folder"),
-            Message::OpenItemFolder(path.clone()),
-        ));
+        actions = actions
+            .push(icon::button(
+                Icon::Play,
+                tr!("Open the file"),
+                Message::OpenFile(path.clone()),
+            ))
+            .push(icon::button(
+                Icon::OpenFolder,
+                tr!("Show in folder"),
+                Message::OpenItemFolder(path.clone()),
+            ));
     }
-    if matches!(item.status, ItemStatus::Failed(_)) {
-        actions = actions.push(icon::button(
-            Icon::Retry,
-            tr!("Retry"),
-            Message::RetryItem(id),
-        ));
-    }
+    actions = actions.push(icon::button(
+        Icon::Copy,
+        tr!("Copy link"),
+        Message::CopyLink(id),
+    ));
     if !matches!(item.status, ItemStatus::Downloading(_)) {
         actions = actions.push(icon::button(
             Icon::Remove,
@@ -1070,13 +1114,13 @@ fn duration(seconds: u64) -> String {
     }
 }
 
-/// Debug builds only: `YTP_DEV_DOWNLOAD=<link>[,<link>...]` queues those
+/// Debug builds only: `MIMIRDLP_DEV_DOWNLOAD=<link>[,<link>...]` queues those
 /// links and starts, so a real download can be checked without clicking.
 pub(super) fn dev_urls() -> Vec<String> {
     if !cfg!(debug_assertions) {
         return Vec::new();
     }
-    let Ok(value) = std::env::var("YTP_DEV_DOWNLOAD") else {
+    let Ok(value) = std::env::var("MIMIRDLP_DEV_DOWNLOAD") else {
         return Vec::new();
     };
     value
@@ -1139,6 +1183,25 @@ mod tests {
         );
         assert_eq!(reopened.items[0].settings.kind, Kind::AudioOnly);
         assert_eq!(reopened.items[0].settings.quality, Quality::P720);
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+
+    /// A link copied from its own card and then removed is still on the
+    /// clipboard, and must not come back into the link field by itself.
+    #[test]
+    fn a_link_copied_from_its_card_is_not_offered_back() {
+        let dir = tempdir();
+        let mut screen = Download::new(Paths::new(dir.clone()));
+        let settings = Settings::default();
+        let link = "https://example.com/a";
+        let _ = screen.update(Message::UrlInput(link.into()), &settings);
+        let _ = screen.update(Message::AddUrl, &settings);
+        let id = screen.items[0].id;
+        let _ = screen.update(Message::CopyLink(id), &settings);
+        assert!(screen.log.iter().any(|(_, line)| line.contains(link)));
+        let _ = screen.update(Message::RemoveItem(id), &settings);
+        let _ = screen.update(Message::Clipboard(Some(link.into())), &settings);
+        assert_eq!(screen.url_input, "");
         std::fs::remove_dir_all(dir).unwrap();
     }
 

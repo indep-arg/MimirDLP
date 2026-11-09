@@ -92,10 +92,10 @@ jobs:
       # Opens the window and closes it like a user would, three times: a
       # crash at startup, a window that never shows, a close that hangs or
       # a process left behind fails the job. No tools are installed
-      # (YTP_DEV_ACTION=none), so nothing is downloaded. Without a usable GPU
+      # (MIMIRDLP_DEV_ACTION=none), so nothing is downloaded. Without a usable GPU
       # on the runner, iced falls back to drawing on the CPU.
       - name: Launch and close the app
         shell: pwsh
         env:
-          YTP_DEV_ACTION: none
+          MIMIRDLP_DEV_ACTION: none
         run: ./scripts/stress-launch.ps1 -Exe target/debug/mimirdlp.exe -Runs 3 -State cold -StartTimeoutSeconds 60

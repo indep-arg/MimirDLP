@@ -354,8 +354,17 @@ msgid "The output folder doesn't exist yet."
 msgstr ""
 
 #: src/gui/download.rs
+msgid "The file isn't there any more."
+msgstr ""
+
+#: src/gui/download.rs
 #, python-brace-format
-msgid "Could not open the folder: {e}"
+msgid "Link copied: {url}"
+msgstr ""
+
+#: src/gui/download.rs
+#, python-brace-format
+msgid "Could not open it: {e}"
 msgstr ""
 
 #: src/gui/download.rs
@@ -538,12 +547,23 @@ msgid "Completed"
 msgstr ""
 
 #: src/gui/download.rs
-#, python-brace-format
-msgid "Failed: {reason}"
+msgid "Failed"
 msgstr ""
 
 #: src/gui/download.rs
 msgid "Retry"
+msgstr ""
+
+#: src/gui/download.rs
+msgid "Open the file"
+msgstr ""
+
+#: src/gui/download.rs
+msgid "Show in folder"
+msgstr ""
+
+#: src/gui/download.rs
+msgid "Copy link"
 msgstr ""
 
 #: src/gui/download.rs

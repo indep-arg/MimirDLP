@@ -90,7 +90,7 @@ pub struct Setup {
     /// Install what is missing as soon as the first inspection ends, so a
     /// first launch needs no button press. Off when the folder can't be
     /// written to, when the tools came with the package, and in debug
-    /// builds with `YTP_DEV_ACTION=none`.
+    /// builds with `MIMIRDLP_DEV_ACTION=none`.
     auto_install: bool,
 }
 
@@ -976,19 +976,19 @@ fn transfer_view(transfer: &Transfer) -> Element<'_, Message> {
     .into()
 }
 
-/// Debug builds only: `YTP_DEV_ACTION=none` keeps a first launch from
+/// Debug builds only: `MIMIRDLP_DEV_ACTION=none` keeps a first launch from
 /// installing anything, to look at an empty folder's screens.
 fn dev_no_auto_install() -> bool {
-    cfg!(debug_assertions) && std::env::var("YTP_DEV_ACTION").is_ok_and(|a| a == "none")
+    cfg!(debug_assertions) && std::env::var("MIMIRDLP_DEV_ACTION").is_ok_and(|a| a == "none")
 }
 
-/// Debug builds only: `YTP_DEV_ACTION=install|check|update|ask-reinstall|reinstall`
+/// Debug builds only: `MIMIRDLP_DEV_ACTION=install|check|update|ask-reinstall|reinstall`
 /// runs that action after the first inspection, instead of a click.
 fn dev_action() -> Option<Message> {
     if !cfg!(debug_assertions) {
         return None;
     }
-    match std::env::var("YTP_DEV_ACTION").ok()?.as_str() {
+    match std::env::var("MIMIRDLP_DEV_ACTION").ok()?.as_str() {
         "install" => Some(Message::InstallMissing),
         "check" => Some(Message::CheckUpdates),
         "update" => Some(Message::UpdateOutdated),
@@ -1247,7 +1247,7 @@ mod tests {
     #[test]
     fn a_bundled_yt_dlp_counts_as_old_later() {
         let days_ago = |n: i64| {
-            let (y, m, d) = civil(provision::today() - n);
+            let (y, m, d) = civil_from_days(provision::today() - n);
             format!("{y}.{m:02}.{d:02}")
         };
         let mut portable = with_ytdlp(&days_ago(30), None);
@@ -1262,7 +1262,7 @@ mod tests {
     }
 
     /// The calendar date of a day number (Hinnant's `civil_from_days`).
-    fn civil(days: i64) -> (i64, i64, i64) {
+    fn civil_from_days(days: i64) -> (i64, i64, i64) {
         let z = days + 719_468;
         let era = z.div_euclid(146_097);
         let doe = z - era * 146_097;

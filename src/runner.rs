@@ -26,10 +26,10 @@ use crate::process;
 use crate::provision::Paths;
 
 /// Prefixes chosen so they can't be confused with yt-dlp's own output.
-const DOWNLOAD: &str = "[ytp] ";
-const POSTPROCESS: &str = "[ytp-pp] ";
-const FILE: &str = "[ytp-file] ";
-const LIVE: &str = "[ytp-live] ";
+const DOWNLOAD: &str = "[mimirdlp] ";
+const POSTPROCESS: &str = "[mimirdlp-pp] ";
+const FILE: &str = "[mimirdlp-file] ";
+const LIVE: &str = "[mimirdlp-live] ";
 /// How often the reading loop checks whether the run was cancelled.
 const POLL: Duration = Duration::from_millis(200);
 
@@ -138,13 +138,13 @@ fn presentation_args() -> Vec<OsString> {
         "--progress-delta",
         "0.3",
         "--progress-template",
-        "download:[ytp] %(progress.status)s|%(progress.downloaded_bytes)s|%(progress.total_bytes)s|%(progress.total_bytes_estimate)s|%(progress.speed)s|%(progress.eta)s",
+        "download:[mimirdlp] %(progress.status)s|%(progress.downloaded_bytes)s|%(progress.total_bytes)s|%(progress.total_bytes_estimate)s|%(progress.speed)s|%(progress.eta)s",
         "--progress-template",
-        "postprocess:[ytp-pp] %(progress.status)s|%(progress.postprocessor)s",
+        "postprocess:[mimirdlp-pp] %(progress.status)s|%(progress.postprocessor)s",
         "--print",
-        "before_dl:[ytp-live] %(is_live)s",
+        "before_dl:[mimirdlp-live] %(is_live)s",
         "--print",
-        "after_move:[ytp-file] %(filepath)s",
+        "after_move:[mimirdlp-file] %(filepath)s",
     ]
     .into_iter()
     .map(OsString::from)
@@ -347,7 +347,7 @@ fn parse_line(line: &str) -> Option<Event> {
     Some(Event::Log(Level::Info, line.to_string()))
 }
 
-/// yt-dlp numbers its progress lines (`2: [ytp] ...`) when several
+/// yt-dlp numbers its progress lines (`2: [mimirdlp] ...`) when several
 /// downloads run at once, which is what a live stream does: it fetches
 /// video and audio in parallel. Checked against a real live stream, where
 /// the numbering shows up with and without `--verbose`. Anything that
@@ -421,7 +421,7 @@ mod tests {
     /// Lines recorded from real runs of the bundled yt-dlp.
     #[test]
     fn progress_lines_are_parsed_as_yt_dlp_prints_them() {
-        let start = parse_line("[ytp] downloading|1024|991017|NA|NA|NA").unwrap();
+        let start = parse_line("[mimirdlp] downloading|1024|991017|NA|NA|NA").unwrap();
         assert_eq!(
             start,
             Event::Progress(Progress {
@@ -433,7 +433,7 @@ mod tests {
                 done: false,
             })
         );
-        let end = parse_line("[ytp] finished|991017|991017|NA|19476822.36014507|NA").unwrap();
+        let end = parse_line("[mimirdlp] finished|991017|991017|NA|19476822.36014507|NA").unwrap();
         let Event::Progress(end) = end else {
             panic!("expected progress")
         };
@@ -443,7 +443,7 @@ mod tests {
 
     #[test]
     fn an_estimate_is_used_when_the_total_is_unknown() {
-        let event = parse_line("[ytp] downloading|2048|NA|4096.5|1000.0|12").unwrap();
+        let event = parse_line("[mimirdlp] downloading|2048|NA|4096.5|1000.0|12").unwrap();
         assert_eq!(
             event,
             Event::Progress(Progress {
@@ -460,8 +460,8 @@ mod tests {
     /// Recorded from a real live stream with --live-from-start.
     #[test]
     fn numbered_progress_lines_of_parallel_downloads_are_recognised() {
-        let first = parse_line("1: [ytp] downloading|20870|NA|NA|NA|NA").unwrap();
-        let second = parse_line("2: [ytp] downloading|311917|NA|NA|771326.89|0.0").unwrap();
+        let first = parse_line("1: [mimirdlp] downloading|20870|NA|NA|NA|NA").unwrap();
+        let second = parse_line("2: [mimirdlp] downloading|311917|NA|NA|771326.89|0.0").unwrap();
         let Event::Progress(first) = first else {
             panic!("expected progress")
         };
@@ -487,13 +487,13 @@ mod tests {
     #[test]
     fn postprocessors_become_readable_lines_once() {
         assert_eq!(
-            parse_line("[ytp-pp] started|Merger"),
+            parse_line("[mimirdlp-pp] started|Merger"),
             Some(Event::Log(Level::Info, "Merging video and audio...".into()))
         );
         // Only the start is reported, so the log doesn't say everything twice.
-        assert_eq!(parse_line("[ytp-pp] finished|Merger"), None);
+        assert_eq!(parse_line("[mimirdlp-pp] finished|Merger"), None);
         assert_eq!(
-            parse_line("[ytp-pp] started|SomethingNew"),
+            parse_line("[mimirdlp-pp] started|SomethingNew"),
             Some(Event::Log(Level::Info, "SomethingNew...".into()))
         );
     }
@@ -521,24 +521,24 @@ mod tests {
         assert_eq!(parse_line(""), None);
     }
 
-    /// `--print before_dl:[ytp-live] %(is_live)s` prints Python's True or
+    /// `--print before_dl:[mimirdlp-live] %(is_live)s` prints Python's True or
     /// False, or NA when a site doesn't say.
     #[test]
     fn a_live_stream_is_recognised_before_it_downloads() {
-        assert_eq!(parse_line("[ytp-live] True"), Some(Event::Live));
-        assert_eq!(parse_line("[ytp-live] False"), None);
-        assert_eq!(parse_line("[ytp-live] NA"), None);
+        assert_eq!(parse_line("[mimirdlp-live] True"), Some(Event::Live));
+        assert_eq!(parse_line("[mimirdlp-live] False"), None);
+        assert_eq!(parse_line("[mimirdlp-live] NA"), None);
         assert!(
             presentation_args()
                 .iter()
-                .any(|a| a == "before_dl:[ytp-live] %(is_live)s")
+                .any(|a| a == "before_dl:[mimirdlp-live] %(is_live)s")
         );
     }
 
     #[test]
     fn the_final_path_is_reported() {
         assert_eq!(
-            parse_line("[ytp-file] /home/u/Videos/Me at the zoo [jNQXAC9IVRw].mkv"),
+            parse_line("[mimirdlp-file] /home/u/Videos/Me at the zoo [jNQXAC9IVRw].mkv"),
             Some(Event::File(
                 "/home/u/Videos/Me at the zoo [jNQXAC9IVRw].mkv".into()
             ))
@@ -621,9 +621,9 @@ mod tests {
         #[test]
         fn a_successful_run_reports_progress_the_file_and_completion() {
             let (dir, paths) = fake_ytdlp(
-                "out [ytp] downloading|10|100|NA|NA|NA\n\
-                 err [ytp-pp] started|Merger\n\
-                 out [ytp-file] /tmp/out.mkv\n\
+                "out [mimirdlp] downloading|10|100|NA|NA|NA\n\
+                 err [mimirdlp-pp] started|Merger\n\
+                 out [mimirdlp-file] /tmp/out.mkv\n\
                  err ERROR: not fatal here",
             );
             let events = collect(&paths, &Cancel::default());
@@ -718,7 +718,7 @@ mod tests {
             let out = crate::testing::tempdir();
             let destination = out.join("Live.mkv");
             let (dir, paths) = fake_ytdlp(&format!(
-                "out [ytp-live] {live}\n\
+                "out [mimirdlp-live] {live}\n\
                  out [download] Destination: {0}\n\
                  write {0}.part|recorded\n\
                  out started\n\
@@ -828,8 +828,8 @@ mod tests {
         fn output_that_is_not_utf8_does_not_end_the_download() {
             let (dir, paths) = fake_ytdlp(
                 "out-raw [download] Destination: /home/Jos\\xe9/v.mkv\n\
-                 repeat 3000 out [ytp] downloading|10|100|NA|NA|NA\n\
-                 out [ytp-file] /tmp/out.mkv",
+                 repeat 3000 out [mimirdlp] downloading|10|100|NA|NA|NA\n\
+                 out [mimirdlp-file] /tmp/out.mkv",
             );
             let events = collect(&paths, &Cancel::default());
             assert!(
