@@ -355,6 +355,15 @@ msgid "The output folder doesn't exist yet."
 msgstr "La carpeta de destino todavía no existe."
 
 #: src/gui/download.rs
+msgid "The file isn't there any more."
+msgstr "El archivo ya no está."
+
+#: src/gui/download.rs
+#, python-brace-format
+msgid "Link copied: {url}"
+msgstr "Enlace copiado: {url}"
+
+#: src/gui/download.rs
 #, python-brace-format
 msgid "Could not open it: {e}"
 msgstr "No se pudo abrir: {e}"
@@ -545,6 +554,18 @@ msgstr "Falló"
 #: src/gui/download.rs
 msgid "Retry"
 msgstr "Reintentar"
+
+#: src/gui/download.rs
+msgid "Open the file"
+msgstr "Abrir el archivo"
+
+#: src/gui/download.rs
+msgid "Show in folder"
+msgstr "Mostrar en la carpeta"
+
+#: src/gui/download.rs
+msgid "Copy link"
+msgstr "Copiar enlace"
 
 #: src/gui/download.rs
 msgid "Remove"
@@ -1572,24 +1593,3 @@ msgstr "Moviendo el archivo a su lugar..."
 
 #~ msgid "SponsorBlock"
 #~ msgstr "SponsorBlock"
-
-#: src/gui/download.rs
-msgid "Open the file"
-msgstr "Abrir el archivo"
-
-#: src/gui/download.rs
-msgid "Show in folder"
-msgstr "Mostrar en la carpeta"
-
-#: src/gui/download.rs
-msgid "Copy link"
-msgstr "Copiar enlace"
-
-#: src/gui/download.rs
-msgid "The file isn't there any more."
-msgstr "El archivo ya no está."
-
-#: src/gui/download.rs
-#, python-brace-format
-msgid "Link copied: {url}"
-msgstr "Enlace copiado: {url}"
