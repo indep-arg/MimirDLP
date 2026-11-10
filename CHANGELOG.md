@@ -8,7 +8,6 @@ All notable changes to MimirDLP are listed here, newest first. The format follow
 
 - Each card in the queue can copy its link, and a finished one can open the file itself, not only its folder.
 - A build attestation for every release archive, so you can check it was built by this repository (`gh attestation verify`, see `SECURITY.md`).
-- `SECURITY.md`: how to report a security problem in private, and what the app checks before it runs a tool.
 
 ### Changed
 
@@ -16,14 +15,12 @@ All notable changes to MimirDLP are listed here, newest first. The format follow
 - The Download button is greyed out until there is a link waiting, and the buttons next to it are a little smaller so it stands out.
 - The queue's progress bar only shows once something has started.
 - The empty Download screen has an icon above its text.
-- Shorter README.
 - Dependencies updated (rfd 0.18, zip 9.5, ureq 3.5.1 and others).
 - For developers: the environment variables that started with `YTP_` now start with `MIMIRDLP_` (`MIMIRDLP_APP_DIR`, `MIMIRDLP_DEV_...`).
 
 ### Fixed
 
 - A queued link was lost, or lost some of its settings, when the app was closed and opened again if its link or its file name template contained `[item]`.
-- A release no longer appears, and the app no longer announces it, before its Windows build is ready.
 - The app's folder and settings are read once at startup instead of twice.
 
 ## [0.8.0] - 2026-11-01
