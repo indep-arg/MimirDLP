@@ -1,9 +1,8 @@
 name: CI
 
 # Runs on every push to main and on every pull request. Other branches are
-# checked through their pull request only: Weblate and Dependabot push
-# branches into this repository, and a push trigger there ran each check
-# twice.
+# checked through their pull request only: Dependabot pushes branches
+# into this repository, and a push trigger there ran each check twice.
 on:
   push:
     branches: [main]
@@ -29,21 +28,35 @@ jobs:
           rustup component add clippy rustfmt
           rustc --version
 
+      # What Tauri's window is built on.
+      - name: System libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev librsvg2-dev libxdo-dev libssl-dev
+
+      # The window's page (ui/ into dist/), which the app embeds: the Rust
+      # side doesn't compile without it.
+      - name: Interface
+        run: |
+          npm ci
+          npm run build
+
       # Reuses the dependency build between runs; the key covers Cargo.lock
       # and the toolchain, so an update rebuilds from scratch.
       - name: Cache
         uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
 
       - name: Formatting
-        run: cargo fmt --check
+        run: cargo fmt --all --check
 
       - name: Clippy
-        run: cargo clippy --all-targets --locked -- -D warnings
+        run: cargo clippy --workspace --all-targets --locked -- -D warnings
 
-      # Includes tests/engine_scenarios.rs, which rebuilds the argv of a
-      # fixed set of scenarios and compares it with what each expects.
+      # Includes crates/core/tests/engine_scenarios.rs, which rebuilds the
+      # argv of a fixed set of scenarios and compares it with what each
+      # expects.
       - name: Tests
-        run: cargo test --all-targets --locked
+        run: cargo test --workspace --all-targets --locked
 
   # The Windows build can only be checked here: there is no Windows machine
   # in the loop. The tests that start a tool use the stand-in program, so
@@ -62,28 +75,35 @@ jobs:
           rustup component add clippy
           rustc --version
 
+      # The window's page (ui/ into dist/), which the app embeds: the Rust
+      # side doesn't compile without it.
+      - name: Interface
+        run: |
+          npm ci
+          npm run build
+
       # Reuses the dependency build between runs; the key covers Cargo.lock
       # and the toolchain, so an update rebuilds from scratch.
       - name: Cache
         uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
 
       - name: Clippy
-        run: cargo clippy --all-targets --locked -- -D warnings
+        run: cargo clippy --workspace --all-targets --locked -- -D warnings
 
       - name: Tests
-        run: cargo test --all-targets --locked
+        run: cargo test --workspace --all-targets --locked
 
       - name: Build
-        run: cargo build --locked
+        run: npx tauri build --debug --no-bundle -- --locked
 
-      # build.rs embeds the icon and the version information in one
-      # resource; if it went missing it would only show as a blank icon on
-      # someone's desktop. The version fields come from that same resource.
+      # tauri-build embeds the icon and the version information in one
+      # resource. Without it the .exe would just show a blank icon on
+      # someone's desktop, so check it is there.
       - name: Check the embedded icon and version
         shell: pwsh
         run: |
-          $info = (Get-Item target/debug/mimirdlp.exe).VersionInfo
-          if ($info.ProductName -ne 'MimirDLP') {
+          $info = (Get-Item target/debug/osprey.exe).VersionInfo
+          if ($info.ProductName -ne 'Osprey') {
             Write-Error "The .exe has no version resource (ProductName: '$($info.ProductName)')"
             exit 1
           }
@@ -92,10 +112,10 @@ jobs:
       # Opens the window and closes it like a user would, three times: a
       # crash at startup, a window that never shows, a close that hangs or
       # a process left behind fails the job. No tools are installed
-      # (MIMIRDLP_DEV_ACTION=none), so nothing is downloaded. Without a usable GPU
-      # on the runner, iced falls back to drawing on the CPU.
+      # (OSPREY_DEV_ACTION=none), so nothing is downloaded. Without a usable
+      # GPU on the runner, the webview draws on the CPU.
       - name: Launch and close the app
         shell: pwsh
         env:
-          MIMIRDLP_DEV_ACTION: none
-        run: ./scripts/stress-launch.ps1 -Exe target/debug/mimirdlp.exe -Runs 3 -State cold -StartTimeoutSeconds 60
+          OSPREY_DEV_ACTION: none
+        run: ./scripts/stress-launch.ps1 -Exe target/debug/osprey.exe -Runs 3 -State cold -StartTimeoutSeconds 60

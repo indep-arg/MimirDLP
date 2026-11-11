@@ -1,12 +1,12 @@
 <#
 .SYNOPSIS
-  Opens and closes MimirDLP many times on Windows and reports what looks off:
+  Opens and closes Osprey many times on Windows and reports what looks off:
   slow or failed starts, hangs on close, crashes, processes left behind,
   idle CPU, memory and handle counts.
 
 .DESCRIPTION
-  Every run starts the exe with MIMIRDLP_APP_DIR pointing at a throwaway folder, so
-  the settings of the copy you use every day are never touched. The tools
+  Every run starts the exe with OSPREY_APP_DIR pointing at a throwaway
+  folder, so the settings of the copy you use every day are never touched. The tools
   (yt-dlp, ffmpeg, deno) are reused through a junction, so nothing of them is
   copied or downloaded per run.
 
@@ -18,12 +18,12 @@
 
 .EXAMPLE
   # The release build of this checkout, with the tools of an unpacked release
-  cargo build --release
-  .\scripts\stress-launch.ps1 -Tools C:\Users\me\Downloads\mimirdlp-0.7.0-windows-x86_64
+  npx tauri build --no-bundle
+  .\scripts\stress-launch.ps1 -Tools C:\Users\me\Downloads\osprey-0.9.0-windows-x86_64
 
 .EXAMPLE
   # A downloaded release, every run from an empty settings folder
-  .\scripts\stress-launch.ps1 -Exe C:\Users\PC\Downloads\mimirdlp-0.7.0-windows-x86_64\mimirdlp.exe -State cold -Runs 50
+  .\scripts\stress-launch.ps1 -Exe C:\Users\PC\Downloads\osprey-0.9.0-windows-x86_64\osprey.exe -State cold -Runs 50
 
 .EXAMPLE
   # One long session, memory and handles every 5 seconds, to look for leaks
@@ -44,11 +44,11 @@ param(
     [int]$CloseTimeoutSeconds = 10,
     # Above 0: a single long run that samples memory instead of the loop.
     [int]$SoakMinutes = 0,
-    [string]$OutDir = (Join-Path $env:TEMP 'mimirdlp-stress')
+    [string]$OutDir = (Join-Path $env:TEMP 'osprey-stress')
 )
 
 $ErrorActionPreference = 'Stop'
-if (-not $Exe) { $Exe = Join-Path (Split-Path -Parent $PSCommandPath) '..\target\release\mimirdlp.exe' }
+if (-not $Exe) { $Exe = Join-Path (Split-Path -Parent $PSCommandPath) '..\target\release\osprey.exe' }
 $Exe = (Resolve-Path $Exe).Path
 if (-not $Tools) { $Tools = Split-Path $Exe }
 $toolsBin = Join-Path $Tools 'bin'
@@ -88,9 +88,9 @@ function Get-Descendants([int]$rootId) {
 }
 
 function Start-App([string]$dir) {
-    $env:MIMIRDLP_APP_DIR = $dir
+    $env:OSPREY_APP_DIR = $dir
     try { Start-Process -FilePath $Exe -PassThru }
-    finally { Remove-Item Env:\MIMIRDLP_APP_DIR -ErrorAction SilentlyContinue }
+    finally { Remove-Item Env:\OSPREY_APP_DIR -ErrorAction SilentlyContinue }
 }
 
 # Waits for the window to be on screen; returns milliseconds, or $null.

@@ -21,3 +21,12 @@ updates:
     groups:
       cargo:
         update-types: ["minor", "patch"]
+
+  # The interface's dependencies (ui/), grouped the same way.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      npm:
+        update-types: ["minor", "patch"]
