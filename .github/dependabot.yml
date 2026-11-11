@@ -1,9 +1,9 @@
-# Keeps the actions in .github/workflows current. They are pinned by commit
-# SHA, and Dependabot updates the SHA and its version comment together.
+# The actions are pinned by commit SHA; Dependabot updates the SHA and its
+# version comment together, in the workflows and in .github/actions.
 version: 2
 updates:
   - package-ecosystem: github-actions
-    directory: /
+    directories: ["/", "/.github/actions/*"]
     schedule:
       interval: monthly
     groups:

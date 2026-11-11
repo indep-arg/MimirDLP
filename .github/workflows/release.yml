@@ -1,260 +1,103 @@
 name: Release
 
-# Publishes the Linux and Windows binaries of the application whenever a
-# "vX.Y.Z" tag is pushed.
+# A "vX.Y.Z" tag publishes that version: checked like any push, built for
+# Linux and Windows, then released with both archives at once, so the
+# release never shows up (or gets announced by the app) half done. A
+# failed run is retried with "Re-run failed jobs".
 on:
   push:
     tags:
       - "v*.*.*"
-  workflow_dispatch:
-    inputs:
-      tag:
-        description: "Existing tag to release (e.g. v0.1.0)"
-        required: true
 
-# contents: the release itself. id-token and attestations: the signed
-# statement that each archive was built here, from this commit.
 permissions:
-  contents: write
-  id-token: write
-  attestations: write
+  contents: read
 
 concurrency:
-  group: release-${{ github.event.inputs.tag || github.ref_name }}
+  group: release-${{ github.ref_name }}
   cancel-in-progress: false
 
 jobs:
-  # Same gate as CI. A broken binary is worse than a failed tag.
-  verify:
+  version:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 5
+    outputs:
+      version: ${{ steps.check.outputs.version }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Toolchain
-        run: |
-          rustup update stable
-          rustup default stable
-          rustup component add clippy rustfmt
-          rustc --version
-
-      # What Tauri's window is built on.
-      - name: System libraries
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev librsvg2-dev libxdo-dev libssl-dev
-
-      # The window's page (ui/ into dist/), which the app embeds: the Rust
-      # side doesn't compile without it.
-      - name: Interface
-        run: |
-          npm ci
-          npm run build
-
-      - name: Formatting
-        run: cargo fmt --all --check
-
-      - name: Clippy
-        run: cargo clippy --workspace --all-targets --locked -- -D warnings
-
-      - name: Tests
-        run: cargo test --workspace --all-targets --locked
-
-  # A Windows binary is published too, so it gets the same gate.
-  verify-windows:
-    runs-on: windows-latest
-    timeout-minutes: 30
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Toolchain
-        run: |
-          rustup update stable
-          rustup default stable
-          rustup component add clippy
-          rustc --version
-
-      # The window's page (ui/ into dist/), which the app embeds: the Rust
-      # side doesn't compile without it.
-      - name: Interface
-        run: |
-          npm ci
-          npm run build
-
-      - name: Clippy
-        run: cargo clippy --workspace --all-targets --locked -- -D warnings
-
-      - name: Tests
-        run: cargo test --workspace --all-targets --locked
-
-  release:
-    needs: [verify, verify-windows]
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      # The tag reaches the scripts through env, never interpolated into
-      # them: a manual run takes it as free text.
-      - name: Resolve tag
-        id: vars
+      # The app reads its own version from Cargo.toml and the interface
+      # from package.json; a tag that disagrees with either is a mistake.
+      - name: Tag, Cargo.toml and package.json agree
+        id: check
         env:
-          TAG: ${{ github.event.inputs.tag || github.ref_name }}
+          TAG: ${{ github.ref_name }}
         run: |
           if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "::error::Not a vX.Y.Z tag: $TAG"
             exit 1
           fi
-          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
-          echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
-
-      - name: Verify Cargo.toml and package.json versions match the tag
-        env:
-          TAG_VERSION: ${{ steps.vars.outputs.version }}
-        run: |
-          CARGO_VERSION=$(grep -m1 '^version = "' Cargo.toml | cut -d'"' -f2)
-          NPM_VERSION=$(node -p "require('./package.json').version")
-          if [[ "$TAG_VERSION" != "$CARGO_VERSION" || "$TAG_VERSION" != "$NPM_VERSION" ]]; then
-            echo "::error::Tag ($TAG_VERSION) does not match Cargo.toml ($CARGO_VERSION) and package.json ($NPM_VERSION)"
+          CARGO=$(grep -m1 '^version = "' Cargo.toml | cut -d'"' -f2)
+          NPM=$(node -p "require('./package.json').version")
+          if [[ "${TAG#v}" != "$CARGO" || "${TAG#v}" != "$NPM" ]]; then
+            echo "::error::$TAG, but Cargo.toml says $CARGO and package.json $NPM"
             exit 1
           fi
+          echo "version=$CARGO" >> "$GITHUB_OUTPUT"
 
-      - name: Toolchain
-        run: |
-          rustup update stable
-          rustup default stable
-          rustc --version
+  ci:
+    uses: ./.github/workflows/ci.yml
 
-      # What Tauri's window is built on.
-      - name: System libraries
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev librsvg2-dev libxdo-dev libssl-dev
+  build:
+    needs: [version, ci]
+    uses: ./.github/workflows/build.yml
+    with:
+      retention-days: 1
 
-      # `tauri build` builds the interface itself, from these.
-      - name: Interface dependencies
-        run: npm ci
-
-      # The binary needs the glibc of the runner, so it targets current
-      # distributions only (built on ubuntu-latest, so glibc 2.39+), and
-      # WebKitGTK 4.1 from the system. Just the binary, as on Windows: no
-      # installer is made (--no-bundle).
-      - name: Build
-        run: npx tauri build --no-bundle -- --locked
-
-      - name: Package
-        id: package
-        env:
-          VERSION: ${{ steps.vars.outputs.version }}
-        run: |
-          NAME="osprey-$VERSION-linux-x86_64"
-          mkdir -p "release/$NAME"
-          cp target/release/osprey "release/$NAME/"
-          tar -czf "release/$NAME.tar.gz" -C release "$NAME"
-          (cd release && sha256sum "$NAME.tar.gz" > "$NAME.tar.gz.sha256")
-          echo "name=$NAME" >> "$GITHUB_OUTPUT"
-          ls -lh release
-
-      - name: Attest the archive
-        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
-        with:
-          subject-path: release/${{ steps.package.outputs.name }}.tar.gz
-
-      # A draft: nobody sees it, and "releases/latest" (what the app asks
-      # for new versions) doesn't point at it, until the Windows build is
-      # on it too. Run again for a tag already released, this only replaces
-      # the files.
-      - name: Create the draft release
-        env:
-          GH_TOKEN: ${{ github.token }}
-          TAG: ${{ steps.vars.outputs.tag }}
-          VERSION: ${{ steps.vars.outputs.version }}
-          NAME: ${{ steps.package.outputs.name }}
-        run: |
-          if ! gh release view "$TAG" > /dev/null 2>&1; then
-            gh release create "$TAG" --draft --verify-tag --generate-notes --title "Osprey $VERSION"
-          fi
-          gh release upload "$TAG" --clobber "release/$NAME.tar.gz" "release/$NAME.tar.gz.sha256"
-
-  # Runs after the Linux job so the draft already exists, adds the Windows
-  # build to it and only then publishes it.
-  windows:
-    needs: release
-    runs-on: windows-latest
-    timeout-minutes: 40
+  publish:
+    needs: [version, build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # id-token and attestations: the signed statement that each archive was
+    # built here, from this commit.
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
     steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Resolve tag
-        id: vars
-        shell: bash
-        env:
-          TAG: ${{ github.event.inputs.tag || github.ref_name }}
-        run: |
-          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "::error::Not a vX.Y.Z tag: $TAG"
-            exit 1
-          fi
-          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
-          echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
-
-      - name: Toolchain
-        run: |
-          rustup update stable
-          rustup default stable
-          rustc --version
-
-      # `tauri build` builds the interface itself, from these.
-      - name: Interface dependencies
-        run: npm ci
-
-      - name: Build
-        run: npx tauri build --no-bundle -- --locked
-
-      # tauri-build embeds the icon and the version information in one
-      # resource. Without it the .exe would just show a blank icon on
-      # someone's desktop, so check it is there.
-      - name: Check the embedded icon and version
-        shell: pwsh
-        run: |
-          $info = (Get-Item target/release/osprey.exe).VersionInfo
-          if ($info.ProductName -ne 'Osprey') {
-            Write-Error "The .exe has no version resource (ProductName: '$($info.ProductName)')"
-            exit 1
-          }
-          "ProductName: $($info.ProductName), FileVersion: $($info.FileVersion)"
-
-      - name: Package
-        id: package
-        shell: pwsh
-        env:
-          VERSION: ${{ steps.vars.outputs.version }}
-        run: |
-          $version = $env:VERSION
-          $name = "osprey-$version-windows-x86_64"
-          New-Item -ItemType Directory -Path "release/$name" | Out-Null
-          Copy-Item target/release/osprey.exe "release/$name/"
-          Compress-Archive -Path "release/$name" -DestinationPath "release/$name.zip"
-          $hash = (Get-FileHash "release/$name.zip" -Algorithm SHA256).Hash.ToLower()
-          "$hash  $name.zip" | Out-File -Encoding ascii "release/$name.zip.sha256"
-          "name=$name" >> $env:GITHUB_OUTPUT
-          Get-ChildItem release
-
-      - name: Attest the archive
-        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          subject-path: release/${{ steps.package.outputs.name }}.zip
+          name: ${{ needs.build.outputs.linux }}
+          path: release
 
-      - name: Add to the release and publish it
-        shell: bash
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: ${{ needs.build.outputs.windows }}
+          path: release
+
+      - name: Checksums
+        working-directory: release
+        run: |
+          for file in osprey-*; do sha256sum "$file" > "$file.sha256"; done
+          ls -l
+
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: |
+            release/${{ needs.build.outputs.linux }}
+            release/${{ needs.build.outputs.windows }}
+
+      # A re-run after the release was already created only replaces its
+      # files.
+      - name: Publish
+        working-directory: release
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ steps.vars.outputs.tag }}
-          NAME: ${{ steps.package.outputs.name }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+          VERSION: ${{ needs.version.outputs.version }}
         run: |
-          gh release upload "$TAG" --clobber "release/$NAME.zip" "release/$NAME.zip.sha256"
-          gh release edit "$TAG" --draft=false
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            gh release upload "$TAG" --clobber osprey-*
+          else
+            gh release create "$TAG" --verify-tag --generate-notes --title "Osprey $VERSION" osprey-*
+          fi

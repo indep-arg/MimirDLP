@@ -1,12 +1,8 @@
-name: Preview build
+name: Preview
 
-# Release binaries for trying a change before tagging it: run it from the
-# Actions tab ("Run workflow", on any branch). Nothing is published; the
-# Linux and Windows builds are attached to the run as artifacts, kept for
-# 14 days. Built and packaged exactly like release.yml does, and
-# uploaded as-is (`archive: false`), so each one is the same single
-# .tar.gz or .zip a release would have: extracted once, not a zip inside
-# a zip.
+# The binaries of any branch, to try a change before tagging it: "Run
+# workflow" in the Actions tab. Nothing is published; the Linux and Windows
+# archives are attached to the run for 14 days, named after the commit.
 on:
   workflow_dispatch:
 
@@ -14,108 +10,7 @@ permissions:
   contents: read
 
 jobs:
-  linux:
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Toolchain
-        run: |
-          rustup update stable
-          rustup default stable
-          rustc --version
-
-      # What Tauri's window is built on.
-      - name: System libraries
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev librsvg2-dev libxdo-dev libssl-dev
-
-      # `tauri build` builds the interface itself, from these.
-      - name: Interface dependencies
-        run: npm ci
-
-      - name: Cache
-        uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
-
-      - name: Build
-        run: npx tauri build --no-bundle -- --locked
-
-      # A tarball keeps the executable bit, which a zip would drop.
-      - name: Package
-        id: package
-        run: |
-          VERSION=$(grep -m1 '^version = "' Cargo.toml | cut -d'"' -f2)
-          NAME="osprey-$VERSION-${GITHUB_SHA::7}-linux-x86_64"
-          mkdir -p "release/$NAME"
-          cp target/release/osprey "release/$NAME/"
-          tar -czf "release/$NAME.tar.gz" -C release "$NAME"
-          echo "name=$NAME" >> "$GITHUB_OUTPUT"
-          ls -lh release
-
-      - name: Upload
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          # With archive: false the file's own name is the artifact's name.
-          path: release/${{ steps.package.outputs.name }}.tar.gz
-          archive: false
-          retention-days: 14
-          if-no-files-found: error
-
-  windows:
-    runs-on: windows-latest
-    timeout-minutes: 40
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Toolchain
-        run: |
-          rustup update stable
-          rustup default stable
-          rustc --version
-
-      # `tauri build` builds the interface itself, from these.
-      - name: Interface dependencies
-        run: npm ci
-
-      - name: Cache
-        uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
-
-      - name: Build
-        run: npx tauri build --no-bundle -- --locked
-
-      # Same check as the release: the icon and the version information
-      # come from the build in one resource.
-      - name: Check the embedded icon and version
-        shell: pwsh
-        run: |
-          $info = (Get-Item target/release/osprey.exe).VersionInfo
-          if ($info.ProductName -ne 'Osprey') {
-            Write-Error "The .exe has no version resource (ProductName: '$($info.ProductName)')"
-            exit 1
-          }
-          "ProductName: $($info.ProductName), FileVersion: $($info.FileVersion)"
-
-      - name: Package
-        id: package
-        shell: pwsh
-        run: |
-          $version = (Select-String -Path Cargo.toml -Pattern '^version = "(.+)"' | Select-Object -First 1).Matches[0].Groups[1].Value
-          $name = "osprey-$version-$($env:GITHUB_SHA.Substring(0, 7))-windows-x86_64"
-          New-Item -ItemType Directory -Path "release/$name" | Out-Null
-          Copy-Item target/release/osprey.exe "release/$name/"
-          Compress-Archive -Path "release/$name" -DestinationPath "release/$name.zip"
-          "name=$name" >> $env:GITHUB_OUTPUT
-          Get-ChildItem release
-
-      - name: Upload
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          # With archive: false the file's own name is the artifact's name.
-          path: release/${{ steps.package.outputs.name }}.zip
-          archive: false
-          retention-days: 14
-          if-no-files-found: error
+  build:
+    uses: ./.github/workflows/build.yml
+    with:
+      preview: true

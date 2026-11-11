@@ -1,0 +1,55 @@
+name: Prepare
+description: Rust, the system libraries the window needs, and the interface.
+
+inputs:
+  components:
+    description: Extra rustup components, such as "clippy rustfmt".
+    default: ""
+  window:
+    description: Install WebKitGTK and GTK on Linux. Only crates/core can build without them.
+    default: "true"
+  interface:
+    description: '"build" builds ui/ into dist/, "deps" only installs its packages (tauri build builds it itself), "none" skips it.'
+    default: build
+  cache:
+    description: Reuse the dependency build from earlier runs.
+    default: "true"
+
+runs:
+  using: composite
+  steps:
+    # The project tracks current stable, so the runner's toolchain is
+    # brought up to date rather than assumed.
+    - name: Toolchain
+      shell: bash
+      env:
+        COMPONENTS: ${{ inputs.components }}
+      run: |
+        rustup update stable
+        rustup default stable
+        # Unquoted on purpose: one word per component.
+        if [ -n "$COMPONENTS" ]; then rustup component add $COMPONENTS; fi
+        rustc --version
+
+    # Windows has WebView2 already.
+    - name: System libraries
+      if: runner.os == 'Linux' && inputs.window == 'true'
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev librsvg2-dev libxdo-dev libssl-dev
+
+    - name: Interface
+      if: inputs.interface != 'none'
+      shell: bash
+      env:
+        INTERFACE: ${{ inputs.interface }}
+      run: |
+        npm ci
+        if [ "$INTERFACE" = build ]; then npm run build; fi
+
+    # The key covers Cargo.lock and the toolchain, so an update rebuilds
+    # from scratch.
+    - name: Cache
+      if: inputs.cache == 'true'
+      uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3

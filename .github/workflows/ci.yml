@@ -1,50 +1,34 @@
 name: CI
 
-# Runs on every push to main and on every pull request. Other branches are
-# checked through their pull request only: Dependabot pushes branches
-# into this repository, and a push trigger there ran each check twice.
+# Every push to main and every pull request, and the release workflow runs
+# it again before building. Other branches are checked through their pull
+# request only: Dependabot pushes branches here, and a push trigger ran
+# each check twice.
 on:
   push:
     branches: [main]
   pull_request:
+  workflow_call:
 
 permissions:
   contents: read
 
+# A new push to a pull request makes the run for the old one pointless.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
-  rust:
+  linux:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      # The project tracks current stable, so the runner's toolchain is
-      # brought up to date rather than assumed. Clippy is not preinstalled.
-      - name: Toolchain
-        run: |
-          rustup update stable
-          rustup default stable
-          rustup component add clippy rustfmt
-          rustc --version
-
-      # What Tauri's window is built on.
-      - name: System libraries
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev librsvg2-dev libxdo-dev libssl-dev
-
-      # The window's page (ui/ into dist/), which the app embeds: the Rust
-      # side doesn't compile without it.
-      - name: Interface
-        run: |
-          npm ci
-          npm run build
-
-      # Reuses the dependency build between runs; the key covers Cargo.lock
-      # and the toolchain, so an update rebuilds from scratch.
-      - name: Cache
-        uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+      # Builds the interface too, which typechecks it on the way.
+      - uses: ./.github/actions/prepare
+        with:
+          components: clippy rustfmt
 
       - name: Formatting
         run: cargo fmt --all --check
@@ -52,40 +36,24 @@ jobs:
       - name: Clippy
         run: cargo clippy --workspace --all-targets --locked -- -D warnings
 
-      # Includes crates/core/tests/engine_scenarios.rs, which rebuilds the
+      # crates/core/tests/engine_scenarios.rs among them: it rebuilds the
       # argv of a fixed set of scenarios and compares it with what each
       # expects.
       - name: Tests
         run: cargo test --workspace --all-targets --locked
 
-  # The Windows build can only be checked here: there is no Windows machine
-  # in the loop. The tests that start a tool use the stand-in program, so
-  # they run here too; the few about Unix file permissions are skipped.
-  rust-windows:
+  # Nobody develops on Windows, so this is where the Windows build is
+  # checked. The tests that start a tool use the stand-in program and run
+  # here too; the few about Unix file permissions are skipped.
+  windows:
     runs-on: windows-latest
     timeout-minutes: 30
     steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Toolchain
-        run: |
-          rustup update stable
-          rustup default stable
-          rustup component add clippy
-          rustc --version
-
-      # The window's page (ui/ into dist/), which the app embeds: the Rust
-      # side doesn't compile without it.
-      - name: Interface
-        run: |
-          npm ci
-          npm run build
-
-      # Reuses the dependency build between runs; the key covers Cargo.lock
-      # and the toolchain, so an update rebuilds from scratch.
-      - name: Cache
-        uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+      - uses: ./.github/actions/prepare
+        with:
+          components: clippy
 
       - name: Clippy
         run: cargo clippy --workspace --all-targets --locked -- -D warnings
@@ -96,25 +64,12 @@ jobs:
       - name: Build
         run: npx tauri build --debug --no-bundle -- --locked
 
-      # tauri-build embeds the icon and the version information in one
-      # resource. Without it the .exe would just show a blank icon on
-      # someone's desktop, so check it is there.
-      - name: Check the embedded icon and version
-        shell: pwsh
-        run: |
-          $info = (Get-Item target/debug/osprey.exe).VersionInfo
-          if ($info.ProductName -ne 'Osprey') {
-            Write-Error "The .exe has no version resource (ProductName: '$($info.ProductName)')"
-            exit 1
-          }
-          "ProductName: $($info.ProductName), FileVersion: $($info.FileVersion)"
-
-      # Opens the window and closes it like a user would, three times: a
+      # Opens the window and closes it like a user would, three times. A
       # crash at startup, a window that never shows, a close that hangs or
-      # a process left behind fails the job. No tools are installed
-      # (OSPREY_DEV_ACTION=none), so nothing is downloaded. Without a usable
-      # GPU on the runner, the webview draws on the CPU.
-      - name: Launch and close the app
+      # a process left behind fails the job. OSPREY_DEV_ACTION=none keeps
+      # it from downloading the tools. Without a GPU on the runner, the
+      # webview draws on the CPU.
+      - name: Launch and close
         shell: pwsh
         env:
           OSPREY_DEV_ACTION: none
