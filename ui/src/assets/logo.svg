@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#22c1c3"/>
+      <stop offset="1" stop-color="#2456d6"/>
+    </linearGradient>
+  </defs>
+  <rect x="64" y="64" width="896" height="896" rx="208" fill="url(#sky)"/>
+  <!-- An osprey in its dive, which is also an arrow pointing down. -->
+  <path fill="#ffffff" d="M512 760 C452 610 330 420 150 300 C320 290 450 350 512 470 C574 350 704 290 874 300 C694 420 572 610 512 760 Z"/>
+  <rect x="352" y="812" width="320" height="56" rx="28" fill="#ffffff" fill-opacity="0.92"/>
+</svg>

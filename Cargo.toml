@@ -1,53 +1,18 @@
-[package]
-name = "mimirdlp"
-version = "0.8.0"
-description = "A portable GUI around yt-dlp: Mimir's well of downloads."
+[workspace]
+resolver = "3"
+members = ["crates/core", "crates/desktop"]
+
+[workspace.package]
+version = "0.9.0"
 edition = "2024"
-# The oldest Rust that can build MimirDLP, kept close to the latest stable
+# The oldest Rust that can build Osprey, kept close to the latest stable
 # on purpose. Users get a prebuilt binary, and building from source only
 # needs a current toolchain from rustup, so there is no reason to hold
 # dependencies back for the older compilers some distros ship. Raise it
 # when moving to a newer toolchain.
 rust-version = "1.98"
-license = "MIT"
-repository = "https://github.com/indep-arg/MimirDLP"
-
-[dependencies]
-iced = { version = "0.14.0", features = ["advanced", "image", "svg"] }
-lzma-rust2 = { version = "0.25.0", default-features = false, features = ["std", "xz", "optimization"] }
-pgp = { version = "0.21.0", default-features = false }
-# The folder picker: the desktop's own dialog. On Linux through the XDG
-# portal over D-Bus (pure Rust, no GTK), on Windows the native one.
-rfd = { version = "0.18.0", default-features = false, features = ["xdg-portal"] }
-rspolib = "0.1.2"
-serde = { version = "1", features = ["derive"] }
-serde_json = "1"
-sha2 = "0.11.0"
-# The language the system is set to, for the default translation.
-sys-locale = "0.3.2"
-tar = { version = "0.4.46", default-features = false }
-# Translations: gettext .po files (po/), embedded in the binary. rspolib
-# parses them; tr supplies the tr!() macro and the translator registry.
-tr = { version = "0.1.11", default-features = false }
-ureq = "3.4.1"
-zip = { version = "9.2.1", default-features = false, features = ["deflate"] }
-
-[target.'cfg(unix)'.dependencies]
-# kill(2) on a process group, to stop yt-dlp along with what it started.
-libc = "0.2.189"
-
-[target.'cfg(target_os = "linux")'.dependencies]
-# An activation token, so the browser or file manager that is opened comes
-# to the front on Wayland (gui/open.rs). Already in the tree through iced,
-# with these features, so nothing new is built or linked.
-wayland-client = "0.31.15"
-wayland-protocols = { version = "0.32.13", default-features = false, features = ["client", "staging"] }
-
-[dev-dependencies]
-lzma-rust2 = { version = "0.25.0", default-features = false, features = ["std", "xz", "encoder"] }
-# tests/translations.rs reads the source to find every translatable text.
-proc-macro2 = "1.0.107"
-syn = { version = "3.0.9", default-features = false, features = ["parsing"] }
+license = "AGPL-3.0-or-later"
+repository = "https://github.com/indep-arg/Osprey"
 
 [profile.release]
 # One binary people download by hand, so a slower build is a fair trade for
@@ -55,6 +20,3 @@ syn = { version = "3.0.9", default-features = false, features = ["parsing"] }
 lto = true
 codegen-units = 1
 strip = true
-
-[build-dependencies]
-winresource = { version = "0.1.31", default-features = false }

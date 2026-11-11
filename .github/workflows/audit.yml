@@ -1,14 +1,13 @@
 name: Audit
 
-# Checks the dependencies against the RustSec advisory database. Runs when
-# they change, and every week as well, since a new advisory can affect a
-# crate that hasn't changed at all.
+# The dependencies against the known advisories: when they change, and
+# every Monday, since a new advisory can hit a dependency that didn't.
 on:
   push:
     branches: [main]
-    paths: [Cargo.toml, Cargo.lock, .cargo/audit.toml]
+    paths: [Cargo.lock, .cargo/audit.toml, package-lock.json]
   pull_request:
-    paths: [Cargo.toml, Cargo.lock, .cargo/audit.toml]
+    paths: [Cargo.lock, .cargo/audit.toml, package-lock.json]
   schedule:
     - cron: "0 6 * * 1"
   workflow_dispatch:
@@ -17,17 +16,25 @@ permissions:
   contents: read
 
 jobs:
-  audit:
+  rust:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      # Built from crates.io rather than taken from a third-party action.
-      # Advisories that don't apply here are listed in .cargo/audit.toml.
-      - name: Install cargo-audit
-        run: cargo install cargo-audit --locked
+      # From crates.io rather than a third-party action. What doesn't apply
+      # here is listed, with the reason, in .cargo/audit.toml.
+      - name: cargo audit
+        run: |
+          cargo install cargo-audit --locked
+          cargo audit
 
-      - name: Audit
-        run: cargo audit
+  # Only what ends up in the window: the build tools never ship.
+  npm:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: npm audit
+        run: npm audit --omit=dev

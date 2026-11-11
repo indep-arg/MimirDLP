@@ -1,0 +1,115 @@
+name: Build
+
+# The release binaries, packaged the way people download them, for
+# preview.yml and release.yml. Each archive is uploaded as it is
+# (`archive: false`), so an artifact is that one .tar.gz or .zip and not a
+# zip around it.
+on:
+  workflow_call:
+    inputs:
+      preview:
+        description: Put the commit in the file names, for a build that isn't a release.
+        type: boolean
+        default: false
+      retention-days:
+        type: number
+        default: 14
+    outputs:
+      linux:
+        value: ${{ jobs.linux.outputs.name }}
+      windows:
+        value: ${{ jobs.windows.outputs.name }}
+
+permissions:
+  contents: read
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      name: ${{ steps.package.outputs.name }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # No cache: a release is built from nothing that an earlier run left.
+      - uses: ./.github/actions/prepare
+        with:
+          interface: deps
+          cache: ${{ inputs.preview }}
+
+      # Built on ubuntu-latest, so it needs glibc 2.39 or newer and the
+      # system's WebKitGTK 4.1. Just the binary: no installer.
+      - name: Build
+        run: npx tauri build --no-bundle -- --locked
+
+      # A tarball keeps the executable bit, which a zip would drop.
+      - name: Package
+        id: package
+        env:
+          PREVIEW: ${{ inputs.preview }}
+        run: |
+          VERSION=$(grep -m1 '^version = "' Cargo.toml | cut -d'"' -f2)
+          if [ "$PREVIEW" = true ]; then VERSION="$VERSION-${GITHUB_SHA::7}"; fi
+          NAME="osprey-$VERSION-linux-x86_64"
+          mkdir -p "release/$NAME"
+          cp target/release/osprey "release/$NAME/"
+          tar -czf "release/$NAME.tar.gz" -C release "$NAME"
+          echo "name=$NAME.tar.gz" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          path: release/${{ steps.package.outputs.name }}
+          archive: false
+          retention-days: ${{ inputs.retention-days }}
+          if-no-files-found: error
+
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 40
+    outputs:
+      name: ${{ steps.package.outputs.name }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: ./.github/actions/prepare
+        with:
+          interface: deps
+          cache: ${{ inputs.preview }}
+
+      - name: Build
+        run: npx tauri build --no-bundle -- --locked
+
+      # tauri-build puts the icon and the version information in one
+      # resource. If it went missing, nobody would notice until the .exe
+      # showed a blank icon on someone's desktop.
+      - name: Check the icon and version
+        shell: pwsh
+        run: |
+          $info = (Get-Item target/release/osprey.exe).VersionInfo
+          if ($info.ProductName -ne 'Osprey') {
+            Write-Error "The .exe has no version resource (ProductName: '$($info.ProductName)')"
+            exit 1
+          }
+          "ProductName: $($info.ProductName), FileVersion: $($info.FileVersion)"
+
+      - name: Package
+        id: package
+        shell: pwsh
+        env:
+          PREVIEW: ${{ inputs.preview }}
+        run: |
+          $version = (Select-String -Path Cargo.toml -Pattern '^version = "(.+)"' | Select-Object -First 1).Matches[0].Groups[1].Value
+          if ($env:PREVIEW -eq 'true') { $version = "$version-$($env:GITHUB_SHA.Substring(0, 7))" }
+          $name = "osprey-$version-windows-x86_64"
+          New-Item -ItemType Directory -Path "release/$name" | Out-Null
+          Copy-Item target/release/osprey.exe "release/$name/"
+          Compress-Archive -Path "release/$name" -DestinationPath "release/$name.zip"
+          "name=$name.zip" >> $env:GITHUB_OUTPUT
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          path: release/${{ steps.package.outputs.name }}
+          archive: false
+          retention-days: ${{ inputs.retention-days }}
+          if-no-files-found: error

@@ -1,10 +1,10 @@
 # Security
 
-MimirDLP downloads yt-dlp, FFmpeg and Deno and runs them, so a problem in how it fetches, checks or starts them matters.
+Osprey downloads yt-dlp, FFmpeg and Deno and runs them, so a problem in how it fetches, checks or starts them matters.
 
 ## Reporting a problem
 
-Please don't open a public issue. Use [Report a vulnerability](https://github.com/indep-arg/MimirDLP/security/advisories/new) on GitHub, which keeps the report private until it is fixed. Say what you found, how to reproduce it and which version you used.
+Please don't open a public issue. Use [Report a vulnerability](https://github.com/indep-arg/Osprey/security/advisories/new) on GitHub, which keeps the report private until it is fixed. Say what you found, how to reproduce it and which version you used.
 
 Only the latest release gets fixes.
 
@@ -20,7 +20,7 @@ Only the latest release gets fixes.
 Each archive on the release page has a `.sha256` next to it, and a build attestation saying it was built by this repository's release workflow:
 
 ```
-gh attestation verify mimirdlp-<version>-windows-x86_64.zip --repo indep-arg/MimirDLP
+gh attestation verify osprey-<version>-windows-x86_64.zip --repo indep-arg/Osprey
 ```
 
 The Windows build isn't code signed yet, which is why SmartScreen warns the first time.

@@ -1,27 +1,42 @@
 # Changelog
 
-All notable changes to MimirDLP are listed here, newest first. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the version numbers follow [Semantic Versioning](https://semver.org/). Dates match the ones in the Linux package's metainfo.
+All notable changes to Osprey (MimirDLP until version 0.8) are listed here, newest first. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the version numbers follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+MimirDLP is now Osprey, with a new interface.
+
 ### Added
 
+- A new interface, redrawn from scratch: smoother, with animations, a thumbnail that shows the video's length, a LIVE badge on a recording, and dropdowns and switches that look the same on Windows and Linux.
+- A new name and a new icon. A portable folder updated in place keeps its settings, its queue and its window size.
+- Only one Osprey runs at a time: starting it again brings the open window to the front.
 - Each card in the queue can copy its link, and a finished one can open the file itself, not only its folder.
 - A build attestation for every release archive, so you can check it was built by this repository (`gh attestation verify`, see `SECURITY.md`).
 
 ### Changed
 
+- The window is now drawn by the system's web view (WebView2 on Windows, WebKitGTK 4.1 on Linux) instead of by the graphics card directly. On Linux this adds WebKitGTK 4.1 to what the app needs.
+- The license is now AGPL-3.0-or-later instead of MIT.
+- Every setting is saved as soon as it changes, typed ones included.
+- Translations are kept in this repository (`crates/core/translations/`) and contributed as pull requests; Weblate is no longer used.
 - A failed download is easier to read: a short "Failed", the reason in normal text under it, and Retry right there.
 - The Download button is greyed out until there is a link waiting, and the buttons next to it are a little smaller so it stands out.
 - The queue's progress bar only shows once something has started.
 - The empty Download screen has an icon above its text.
-- Dependencies updated (rfd 0.18, zip 9.5, ureq 3.5.1 and others).
-- For developers: the environment variables that started with `YTP_` now start with `MIMIRDLP_` (`MIMIRDLP_APP_DIR`, `MIMIRDLP_DEV_...`).
+- Dependencies updated (zip 9.5, ureq 3.5.1 and others).
+- For developers: the environment variables now start with `OSPREY_` (`OSPREY_APP_DIR`, `OSPREY_DEV_...`).
+
+### Removed
+
+- The "Draw with the graphics card" setting, which no longer applies.
+- "Help translate" on the About screen.
 
 ### Fixed
 
 - A queued link was lost, or lost some of its settings, when the app was closed and opened again if its link or its file name template contained `[item]`.
 - The app's folder and settings are read once at startup instead of twice.
+- The window's web view keeps its cache in the app's folder (`webview/`) instead of in your user's local data folder, so a portable copy leaves nothing behind.
 
 ## [0.8.0] - 2026-11-01
 
@@ -121,7 +136,7 @@ All notable changes to MimirDLP are listed here, newest first. The format follow
 
 First release. Paste a link, choose video or audio, and download with yt-dlp. You can queue several links at once, and the queue is still there the next time you open it. Portable: extract it anywhere and run it. The first launch downloads yt-dlp, FFmpeg and Deno (around 200 MB) into a `bin` folder next to it. Available in English and Spanish.
 
-[Unreleased]: https://github.com/indep-arg/MimirDLP/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/indep-arg/Osprey/compare/v0.8.0...HEAD
 [0.8.0]: https://github.com/indep-arg/MimirDLP/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/indep-arg/MimirDLP/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/indep-arg/MimirDLP/compare/v0.5.0...v0.6.0

@@ -1,10 +1,10 @@
 name: E2E
 
-# tests/e2e.rs on Linux and Windows: real downloads from YouTube, with the
-# files checked by ffprobe. Started by hand (Actions, "Run workflow"), not on
-# every push: it needs the network, takes a few minutes, and YouTube may
-# refuse a datacenter address ("Sign in to confirm you're not a bot"), which
-# fails a test without anything being wrong with the app.
+# crates/core/tests/e2e.rs on Linux and Windows: real downloads from
+# YouTube, with the files checked by ffprobe. Started by hand (Actions, "Run
+# workflow"), not on every push: it needs the network, takes a few minutes,
+# and YouTube may refuse a datacenter address ("Sign in to confirm you're
+# not a bot"), which fails a test without anything being wrong with the app.
 on:
   workflow_dispatch:
 
@@ -20,18 +20,14 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Toolchain
-        run: |
-          rustup update stable
-          rustup default stable
-          rustc --version
-
-      - name: Cache
-        uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+      # Only crates/core: no window, no interface.
+      - uses: ./.github/actions/prepare
+        with:
+          window: "false"
+          interface: none
 
       # One at a time, as the tests themselves ask YouTube.
       - name: Real downloads
-        run: cargo test --test e2e --locked -- --ignored --test-threads=1
+        run: cargo test -p osprey-core --test e2e --locked -- --ignored --test-threads=1
