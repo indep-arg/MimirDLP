@@ -71,7 +71,6 @@ function paste(event: ClipboardEvent) {
             @paste="paste"
           />
         </label>
-        <!-- Not a second blue button: Download is the one thing to press. -->
         <button type="submit" class="btn"><Plus /> {{ t("Add") }}</button>
       </form>
       <h1 v-else-if="!welcoming" class="title">{{ title }}</h1>

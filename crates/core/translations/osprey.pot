@@ -1094,6 +1094,10 @@ msgid "Paste a link from YouTube or almost any other site above."
 msgstr ""
 
 #: ui/src/views/DownloadView.vue
+msgid "Copy a link anywhere and come back: it will be in the box already. Ctrl+V works too."
+msgstr ""
+
+#: ui/src/views/DownloadView.vue
 msgid "Stop and save"
 msgstr ""
 

@@ -25,7 +25,7 @@ import { choiceLabel, choices } from "../lib/store";
 import ProgressBar from "./ProgressBar.vue";
 import UiSelect from "./UiSelect.vue";
 
-const props = defineProps<{ item: Item }>();
+const props = defineProps<{ item: Item; compact?: boolean }>();
 
 const title = computed(() => props.item.title ?? props.item.url);
 
@@ -70,7 +70,7 @@ async function copy() {
 </script>
 
 <template>
-  <article class="card item" :class="item.status">
+  <article class="card item" :class="[item.status, { compact }]">
     <div class="thumb">
       <img v-if="item.thumbnail" :src="api.thumbnail(item.id)" alt="" draggable="false" />
       <div v-else class="placeholder">
@@ -89,7 +89,10 @@ async function copy() {
       <p v-if="item.lookup === 'fetching'" class="caption muted">
         {{ t("Looking up this link...") }}
       </p>
-      <p v-else-if="item.lookup === 'failed'" class="caption warning-text selectable">
+      <p
+        v-else-if="item.lookup === 'failed' && item.status !== 'failed'"
+        class="caption warning-text selectable"
+      >
         {{ t("Could not look this link up: {e}", { e: item.lookupError ?? "" }) }}
       </p>
       <p v-else-if="details" class="caption muted">{{ details }}</p>
@@ -142,10 +145,6 @@ async function copy() {
           </span>
           <span class="caption muted numbers">{{ progressDetails }}</span>
         </div>
-        <ProgressBar
-          :value="fraction(item.progress.downloaded, item.progress.total)"
-          :unknown="item.progress.processing || !item.progress.total"
-        />
       </div>
 
       <!-- No file: yt-dlp skipped it (already in the history, or the file
@@ -202,27 +201,39 @@ async function copy() {
         <X />
       </button>
     </div>
+
+    <ProgressBar
+      v-if="item.status === 'downloading' && item.progress"
+      class="edge"
+      :value="fraction(item.progress.downloaded, item.progress.total)"
+      :unknown="item.progress.processing || !item.progress.total"
+    />
   </article>
 </template>
 
 <style scoped>
 .item {
+  position: relative;
   display: flex;
   align-items: flex-start;
   gap: 16px;
   padding: 14px;
-  transition:
-    border-color 0.2s var(--ease),
-    box-shadow 0.2s var(--ease);
+  overflow: hidden;
+  transition: border-color 0.2s var(--ease);
 }
 .item:hover {
   border-color: var(--border-strong);
 }
 .item.downloading {
   border-color: color-mix(in srgb, var(--accent) 45%, transparent);
-  box-shadow:
-    var(--shadow),
-    0 0 0 3px var(--accent-soft);
+}
+.item > .edge {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  border-radius: 0;
 }
 
 /* 16:9, like nearly every thumbnail. */
@@ -355,5 +366,40 @@ async function copy() {
   display: flex;
   flex: none;
   gap: 2px;
+}
+
+.compact {
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px;
+}
+.compact .thumb {
+  width: 96px;
+}
+.compact .body {
+  gap: 4px;
+}
+.compact .title {
+  font-size: 14px;
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
+}
+.compact .body > .caption.muted {
+  display: none;
+}
+.compact .failure {
+  gap: 4px;
+}
+.compact .body > .warning-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.compact .failure p {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
 }
 </style>

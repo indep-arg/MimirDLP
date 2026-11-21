@@ -24,6 +24,7 @@ const showLog = ref(false);
 
 const queue = computed(() => props.snap.queue);
 const total = computed(() => queue.value.items.length);
+const compact = computed(() => total.value >= 5);
 
 // A failed link is finished, but not done: it is counted on its own, so a
 // queue where nothing worked never reads "All done.".
@@ -106,21 +107,21 @@ const canUpdateTools = computed(() => !queue.value.usesTools && props.snap.setup
       </button>
     </div>
 
-    <!-- What this screen is for, said once. -->
     <div v-if="total === 0" class="empty">
-      <div class="empty-icon"><Download /></div>
       <h2>{{ t("Download a video") }}</h2>
       <p class="muted">{{ t("Paste a link from YouTube or almost any other site above.") }}</p>
+      <p class="caption muted">
+        {{ t("Copy a link anywhere and come back: it will be in the box already. Ctrl+V works too.") }}
+      </p>
     </div>
     <div v-else class="list-scroll">
-      <TransitionGroup name="list" tag="div" class="list">
-        <QueueCard v-for="item in queue.items" :key="item.id" :item="item" />
+      <TransitionGroup name="list" tag="div" class="list" :class="{ compact }">
+        <QueueCard v-for="item in queue.items" :key="item.id" :item="item" :compact="compact" />
       </TransitionGroup>
     </div>
 
     <footer class="footer">
       <div v-if="total > 0" class="progress">
-        <!-- Red only when nothing worked; some failures are a warning. -->
         <span class="caption" :class="summaryTone">{{ summary }}</span>
         <!-- An empty bar under a queue nobody started yet says nothing. -->
         <ProgressBar
@@ -193,19 +194,8 @@ const canUpdateTools = computed(() => !queue.value.usesTools && props.snap.setup
   font-weight: 600;
   letter-spacing: -0.01em;
 }
-.empty-icon {
-  display: grid;
-  place-items: center;
-  width: 84px;
-  height: 84px;
-  margin-bottom: 8px;
-  border-radius: 26px;
-  background: var(--accent-soft);
-  color: var(--accent);
-}
-.empty-icon svg {
-  width: 38px;
-  height: 38px;
+.empty .caption {
+  max-width: 420px;
 }
 /* Its own lane, so the scrollbar never covers a card's edge. */
 .list-scroll {
@@ -222,6 +212,9 @@ const canUpdateTools = computed(() => !queue.value.usesTools && props.snap.setup
   flex-direction: column;
   gap: 10px;
   padding: 2px 0 4px;
+}
+.list.compact {
+  gap: 6px;
 }
 .footer {
   display: flex;

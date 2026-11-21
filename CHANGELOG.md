@@ -8,6 +8,10 @@ All notable changes to Osprey are listed here, newest first. The format follows 
 
 - A plainer look that sits better on the desktop: flat buttons in the logo's blue instead of a glowing gradient, corners close to the system's own instead of pills, no glow behind the window or the logo, and one blue button per screen (Download; Add is now an ordinary button next to the link field).
 - A queue where some links failed says so in amber; red, and a red bar, are kept for when nothing worked.
+- From five links on, the queue's cards are smaller, so more of them fit.
+- A downloading card shows its progress along its bottom edge.
+- A failed card gives its reason once, not twice.
+- The empty Download screen says how to bring in a link, instead of showing a large icon.
 
 - With a speed limit, parts are downloaded one at a time, so the limit is the total speed. yt-dlp applies it to each part, and five at once went five times over it.
 - A card offers only the qualities its video has ("Up to 1080p" is gone for a video that goes up to 720p), and its size follows the quality and the kind chosen.
