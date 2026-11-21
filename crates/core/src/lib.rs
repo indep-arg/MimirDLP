@@ -11,6 +11,7 @@ pub mod desktop;
 pub mod engine;
 pub mod explain;
 pub mod i18n;
+pub mod leftovers;
 pub mod live;
 pub mod log;
 pub mod metadata;

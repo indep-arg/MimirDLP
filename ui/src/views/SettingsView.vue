@@ -649,6 +649,13 @@ const historySummary = computed(() => {
               />
             </div>
           </div>
+          <p v-if="setting('limit_rate').trim()" class="row-note flush">
+            {{
+              t(
+                "With a speed limit, parts are downloaded one at a time, so the limit is the total speed.",
+              )
+            }}
+          </p>
           <div class="row">
             <span class="row-label">{{ t("Seconds between requests") }}</span>
             <div class="control narrow">

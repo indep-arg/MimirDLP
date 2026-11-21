@@ -4,6 +4,20 @@ All notable changes to Osprey are listed here, newest first. The format follows 
 
 ## [Unreleased]
 
+### Changed
+
+- With a speed limit, parts are downloaded one at a time, so the limit is the total speed. yt-dlp applies it to each part, and five at once went five times over it.
+- A card offers only the qualities its video has ("Up to 1080p" is gone for a video that goes up to 720p), and its size follows the quality and the kind chosen.
+- Certificates are checked against the system's own, so installing and updating the tools works behind an antivirus or a company network that inspects HTTPS. When a certificate isn't trusted, the app says so instead of blaming the internet connection.
+
+### Fixed
+
+- Stopping a download while it was being converted (to MP3, for example) left a cut-off file under the final name, which the next try then took for finished. It is now removed, and the next try converts again.
+- A failed or stopped download no longer leaves its thumbnail behind in the folder.
+- A queue where downloads failed said "All done." with a full bar. It now says how many failed.
+- When a folder, a file or a link couldn't be opened, nothing was said outside the activity log. It is now said next to the buttons, or on the About page.
+- Screen readers heard two "Download" controls on a card: the kind of download is now called "What to download".
+
 ## [0.9.0] - 2026-11-21
 
 MimirDLP is now Osprey, with a new interface.

@@ -158,8 +158,9 @@ pub fn queue_do(
                 } else {
                     app.opener().reveal_item_in_dir(path)
                 };
-                if let Err(e) = opened {
-                    shared.app().queue.open_failed(&e.to_string());
+                match opened {
+                    Ok(()) => shared.app().queue.opened(),
+                    Err(e) => shared.app().queue.open_failed(&e.to_string()),
                 }
             }
             shared.touch();
@@ -171,12 +172,14 @@ pub fn queue_do(
                 let settings = core.settings.settings().clone();
                 core.queue.output_folder(&settings)
             };
-            if let Some(folder) = folder
-                && let Err(e) = app
+            if let Some(folder) = folder {
+                match app
                     .opener()
                     .open_path(folder.to_string_lossy(), None::<&str>)
-            {
-                shared.app().queue.open_failed(&e.to_string());
+                {
+                    Ok(()) => shared.app().queue.opened(),
+                    Err(e) => shared.app().queue.open_failed(&e.to_string()),
+                }
             }
             shared.touch();
             return Ok(());
@@ -285,9 +288,14 @@ pub fn dismiss_update(shared: Held<'_>) {
     dispatch(&shared, Message::DismissAppUpdate);
 }
 
-/// Opens one of the project's own pages in the browser.
+/// Opens one of the project's own pages in the browser. What to tell the
+/// user if no browser opened it.
 #[tauri::command(async)]
-pub fn open_link(app: AppHandle, shared: Held<'_>, which: String) -> Result<(), String> {
+pub fn open_link(
+    app: AppHandle,
+    shared: Held<'_>,
+    which: String,
+) -> Result<Option<String>, String> {
     let url = match which.as_str() {
         "website" => app::WEBSITE,
         "report" => app::REPORT,
@@ -295,8 +303,18 @@ pub fn open_link(app: AppHandle, shared: Held<'_>, which: String) -> Result<(), 
         other => return Err(format!("unknown link: {other}")),
     };
     if let Err(e) = app.opener().open_url(url, None::<&str>) {
-        shared.app().link_failed(url, &e.to_string());
+        let note = {
+            let mut core = shared.app();
+            let note = core.link_failed(url, &e.to_string());
+            // "What's new" is on the Download screen, which says it next to
+            // its buttons; About shows what it gets back.
+            if which == "releases" {
+                core.queue.set_problem(note.clone());
+            }
+            note
+        };
         shared.touch();
+        return Ok(Some(note));
     }
-    Ok(())
+    Ok(None)
 }

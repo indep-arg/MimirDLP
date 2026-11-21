@@ -19,6 +19,11 @@ msgstr "No se pudo abrir {url}: {e}"
 
 #: crates/core/src/app/mod.rs
 #, python-brace-format
+msgid "The browser couldn't be opened. The address is {url}"
+msgstr "No se pudo abrir el navegador. La dirección es {url}"
+
+#: crates/core/src/app/mod.rs
+#, python-brace-format
 msgid "Could not find the folder this app is in: {e}"
 msgstr "No se encontró la carpeta donde está esta aplicación: {e}"
 
@@ -27,8 +32,8 @@ msgid "Where to save downloads"
 msgstr "Dónde guardar las descargas"
 
 #: crates/core/src/app/queue.rs
-msgid "The output folder doesn't exist yet."
-msgstr "La carpeta de destino todavía no existe."
+msgid "The output folder doesn't exist yet. It is made by the first download."
+msgstr "La carpeta de destino todavía no existe. Se crea con la primera descarga."
 
 #: crates/core/src/app/queue.rs
 msgid "The file isn't there any more."
@@ -38,6 +43,10 @@ msgstr "El archivo ya no está."
 #, python-brace-format
 msgid "Could not open it: {e}"
 msgstr "No se pudo abrir: {e}"
+
+#: crates/core/src/app/queue.rs
+msgid "The system couldn't open it. Check that an app is set up to open it; Show activity has the details."
+msgstr "El sistema no pudo abrirlo. Revisa que haya una aplicación configurada para abrirlo; en Mostrar actividad están los detalles."
 
 #: crates/core/src/app/queue.rs
 msgid "Stopping the recording..."
@@ -644,6 +653,10 @@ msgid "Failed to download {name} after {attempts} attempts ({e})"
 msgstr "No se pudo descargar {name} tras {attempts} intentos ({e})"
 
 #: crates/core/src/provision/download.rs
+msgid "The secure connection couldn't be verified (its certificate isn't trusted). An antivirus or a network that inspects HTTPS can cause this: allow Osprey in it, or try another network."
+msgstr "No se pudo verificar la conexión segura (su certificado no es de confianza). Puede deberse a un antivirus o a una red que inspecciona HTTPS: permite Osprey en él o prueba con otra red."
+
+#: crates/core/src/provision/download.rs
 msgid "Please check your internet connection and try again."
 msgstr "Revisa tu conexión a internet y vuelve a intentarlo."
 
@@ -786,6 +799,16 @@ msgid "yt-dlp stopped unexpectedly."
 msgstr "yt-dlp se detuvo inesperadamente."
 
 #: crates/core/src/runner.rs
+#, python-brace-format
+msgid "Removed a leftover file: {path}"
+msgstr "Se borró un archivo sobrante: {path}"
+
+#: crates/core/src/runner.rs
+#, python-brace-format
+msgid "Could not remove a half-written file, delete it yourself: {path}"
+msgstr "No se pudo borrar un archivo a medio escribir, bórralo tú: {path}"
+
+#: crates/core/src/runner.rs
 msgid "Extracting audio..."
 msgstr "Extrayendo el audio..."
 
@@ -915,9 +938,9 @@ msgstr "Consultando este enlace..."
 msgid "Could not look this link up: {e}"
 msgstr "No se pudo consultar este enlace: {e}"
 
-#: ui/src/components/QueueCard.vue ui/src/views/DownloadView.vue ui/src/views/SettingsView.vue
-msgid "Download"
-msgstr "Descargar"
+#: ui/src/components/QueueCard.vue ui/src/views/SettingsView.vue
+msgid "What to download"
+msgstr "Qué descargar"
 
 #: ui/src/components/QueueCard.vue ui/src/views/SettingsView.vue
 msgid "Quality"
@@ -999,12 +1022,33 @@ msgstr "Software libre con licencia AGPL-3.0."
 
 #: ui/src/views/DownloadView.vue
 #, python-brace-format
+msgid "Downloading queue: {done} of {total} done, {n} failed"
+msgid_plural "Downloading queue: {done} of {total} done, {n} failed"
+msgstr[0] "Descargando la cola: {done} de {total} terminados, {n} falló"
+msgstr[1] "Descargando la cola: {done} de {total} terminados, {n} fallaron"
+
+#: ui/src/views/DownloadView.vue
+#, python-brace-format
 msgid "Downloading queue: {done} of {total} done"
 msgstr "Descargando la cola: {done} de {total} terminados"
 
 #: ui/src/views/DownloadView.vue
+#, python-brace-format
+msgid "Finished, but {n} download failed."
+msgid_plural "Finished, but {n} downloads failed."
+msgstr[0] "Terminado, pero {n} descarga falló."
+msgstr[1] "Terminado, pero {n} descargas fallaron."
+
+#: ui/src/views/DownloadView.vue
 msgid "All done."
 msgstr "Todo listo."
+
+#: ui/src/views/DownloadView.vue
+#, python-brace-format
+msgid "Ready: {done} of {total} done, {n} failed"
+msgid_plural "Ready: {done} of {total} done, {n} failed"
+msgstr[0] "En espera: {done} de {total} terminados, {n} falló"
+msgstr[1] "En espera: {done} de {total} terminados, {n} fallaron"
 
 #: ui/src/views/DownloadView.vue
 #, python-brace-format
@@ -1058,6 +1102,10 @@ msgstr "Detener y guardar"
 msgid "Stop"
 msgstr "Detener"
 
+#: ui/src/views/DownloadView.vue ui/src/views/SettingsView.vue
+msgid "Download"
+msgstr "Descargar"
+
 #: ui/src/views/DownloadView.vue
 msgid "Open folder"
 msgstr "Abrir carpeta"
@@ -1092,10 +1140,6 @@ msgstr[1] "{n} videos en el historial"
 #: ui/src/views/SettingsView.vue
 msgid "These apply to every link you queue from now on. Links already in the queue keep what they were queued with."
 msgstr "Se aplican a cada enlace que agregues a partir de ahora. Los enlaces que ya están en la cola conservan los ajustes con los que se agregaron."
-
-#: ui/src/views/SettingsView.vue
-msgid "What to download"
-msgstr "Qué descargar"
 
 #: ui/src/views/SettingsView.vue
 msgid "Format"
@@ -1356,6 +1400,10 @@ msgstr "Límite de velocidad"
 #: ui/src/views/SettingsView.vue
 msgid "Parts downloaded at once"
 msgstr "Partes descargadas a la vez"
+
+#: ui/src/views/SettingsView.vue
+msgid "With a speed limit, parts are downloaded one at a time, so the limit is the total speed."
+msgstr "Con un límite de velocidad, las partes se descargan una a la vez, así que el límite es la velocidad total."
 
 #: ui/src/views/SettingsView.vue
 msgid "Seconds between requests"

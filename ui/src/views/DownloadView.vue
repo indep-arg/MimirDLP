@@ -25,11 +25,34 @@ const showLog = ref(false);
 const queue = computed(() => props.snap.queue);
 const total = computed(() => queue.value.items.length);
 
+// A failed link is finished, but not done: it is counted on its own, so a
+// queue where nothing worked never reads "All done.".
 const summary = computed(() => {
-  const counts = { done: queue.value.done, total: total.value };
-  if (queue.value.running) return t("Downloading queue: {done} of {total} done", counts);
-  if (queue.value.done === total.value) return t("All done.");
-  return t("Ready: {done} of {total} done", counts);
+  const failed = queue.value.failed;
+  const counts = { done: queue.value.done - failed, total: total.value };
+  if (queue.value.running) {
+    return failed
+      ? tn(
+          "Downloading queue: {done} of {total} done, {n} failed",
+          "Downloading queue: {done} of {total} done, {n} failed",
+          failed,
+          counts,
+        )
+      : t("Downloading queue: {done} of {total} done", counts);
+  }
+  if (queue.value.done === total.value) {
+    return failed
+      ? tn("Finished, but {n} download failed.", "Finished, but {n} downloads failed.", failed)
+      : t("All done.");
+  }
+  return failed
+    ? tn(
+        "Ready: {done} of {total} done, {n} failed",
+        "Ready: {done} of {total} done, {n} failed",
+        failed,
+        counts,
+      )
+    : t("Ready: {done} of {total} done", counts);
 });
 
 // Sites change their pages all the time and yt-dlp follows within days, so
@@ -93,9 +116,14 @@ const canUpdateTools = computed(() => !queue.value.usesTools && props.snap.setup
 
     <footer class="footer">
       <div v-if="total > 0" class="progress">
-        <span class="caption muted">{{ summary }}</span>
+        <span class="caption" :class="queue.failed ? 'danger-text' : 'muted'">{{ summary }}</span>
         <!-- An empty bar under a queue nobody started yet says nothing. -->
-        <ProgressBar v-if="queue.running || queue.done > 0" thin :value="queue.fraction" />
+        <ProgressBar
+          v-if="queue.running || queue.done > 0"
+          thin
+          :danger="queue.failed > 0 && !queue.running"
+          :value="queue.fraction"
+        />
       </div>
       <div class="actions">
         <button v-if="queue.running" class="btn btn-danger btn-large" @click="api.queue('stop')">

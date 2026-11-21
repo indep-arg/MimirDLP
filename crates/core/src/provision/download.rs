@@ -28,9 +28,28 @@ const STALL: Duration = Duration::from_secs(60);
 const MAX_SIZE: u64 = 1 << 30;
 const PROGRESS_EVERY: Duration = Duration::from_millis(100);
 
+/// Certificates are checked against the system's own, not a list built
+/// into the app: a company network or an antivirus that inspects HTTPS
+/// installs its root there, and the system trusts it, so Osprey must too.
+/// `pub(crate)`: also used for the update check.
+pub(crate) fn tls() -> ureq::tls::TlsConfig {
+    ureq::tls::TlsConfig::builder()
+        .root_certs(ureq::tls::RootCerts::PlatformVerifier)
+        .build()
+}
+
+/// The connection could be made but its certificate wasn't trusted, which
+/// "check your internet connection" would only send the user looking in
+/// the wrong place for.
+pub fn is_certificate_error(error: &str) -> bool {
+    let error = error.to_ascii_lowercase();
+    error.contains("certificate") || error.contains("unknownissuer")
+}
+
 /// `pub(crate)`: also used by `metadata` to fetch a video's thumbnail.
 pub(crate) fn agent() -> ureq::Agent {
     ureq::Agent::config_builder()
+        .tls_config(tls())
         .timeout_connect(Some(Duration::from_secs(10)))
         .timeout_recv_response(Some(Duration::from_secs(30)))
         .user_agent(concat!(
@@ -140,15 +159,29 @@ fn retry<T>(
                         e
                     ),
                 ));
-                emit(Event::Log(
-                    Level::Error,
-                    tr!("Please check your internet connection and try again."),
-                ));
+                emit(Event::Log(Level::Error, advice(&e.to_string())));
                 return Err(e);
             }
         }
     }
     unreachable!("attempts is always at least 1")
+}
+
+/// Why a certificate may not be trusted, and what to do about it.
+pub(crate) fn certificate_advice() -> String {
+    tr!(
+        "The secure connection couldn't be verified (its certificate isn't trusted). An antivirus or a network that inspects HTTPS can cause this: allow Osprey in it, or try another network."
+    )
+}
+
+/// What to do about a download that kept failing, said last so it is what
+/// the Setup screen shows.
+fn advice(error: &str) -> String {
+    if is_certificate_error(error) {
+        certificate_advice()
+    } else {
+        tr!("Please check your internet connection and try again.")
+    }
 }
 
 enum Msg {
@@ -293,6 +326,18 @@ mod tests {
             }
         });
         format!("http://{addr}/asset.bin")
+    }
+
+    /// Recorded from a real run behind a proxy that inspects HTTPS.
+    #[test]
+    fn an_untrusted_certificate_is_not_blamed_on_the_connection() {
+        let error = "io: invalid peer certificate: UnknownIssuer";
+        assert!(is_certificate_error(error));
+        assert!(advice(error).contains("certificate"));
+        assert!(!is_certificate_error(
+            "io: Connection refused (os error 111)"
+        ));
+        assert!(advice("io: Connection refused (os error 111)").contains("internet connection"));
     }
 
     #[test]

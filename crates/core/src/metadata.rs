@@ -44,6 +44,121 @@ pub struct Metadata {
     pub approx_size: Option<u64>,
     /// `Some` for a playlist: how many videos it holds, when yt-dlp knows.
     pub playlist: Option<Option<u64>>,
+    /// What the site offers, for the qualities worth offering and the
+    /// size of each choice. Empty for a playlist.
+    pub formats: Vec<Format>,
+}
+
+/// One of the formats a video is offered in.
+#[derive(Debug, Clone, PartialEq, Default)]
+pub struct Format {
+    /// The shorter side, which is what yt-dlp's `res:N` compares: a
+    /// 1080x1920 short is "1080p".
+    pub height: Option<u32>,
+    /// Bytes, exact or approximate.
+    pub size: Option<u64>,
+    pub video: bool,
+    pub audio: bool,
+}
+
+/// What a download is set to get, as far as its size goes.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Wanted {
+    Audio,
+    /// Video with audio, merged from two formats when the best video has
+    /// none of its own (the default).
+    Video {
+        cap: Option<u32>,
+    },
+    /// One format holding both, if there is one.
+    SingleFile {
+        cap: Option<u32>,
+    },
+    VideoOnly {
+        cap: Option<u32>,
+    },
+    /// A format string of the user's own: nobody can tell.
+    Custom,
+}
+
+impl Metadata {
+    /// The tallest video on offer, when the site says.
+    pub fn max_height(&self) -> Option<u32> {
+        self.formats
+            .iter()
+            .filter(|f| f.video)
+            .filter_map(|f| f.height)
+            .max()
+    }
+
+    /// About how big the download will be. Picks formats the way yt-dlp's
+    /// default order does in the main (the tallest that fits under the
+    /// cap, the smallest above it when none does), which is close enough
+    /// for a size shown with a "~".
+    pub fn estimate(&self, wanted: Wanted) -> Option<u64> {
+        let best_audio = || {
+            self.formats
+                .iter()
+                .filter(|f| f.audio && !f.video)
+                .filter_map(|f| f.size)
+                .max()
+        };
+        let pick = |cap: Option<u32>, keep: &dyn Fn(&Format) -> bool| -> Option<&Format> {
+            let offered: Vec<&Format> =
+                self.formats.iter().filter(|f| f.video && keep(f)).collect();
+            let height = |f: &&Format| f.height.unwrap_or(0);
+            let fitting: Vec<&Format> = match cap {
+                Some(cap) if offered.iter().any(|f| height(f) <= cap) => {
+                    offered.into_iter().filter(|f| height(f) <= cap).collect()
+                }
+                Some(_) => {
+                    let lowest = offered.iter().map(height).min()?;
+                    offered
+                        .into_iter()
+                        .filter(|f| height(f) == lowest)
+                        .collect()
+                }
+                None => offered,
+            };
+            let tallest = fitting.iter().map(height).max()?;
+            fitting
+                .into_iter()
+                .filter(|f| height(f) == tallest)
+                .max_by_key(|f| f.size.unwrap_or(0))
+        };
+        // Nothing to choose from: the size of yt-dlp's own pick, which is
+        // the best of everything.
+        if self.formats.is_empty() {
+            return match wanted {
+                Wanted::Video { cap: None } => self.approx_size,
+                _ => None,
+            };
+        }
+        let uncapped =
+            |cap: Option<u32>| cap.is_none_or(|c| self.max_height().is_some_and(|m| m <= c));
+        match wanted {
+            Wanted::Custom => None,
+            Wanted::Audio => best_audio(),
+            // yt-dlp's own pick is exact where it applies.
+            Wanted::Video { cap } if uncapped(cap) && self.approx_size.is_some() => {
+                self.approx_size
+            }
+            Wanted::Video { cap } => {
+                let video = pick(cap, &|_| true)?;
+                let size = video.size?;
+                Some(if video.audio {
+                    size
+                } else {
+                    size + best_audio().unwrap_or(0)
+                })
+            }
+            Wanted::SingleFile { cap } => match pick(cap, &|f| f.audio) {
+                Some(both) => both.size,
+                None => self.estimate(Wanted::Video { cap }),
+            },
+            Wanted::VideoOnly { cap } => pick(cap, &|f| !f.audio).and_then(|f| f.size),
+        }
+    }
 }
 
 #[derive(Deserialize, Default)]
@@ -59,6 +174,53 @@ struct Info {
     filesize: Option<u64>,
     filesize_approx: Option<u64>,
     playlist_count: Option<u64>,
+    #[serde(default)]
+    formats: Vec<FormatInfo>,
+}
+
+/// Numbers as `f64`: a site may give a height or a size with a fraction.
+#[derive(Deserialize)]
+struct FormatInfo {
+    height: Option<f64>,
+    width: Option<f64>,
+    filesize: Option<f64>,
+    filesize_approx: Option<f64>,
+    /// Kilobits per second, for a size from the duration when the site
+    /// gives none.
+    tbr: Option<f64>,
+    /// `"none"` when there is no video in it; missing when unknown.
+    vcodec: Option<String>,
+    acodec: Option<String>,
+}
+
+impl FormatInfo {
+    fn into_format(self, duration: Option<f64>) -> Option<Format> {
+        let has = |codec: &Option<String>| codec.as_deref() != Some("none");
+        let (video, audio) = (has(&self.vcodec), has(&self.acodec));
+        // Storyboards and the like: pictures, not something to download.
+        if !video && !audio {
+            return None;
+        }
+        let bytes = |n: f64| (n.is_finite() && n > 0.0).then_some(n as u64);
+        let size = self
+            .filesize
+            .or(self.filesize_approx)
+            .and_then(bytes)
+            .or_else(|| bytes(self.tbr? * 125.0 * duration?));
+        let side = |n: Option<f64>| n.filter(|n| n.is_finite() && *n > 0.0);
+        // yt-dlp's res:N sorts on the shorter side; either one when only
+        // one is known.
+        let shorter = match (side(self.height), side(self.width)) {
+            (Some(h), Some(w)) => Some(h.min(w)),
+            (h, w) => h.or(w),
+        };
+        Some(Format {
+            height: shorter.map(|n| n as u32),
+            size,
+            video,
+            audio,
+        })
+    }
 }
 
 #[derive(Deserialize)]
@@ -78,14 +240,21 @@ impl From<Info> for Metadata {
                 duration: None,
                 approx_size: None,
                 playlist: Some(info.playlist_count),
+                formats: Vec::new(),
             };
         }
+        let duration = info.duration;
         Metadata {
             title: info.title.unwrap_or_default(),
             thumbnail_url,
-            duration: info.duration,
+            duration,
             approx_size: info.filesize.or(info.filesize_approx),
             playlist: None,
+            formats: info
+                .formats
+                .into_iter()
+                .filter_map(|f| f.into_format(duration))
+                .collect(),
         }
     }
 }
@@ -218,6 +387,133 @@ pub fn fetch_thumbnail(url: &str) -> Result<Vec<u8>, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// `yt-dlp -J` for archive.org's Big Buck Bunny, cut down to what is
+    /// read: three files of one size each, codecs unknown.
+    const ARCHIVE_ORG: &str = r#"{
+        "title": "Big Buck Bunny", "duration": 596.46, "filesize": 332243668,
+        "formats": [
+            {"format_id": "0", "ext": "ogv", "height": 300, "filesize": 46935223},
+            {"format_id": "1", "ext": "mp4", "height": 360, "filesize": 61878609},
+            {"format_id": "2", "ext": "avi", "height": 720, "filesize": 332243668}
+        ]
+    }"#;
+
+    /// The same for a SoundCloud track: audio only, sizes from the bitrate.
+    const SOUNDCLOUD: &str = r#"{
+        "title": "Flickermood", "duration": 213.886, "filesize_approx": 4277720,
+        "formats": [
+            {"format_id": "hls_aac_96k", "vcodec": "none", "acodec": "mp4a.40.2", "filesize_approx": 2566632, "tbr": 96},
+            {"format_id": "hls_aac_160k", "vcodec": "none", "acodec": "mp4a.40.2", "filesize_approx": 4277720, "tbr": 160}
+        ]
+    }"#;
+
+    fn meta(json: &str) -> Metadata {
+        serde_json::from_str::<Info>(json).unwrap().into()
+    }
+
+    /// Choosing "Up to 480p" there downloaded the 360p MP4, 61.9 MB, while
+    /// the card went on saying ~332 MB.
+    #[test]
+    fn the_size_follows_the_quality_chosen() {
+        let bunny = meta(ARCHIVE_ORG);
+        assert_eq!(bunny.max_height(), Some(720));
+        assert_eq!(bunny.estimate(Wanted::Video { cap: None }), Some(332243668));
+        assert_eq!(
+            bunny.estimate(Wanted::Video { cap: Some(1080) }),
+            Some(332243668)
+        );
+        assert_eq!(
+            bunny.estimate(Wanted::Video { cap: Some(480) }),
+            Some(61878609)
+        );
+        // Nothing that low: yt-dlp takes the smallest there is.
+        assert_eq!(
+            bunny.estimate(Wanted::Video { cap: Some(144) }),
+            Some(46935223)
+        );
+        assert_eq!(bunny.estimate(Wanted::Custom), None);
+    }
+
+    #[test]
+    fn audio_only_is_the_size_of_the_best_audio() {
+        let track = meta(SOUNDCLOUD);
+        assert_eq!(track.max_height(), None);
+        assert_eq!(track.estimate(Wanted::Audio), Some(4277720));
+    }
+
+    /// The usual YouTube case: video and audio come apart and are merged.
+    #[test]
+    fn a_merged_download_adds_the_best_audio_to_the_video() {
+        let video = meta(
+            r#"{
+                "title": "v", "duration": 100, "filesize_approx": 999,
+                "formats": [
+                    {"height": 1080, "vcodec": "vp9", "acodec": "none", "filesize": 50000000},
+                    {"height": 720, "vcodec": "vp9", "acodec": "none", "filesize": 20000000},
+                    {"height": 720, "vcodec": "avc1", "acodec": "none", "filesize": 25000000},
+                    {"height": 360, "vcodec": "avc1", "acodec": "mp4a", "filesize": 8000000},
+                    {"vcodec": "none", "acodec": "opus", "filesize": 3000000},
+                    {"vcodec": "none", "acodec": "mp4a", "tbr": 128},
+                    {"vcodec": "none", "acodec": "none", "format_note": "storyboard"}
+                ]
+            }"#,
+        );
+        assert_eq!(
+            video.formats.len(),
+            6,
+            "the storyboard is no format to download"
+        );
+        // 128 kb/s for 100 s, from the bitrate.
+        assert_eq!(video.formats[5].size, Some(1_600_000));
+        assert_eq!(
+            video.estimate(Wanted::Video { cap: Some(720) }),
+            Some(28_000_000)
+        );
+        assert_eq!(
+            video.estimate(Wanted::VideoOnly { cap: Some(720) }),
+            Some(25_000_000)
+        );
+        assert_eq!(
+            video.estimate(Wanted::SingleFile { cap: None }),
+            Some(8_000_000)
+        );
+        assert_eq!(video.estimate(Wanted::Audio), Some(3_000_000));
+    }
+
+    /// A YouTube short is taller than wide: yt-dlp calls 1080x1920 1080p,
+    /// so does Osprey.
+    #[test]
+    fn a_portrait_video_is_measured_by_its_shorter_side() {
+        let short = meta(
+            r#"{
+                "title": "s", "duration": 30,
+                "formats": [
+                    {"width": 1080, "height": 1920, "vcodec": "vp9", "acodec": "none", "filesize": 9000000},
+                    {"width": 480, "height": 854, "vcodec": "vp9", "acodec": "none", "filesize": 2000000},
+                    {"vcodec": "none", "acodec": "opus", "filesize": 500000}
+                ]
+            }"#,
+        );
+        assert_eq!(short.max_height(), Some(1080));
+        assert_eq!(
+            short.estimate(Wanted::Video { cap: Some(1080) }),
+            Some(9_500_000)
+        );
+        assert_eq!(
+            short.estimate(Wanted::Video { cap: Some(720) }),
+            Some(2_500_000)
+        );
+    }
+
+    #[test]
+    fn without_formats_only_the_best_has_a_size() {
+        let bare = meta(r#"{"title": "x", "filesize_approx": 1000}"#);
+        assert_eq!(bare.estimate(Wanted::Video { cap: None }), Some(1000));
+        assert_eq!(bare.estimate(Wanted::Video { cap: Some(480) }), None);
+        assert_eq!(bare.estimate(Wanted::Audio), None);
+        assert_eq!(bare.estimate(Wanted::Custom), None);
+    }
 
     #[test]
     fn a_full_info_dict_is_mapped_to_metadata() {

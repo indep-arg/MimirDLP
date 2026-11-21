@@ -32,6 +32,8 @@ export interface Item {
   thumbnail: boolean;
   kind: string;
   quality: string;
+  /** The qualities worth offering for this video (keys of `quality`). */
+  qualities: string[];
   status: "queued" | "downloading" | "completed" | "failed";
   progress: Progress | null;
   path: string | null;
@@ -47,7 +49,10 @@ export interface QueueState {
   recording: boolean;
   usesTools: boolean;
   fraction: number;
+  /** Finished, whether they completed or failed. */
   done: number;
+  /** Of those, the ones that failed. */
+  failed: number;
   hasQueued: boolean;
   hasFinished: boolean;
   logRevision: number;
@@ -183,7 +188,9 @@ export const api = {
   historyLines: () => invoke<string[] | null>("history_lines"),
   clearHistory: () => invoke<void>("clear_history"),
   dismissUpdate: () => invoke<void>("dismiss_update"),
-  openLink: (which: "website" | "report" | "releases") => invoke<void>("open_link", { which }),
+  /** What to tell the user if no browser opened it. */
+  openLink: (which: "website" | "report" | "releases") =>
+    invoke<string | null>("open_link", { which }),
   /** Where the page finds the thumbnail of the queue item `id`. */
   thumbnail: (id: number) => convertFileSrc(String(id), "thumb"),
 };

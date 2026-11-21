@@ -181,7 +181,9 @@ impl Queue {
         if dir.is_dir() {
             return Some(dir);
         }
-        self.log((Level::Info, tr!("The output folder doesn't exist yet.")));
+        let note = tr!("The output folder doesn't exist yet. It is made by the first download.");
+        self.log((Level::Info, note.clone()));
+        self.problem = Some(note);
         None
     }
 
@@ -189,13 +191,32 @@ impl Queue {
         if Path::new(path).is_file() {
             return true;
         }
-        self.log((Level::Warn, tr!("The file isn't there any more.")));
+        let note = tr!("The file isn't there any more.");
+        self.log((Level::Warn, note.clone()));
+        self.problem = Some(note);
         false
     }
 
-    /// The system couldn't open a file, a folder or a link.
+    /// Something to say next to the buttons, such as a link that couldn't
+    /// be opened from elsewhere in the app.
+    pub fn set_problem(&mut self, problem: String) {
+        self.problem = Some(problem);
+    }
+
+    /// A file or a folder opened: whatever an earlier attempt said is no
+    /// longer true.
+    pub fn opened(&mut self) {
+        self.problem = None;
+    }
+
+    /// The system couldn't open a file, a folder or a link. Said next to
+    /// the buttons, since the log is usually folded away; the system's own
+    /// words go to the log.
     pub fn open_failed(&mut self, error: &str) {
         self.log((Level::Warn, tr!("Could not open it: {e}", e = error)));
+        self.problem = Some(tr!(
+            "The system couldn't open it. Check that an app is set up to open it; Show activity has the details."
+        ));
     }
 
     /// yt-dlp is running for a download or a lookup, so the tools in
@@ -850,6 +871,40 @@ mod tests {
         std::fs::remove_dir_all(dir).unwrap();
     }
 
+    /// "Open folder" with no app to open folders did nothing visible: the
+    /// reason was only in the log, which is usually folded away.
+    #[test]
+    fn what_could_not_be_opened_is_said_next_to_the_buttons() {
+        let dir = tempdir();
+        let mut screen = Queue::new(Paths::new(dir.clone()));
+        screen.open_failed("Launcher \"gio\" \"open\" failed with ExitStatus(512)");
+        let problem = screen.problem().unwrap().to_string();
+        assert!(
+            !problem.contains("gio"),
+            "the system's words stay in the log: {problem}"
+        );
+        assert!(
+            screen
+                .activity()
+                .latest(Level::Warn)
+                .unwrap()
+                .contains("gio")
+        );
+
+        let mut screen = Queue::new(Paths::new(dir.clone()));
+        assert!(!screen.file_exists(&dir.join("gone.mkv").display().to_string()));
+        assert!(screen.problem().is_some());
+
+        let mut screen = Queue::new(Paths::new(dir.clone()));
+        let settings = Settings {
+            output_dir: dir.join("not yet").display().to_string(),
+            ..Settings::default()
+        };
+        assert_eq!(screen.output_folder(&settings), None);
+        assert!(screen.problem().is_some());
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+
     #[test]
     fn an_invalid_url_is_rejected_without_touching_the_queue() {
         let dir = tempdir();
@@ -896,6 +951,7 @@ mod tests {
             duration: Some(90.0),
             approx_size: Some(5_000_000),
             playlist: None,
+            formats: Vec::new(),
         };
         let _ = screen.update(
             Message::MetadataFetched(id, Ok(meta.clone())),

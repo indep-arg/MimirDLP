@@ -3,9 +3,10 @@
 //! The arguments come from [`crate::engine::build_args`], pinned by
 //! `tests/engine_scenarios.rs`. The presentation flags added here are
 //! prepended, so the engine's argv stays comparable with those scenarios.
-//! Checked against real downloads: progress lines arrive on stdout,
-//! postprocessor lines on stderr, and `--print` implies `--quiet`, so
-//! `--progress` and `--no-quiet` keep the rest of the output flowing.
+//! Checked against real downloads: `--print` implies `--quiet`, so
+//! `--progress` and `--no-quiet` keep the rest of the output flowing. With
+//! `--no-quiet`, everything but warnings and errors comes down stdout, in
+//! the order yt-dlp printed it; those two go to stderr.
 
 use std::ffi::OsString;
 use std::io::{BufRead, BufReader, Read, Write};
@@ -14,12 +15,13 @@ use std::process::{Child, Stdio};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Mutex, mpsc};
 use std::thread;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use tr::tr;
 
 use crate::engine::{self, Options, Outcome};
 use crate::explain;
+use crate::leftovers::Leftovers;
 use crate::live;
 use crate::log::Level;
 use crate::process;
@@ -32,6 +34,9 @@ const FILE: &str = "[osprey-file] ";
 const LIVE: &str = "[osprey-live] ";
 /// How often the reading loop checks whether the run was cancelled.
 const POLL: Duration = Duration::from_millis(200);
+/// How long a stopped run goes on reading what yt-dlp printed before it
+/// was killed.
+const DRAIN: Duration = Duration::from_millis(500);
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Event {
@@ -247,10 +252,22 @@ pub fn run(
 
     let mut last_error = None;
     let mut is_live = false;
+    // Half-written files and thumbnails nobody will embed, removed at the
+    // end.
+    let mut leftovers = Leftovers::default();
     // Where each stream is written, which a stopped recording is saved
     // from.
     let mut destinations: Vec<PathBuf> = Vec::new();
+    let mut drain_until = None;
     loop {
+        // What was already in the pipes when Stop came is still read, up to
+        // a point: a "saved" line among it keeps that file from being taken
+        // for a leftover.
+        if cancel.is_cancelled()
+            && Instant::now() > *drain_until.get_or_insert_with(|| Instant::now() + DRAIN)
+        {
+            break;
+        }
         let line = match rx.recv_timeout(POLL) {
             Ok(line) => line,
             // A cancelled run stops reading instead of waiting for the last
@@ -263,16 +280,21 @@ pub fn run(
         // Before anything is logged: the links in yt-dlp's and FFmpeg's
         // lines carry the user's IP address.
         let line = crate::redact::hide_addresses(line.trim_end());
+        if let Some(name) = postprocessor_finished(&line) {
+            leftovers.finished(name);
+        }
         if let Some(event) = parse_line(&line) {
             match &event {
                 Event::Log(Level::Error, message) => last_error = Some(message.clone()),
                 Event::Log(_, line) => {
+                    leftovers.note(line);
                     if let Some(path) = live::destination_from_line(line)
                         && !destinations.contains(&path)
                     {
                         destinations.push(path);
                     }
                 }
+                Event::File(path) => leftovers.saved(path),
                 Event::Live => is_live = true,
                 _ => {}
             }
@@ -316,7 +338,33 @@ pub fn run(
             }
         }
     };
+    // yt-dlp and everything it started are gone by now, so nothing is
+    // still writing these.
+    let (removed, stuck) = leftovers.remove();
+    for path in removed {
+        emit(Event::Log(
+            Level::Info,
+            tr!("Removed a leftover file: {path}", path = path.display()),
+        ));
+    }
+    for path in stuck {
+        emit(Event::Log(
+            Level::Warn,
+            tr!(
+                "Could not remove a half-written file, delete it yourself: {path}",
+                path = path.display()
+            ),
+        ));
+    }
     emit(Event::Finished(finish));
+}
+
+/// `[osprey-pp] finished|ExtractAudio`: the postprocessor's file is
+/// complete.
+fn postprocessor_finished(line: &str) -> Option<&str> {
+    let (_, rest) = split_stream(line);
+    let (status, name) = rest.strip_prefix(POSTPROCESS)?.split_once('|')?;
+    (status == "finished").then_some(name)
 }
 
 /// One line of yt-dlp output. `None` for lines worth dropping.
@@ -404,7 +452,8 @@ fn parse_postprocess(rest: &str) -> Option<Event> {
         "Merger" => tr!("Merging video and audio..."),
         "ThumbnailsConvertor" => tr!("Converting the thumbnail..."),
         "EmbedThumbnail" => tr!("Embedding the thumbnail..."),
-        "FFmpegMetadata" => tr!("Embedding metadata..."),
+        // yt-dlp drops the "FFmpeg" of its class names.
+        "Metadata" | "FFmpegMetadata" => tr!("Embedding metadata..."),
         "EmbedSubtitle" => tr!("Embedding subtitles..."),
         "SponsorBlock" => tr!("Looking up SponsorBlock segments..."),
         "ModifyChapters" => tr!("Applying SponsorBlock..."),
@@ -630,6 +679,77 @@ mod tests {
             assert!(events.contains(&Event::File("/tmp/out.mkv".into())));
             assert_eq!(events.last(), Some(&Event::Finished(Finish::Completed)));
             fs::remove_dir_all(dir).unwrap();
+        }
+
+        /// Stop while yt-dlp converts to MP3: the half-written MP3 has its
+        /// final name, so it is removed, or the next run would take it for
+        /// finished. What resumes the download stays.
+        #[test]
+        fn a_stop_during_the_conversion_removes_the_half_written_file() {
+            let out = crate::testing::tempdir();
+            let source = out.join("Song [1].m4a");
+            let mp3 = out.join("Song [1].mp3");
+            let (dir, paths) = fake_ytdlp(&format!(
+                "write {source}|audio\n\
+                 out [download] Destination: {source}\n\
+                 out [osprey-pp] started|ExtractAudio\n\
+                 write {mp3}|half\n\
+                 out [ExtractAudio] Destination: {mp3}\n\
+                 out converting\n\
+                 sleep 30",
+                source = source.display(),
+                mp3 = mp3.display(),
+            ));
+            let cancel = Cancel::default();
+            let events = collect_cancelling_on(&paths, &cancel, Some("converting"));
+            assert_eq!(events.last(), Some(&Event::Finished(Finish::Cancelled)));
+            assert!(!mp3.exists(), "{events:?}");
+            assert!(source.exists());
+            fs::remove_dir_all(dir).unwrap();
+            fs::remove_dir_all(out).unwrap();
+        }
+
+        /// A failed download leaves no thumbnail behind: Osprey only asks
+        /// for one to embed it.
+        #[test]
+        fn a_failed_download_removes_its_thumbnail() {
+            let out = crate::testing::tempdir();
+            let thumb = out.join("Clip [x].jpg");
+            let (dir, paths) = fake_ytdlp(&format!(
+                "write {thumb}|jpeg\n\
+                 out [info] Writing video thumbnail 32 to: {thumb}\n\
+                 err ERROR: unable to download video data: HTTP Error 403: Forbidden\n\
+                 exit 1",
+                thumb = thumb.display(),
+            ));
+            let events = collect(&paths, &Cancel::default());
+            assert!(matches!(
+                events.last(),
+                Some(Event::Finished(Finish::Failed(_)))
+            ));
+            assert!(!thumb.exists(), "{events:?}");
+            fs::remove_dir_all(dir).unwrap();
+            fs::remove_dir_all(out).unwrap();
+        }
+
+        /// A finished file is never taken for a leftover.
+        #[test]
+        fn a_finished_conversion_is_kept() {
+            let out = crate::testing::tempdir();
+            let mp3 = out.join("Song [1].mp3");
+            let (dir, paths) = fake_ytdlp(&format!(
+                "out [osprey-pp] started|ExtractAudio\n\
+                 write {mp3}|done\n\
+                 out [ExtractAudio] Destination: {mp3}\n\
+                 out [osprey-pp] finished|ExtractAudio\n\
+                 out [osprey-file] {mp3}",
+                mp3 = mp3.display(),
+            ));
+            let events = collect(&paths, &Cancel::default());
+            assert_eq!(events.last(), Some(&Event::Finished(Finish::Completed)));
+            assert!(mp3.exists());
+            fs::remove_dir_all(dir).unwrap();
+            fs::remove_dir_all(out).unwrap();
         }
 
         /// An error nothing explains is passed on in yt-dlp's own words.

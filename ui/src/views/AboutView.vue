@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // The versions a bug report asks for, and where to find the project or
 // report a problem.
+import { ref } from "vue";
 import { Bug, Globe } from "@lucide/vue";
 import { api, type Snapshot } from "../lib/api";
 import { t } from "../lib/i18n";
@@ -8,6 +9,12 @@ import { store } from "../lib/store";
 import logo from "../assets/logo.svg";
 
 defineProps<{ snap: Snapshot }>();
+
+// Said here when no browser opened the page, with its address to copy.
+const linkProblem = ref<string | null>(null);
+async function open(which: "website" | "report") {
+  linkProblem.value = await api.openLink(which);
+}
 </script>
 
 <template>
@@ -24,11 +31,12 @@ defineProps<{ snap: Snapshot }>();
     </div>
     <p>{{ t("Download videos and music from YouTube and many other sites.") }}</p>
     <div class="links">
-      <button class="btn" @click="api.openLink('website')"><Globe /> {{ t("Website") }}</button>
-      <button class="btn" @click="api.openLink('report')">
+      <button class="btn" @click="open('website')"><Globe /> {{ t("Website") }}</button>
+      <button class="btn" @click="open('report')">
         <Bug /> {{ t("Report a problem") }}
       </button>
     </div>
+    <p v-if="linkProblem" class="caption danger-text selectable">{{ linkProblem }}</p>
     <p class="caption muted">{{ t("Free software under the AGPL-3.0 license.") }}</p>
   </div>
 </template>

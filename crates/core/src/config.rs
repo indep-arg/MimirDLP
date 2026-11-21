@@ -106,7 +106,7 @@ keyed!(Quality {
 
 impl Quality {
     /// `--format-sort res:N`, or nothing for the best available.
-    fn cap(self) -> Option<u32> {
+    pub fn cap(self) -> Option<u32> {
         match self {
             Quality::Best => None,
             Quality::P2160 => Some(2160),

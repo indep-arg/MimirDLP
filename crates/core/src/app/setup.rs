@@ -259,9 +259,11 @@ impl Setup {
                         Level::Info,
                         tr!("Checking for updates... (requires internet)"),
                     )));
+                    let mut certificate = false;
                     for component in targets {
                         let result = provision::check_update(component, &paths);
                         if let UpdateCheck::Failed(reason) = &result {
+                            certificate |= provision::download::is_certificate_error(reason);
                             send(Report::Provision(Event::Log(
                                 Level::Warn,
                                 tr!(
@@ -272,6 +274,13 @@ impl Setup {
                             )));
                         }
                         send(Report::Update(component, result));
+                    }
+                    // Once, not under every tool: it is the same connection.
+                    if certificate {
+                        send(Report::Provision(Event::Log(
+                            Level::Warn,
+                            provision::download::certificate_advice(),
+                        )));
                     }
                 });
             }

@@ -29,6 +29,11 @@ const props = defineProps<{ item: Item }>();
 
 const title = computed(() => props.item.title ?? props.item.url);
 
+// "Up to 1080p" means nothing for a video that only goes up to 480p.
+const qualities = computed(() =>
+  choices("quality").filter((choice) => props.item.qualities.includes(choice.key)),
+);
+
 const details = computed(() => {
   const item = props.item;
   const parts: string[] = [];
@@ -98,14 +103,14 @@ async function copy() {
             small
             :model-value="item.kind"
             :options="choices('kind')"
-            :label="t('Download')"
+            :label="t('What to download')"
             @update:model-value="api.queue('kind', item.id, $event)"
           />
           <UiSelect
             v-if="item.kind === 'video'"
             small
             :model-value="item.quality"
-            :options="choices('quality')"
+            :options="qualities"
             :label="t('Quality')"
             @update:model-value="api.queue('quality', item.id, $event)"
           />

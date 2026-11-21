@@ -18,7 +18,9 @@ use super::log::Log;
 use super::queue::{ItemStatus, MetaState, QueueItem};
 use super::setup::{Job, Row};
 use super::{App, Queue, SettingsPage, Setup};
+use crate::config::{Kind, Quality, Settings, VideoFormat};
 use crate::log::Level;
+use crate::metadata::{Metadata, Wanted};
 use crate::provision::{Channel, Status, UpdateCheck};
 
 #[derive(Debug, Serialize)]
@@ -51,7 +53,10 @@ pub struct QueueView {
     pub uses_tools: bool,
     /// How far the whole queue is, from 0 to 1.
     pub fraction: f32,
+    /// Finished, whether they completed or failed.
     pub done: usize,
+    /// Of those, the ones that failed.
+    pub failed: usize,
     pub has_queued: bool,
     pub has_finished: bool,
     pub log_revision: u64,
@@ -75,6 +80,10 @@ pub struct ItemView {
     pub thumbnail: bool,
     pub kind: &'static str,
     pub quality: &'static str,
+    /// The qualities worth offering for this video: "Up to 1080p" means
+    /// nothing for a video that only goes up to 480p. Always holds the one
+    /// it has.
+    pub qualities: Vec<&'static str>,
     /// `queued`, `downloading`, `completed` or `failed`.
     pub status: &'static str,
     pub progress: Option<ProgressView>,
@@ -274,6 +283,10 @@ fn queue(queue: &Queue) -> QueueView {
         uses_tools: queue.uses_tools(),
         fraction: queue.fraction(),
         done: items.iter().filter(|i| i.status.is_finished()).count(),
+        failed: items
+            .iter()
+            .filter(|i| matches!(i.status, ItemStatus::Failed(_)))
+            .count(),
         has_queued: items.iter().any(|i| i.status == ItemStatus::Queued),
         has_finished: items.iter().any(|i| i.status.is_finished()),
         log_revision: queue.activity().revision(),
@@ -318,16 +331,50 @@ fn item(item: &QueueItem, live: bool) -> ItemView {
         playlist: meta.is_some_and(|m| m.playlist.is_some()),
         playlist_count: meta.and_then(|m| m.playlist.flatten()),
         duration: meta.and_then(|m| m.duration),
-        size: meta.and_then(|m| m.approx_size),
+        size: meta.and_then(|m| m.estimate(wanted(&item.settings))),
         thumbnail: item.thumbnail.is_some(),
         kind: item.settings.kind.key(),
         quality: item.settings.quality.key(),
+        qualities: qualities(meta, item.settings.quality),
         status,
         progress,
         path,
         error,
         live,
     }
+}
+
+/// What the item is set to download, for the size of it.
+fn wanted(settings: &Settings) -> Wanted {
+    let cap = settings.quality.cap();
+    match (settings.kind, settings.video_format) {
+        (Kind::AudioOnly, _) => Wanted::Audio,
+        (_, VideoFormat::Best) => Wanted::Video { cap },
+        (_, VideoFormat::PreMerged) => Wanted::SingleFile { cap },
+        (_, VideoFormat::VideoOnly) => Wanted::VideoOnly { cap },
+        (_, VideoFormat::Custom) => Wanted::Custom,
+    }
+}
+
+/// The best available, and every cap below the tallest video on offer.
+/// All of them when the site doesn't say how tall its videos are, and only
+/// the best when it has no video at all (a music site).
+fn qualities(meta: Option<&Metadata>, chosen: Quality) -> Vec<&'static str> {
+    let tallest = meta.and_then(Metadata::max_height);
+    let no_video =
+        meta.is_some_and(|m| !m.formats.is_empty() && !m.formats.iter().any(|f| f.video));
+    Quality::ALL
+        .iter()
+        .filter(|q| {
+            **q == chosen
+                || match (q.cap(), tallest) {
+                    (None, _) => true,
+                    (Some(_), None) => !no_video,
+                    (Some(cap), Some(tallest)) => cap < tallest,
+                }
+        })
+        .map(|q| q.key())
+        .collect()
 }
 
 fn setup(setup: &Setup) -> SetupView {
@@ -402,9 +449,60 @@ fn settings(page: &SettingsPage) -> SettingsView {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::config::Settings;
+    use crate::metadata::Format;
     use crate::provision::Paths;
     use crate::testing::tempdir;
+
+    fn offering(formats: Vec<Format>) -> Metadata {
+        Metadata {
+            title: "v".into(),
+            thumbnail_url: None,
+            duration: None,
+            approx_size: None,
+            playlist: None,
+            formats,
+        }
+    }
+
+    fn video(height: u32) -> Format {
+        Format {
+            height: Some(height),
+            size: None,
+            video: true,
+            audio: true,
+        }
+    }
+
+    /// archive.org's Big Buck Bunny goes up to 720p: offering 4K, 1440p,
+    /// 1080p or 720p as a cap said nothing "Best available" doesn't.
+    #[test]
+    fn only_the_qualities_a_video_has_are_offered() {
+        let bunny = offering(vec![video(300), video(360), video(720)]);
+        assert_eq!(qualities(Some(&bunny), Quality::Best), ["best", "480"]);
+        // The one it was queued with stays, so the card can show it.
+        assert_eq!(
+            qualities(Some(&bunny), Quality::P1080),
+            ["best", "1080", "480"]
+        );
+        // Not looked up (yet), or a site that doesn't say: everything.
+        assert_eq!(qualities(None, Quality::Best).len(), Quality::ALL.len());
+        let unknown = offering(vec![Format {
+            height: None,
+            ..video(0)
+        }]);
+        assert_eq!(
+            qualities(Some(&unknown), Quality::Best).len(),
+            Quality::ALL.len()
+        );
+        // Music: no video to cap.
+        let music = offering(vec![Format {
+            height: None,
+            size: None,
+            video: false,
+            audio: true,
+        }]);
+        assert_eq!(qualities(Some(&music), Quality::Best), ["best"]);
+    }
 
     /// The window is written against these names, so a renamed field must
     /// fail here rather than show up as an empty screen.

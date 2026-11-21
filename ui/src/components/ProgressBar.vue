@@ -1,13 +1,14 @@
 <script setup lang="ts">
 // A progress bar. Without a known fraction it shows that something is
 // going on instead of how far it is.
-defineProps<{ value: number; unknown?: boolean; thin?: boolean }>();
+// `danger`: what it measures ended badly (a queue where links failed).
+defineProps<{ value: number; unknown?: boolean; thin?: boolean; danger?: boolean }>();
 </script>
 
 <template>
   <div
     class="bar"
-    :class="{ thin, unknown }"
+    :class="{ thin, unknown, danger }"
     role="progressbar"
     :aria-valuenow="unknown ? undefined : Math.round(value * 100)"
     aria-valuemin="0"
@@ -34,6 +35,9 @@ defineProps<{ value: number; unknown?: boolean; thin?: boolean }>();
   border-radius: inherit;
   background: var(--brand);
   transition: width 0.3s var(--ease);
+}
+.danger .fill {
+  background: var(--danger-solid);
 }
 .unknown .fill {
   position: absolute;

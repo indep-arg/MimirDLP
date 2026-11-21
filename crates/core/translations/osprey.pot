@@ -18,6 +18,11 @@ msgstr ""
 
 #: crates/core/src/app/mod.rs
 #, python-brace-format
+msgid "The browser couldn't be opened. The address is {url}"
+msgstr ""
+
+#: crates/core/src/app/mod.rs
+#, python-brace-format
 msgid "Could not find the folder this app is in: {e}"
 msgstr ""
 
@@ -26,7 +31,7 @@ msgid "Where to save downloads"
 msgstr ""
 
 #: crates/core/src/app/queue.rs
-msgid "The output folder doesn't exist yet."
+msgid "The output folder doesn't exist yet. It is made by the first download."
 msgstr ""
 
 #: crates/core/src/app/queue.rs
@@ -36,6 +41,10 @@ msgstr ""
 #: crates/core/src/app/queue.rs
 #, python-brace-format
 msgid "Could not open it: {e}"
+msgstr ""
+
+#: crates/core/src/app/queue.rs
+msgid "The system couldn't open it. Check that an app is set up to open it; Show activity has the details."
 msgstr ""
 
 #: crates/core/src/app/queue.rs
@@ -643,6 +652,10 @@ msgid "Failed to download {name} after {attempts} attempts ({e})"
 msgstr ""
 
 #: crates/core/src/provision/download.rs
+msgid "The secure connection couldn't be verified (its certificate isn't trusted). An antivirus or a network that inspects HTTPS can cause this: allow Osprey in it, or try another network."
+msgstr ""
+
+#: crates/core/src/provision/download.rs
 msgid "Please check your internet connection and try again."
 msgstr ""
 
@@ -785,6 +798,16 @@ msgid "yt-dlp stopped unexpectedly."
 msgstr ""
 
 #: crates/core/src/runner.rs
+#, python-brace-format
+msgid "Removed a leftover file: {path}"
+msgstr ""
+
+#: crates/core/src/runner.rs
+#, python-brace-format
+msgid "Could not remove a half-written file, delete it yourself: {path}"
+msgstr ""
+
+#: crates/core/src/runner.rs
 msgid "Extracting audio..."
 msgstr ""
 
@@ -914,8 +937,8 @@ msgstr ""
 msgid "Could not look this link up: {e}"
 msgstr ""
 
-#: ui/src/components/QueueCard.vue ui/src/views/DownloadView.vue ui/src/views/SettingsView.vue
-msgid "Download"
+#: ui/src/components/QueueCard.vue ui/src/views/SettingsView.vue
+msgid "What to download"
 msgstr ""
 
 #: ui/src/components/QueueCard.vue ui/src/views/SettingsView.vue
@@ -998,12 +1021,33 @@ msgstr ""
 
 #: ui/src/views/DownloadView.vue
 #, python-brace-format
+msgid "Downloading queue: {done} of {total} done, {n} failed"
+msgid_plural "Downloading queue: {done} of {total} done, {n} failed"
+msgstr[0] ""
+msgstr[1] ""
+
+#: ui/src/views/DownloadView.vue
+#, python-brace-format
 msgid "Downloading queue: {done} of {total} done"
 msgstr ""
 
 #: ui/src/views/DownloadView.vue
+#, python-brace-format
+msgid "Finished, but {n} download failed."
+msgid_plural "Finished, but {n} downloads failed."
+msgstr[0] ""
+msgstr[1] ""
+
+#: ui/src/views/DownloadView.vue
 msgid "All done."
 msgstr ""
+
+#: ui/src/views/DownloadView.vue
+#, python-brace-format
+msgid "Ready: {done} of {total} done, {n} failed"
+msgid_plural "Ready: {done} of {total} done, {n} failed"
+msgstr[0] ""
+msgstr[1] ""
 
 #: ui/src/views/DownloadView.vue
 #, python-brace-format
@@ -1057,6 +1101,10 @@ msgstr ""
 msgid "Stop"
 msgstr ""
 
+#: ui/src/views/DownloadView.vue ui/src/views/SettingsView.vue
+msgid "Download"
+msgstr ""
+
 #: ui/src/views/DownloadView.vue
 msgid "Open folder"
 msgstr ""
@@ -1090,10 +1138,6 @@ msgstr[1] ""
 
 #: ui/src/views/SettingsView.vue
 msgid "These apply to every link you queue from now on. Links already in the queue keep what they were queued with."
-msgstr ""
-
-#: ui/src/views/SettingsView.vue
-msgid "What to download"
 msgstr ""
 
 #: ui/src/views/SettingsView.vue
@@ -1354,6 +1398,10 @@ msgstr ""
 
 #: ui/src/views/SettingsView.vue
 msgid "Parts downloaded at once"
+msgstr ""
+
+#: ui/src/views/SettingsView.vue
+msgid "With a speed limit, parts are downloaded one at a time, so the limit is the total speed."
 msgstr ""
 
 #: ui/src/views/SettingsView.vue

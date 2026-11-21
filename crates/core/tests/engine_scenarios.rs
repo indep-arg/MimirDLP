@@ -50,8 +50,10 @@ fn scenarios() -> Vec<Scenario> {
                 "30",
                 "--sleep-requests",
                 "2.5",
+                // A speed limit is for all the parts together, which yt-dlp
+                // only does one part at a time.
                 "--concurrent-fragments",
-                "8",
+                "1",
                 "--ffmpeg-location",
                 "<SCRIPT_DIR>/bin/ffmpeg",
                 "--js-runtimes",

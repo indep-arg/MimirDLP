@@ -212,11 +212,15 @@ impl App {
         self.queue.log(note);
     }
 
-    pub fn link_failed(&mut self, url: &str, error: &str) {
+    /// No browser opened `url`. Returns what to tell the user, which has
+    /// the address in it so it can be copied by hand; the system's own
+    /// words go to the log.
+    pub fn link_failed(&mut self, url: &str, error: &str) -> String {
         self.queue.log((
             crate::log::Level::Warn,
             tr!("Could not open {url}: {e}", url, e = error),
         ));
+        tr!("The browser couldn't be opened. The address is {url}", url)
     }
 }
 

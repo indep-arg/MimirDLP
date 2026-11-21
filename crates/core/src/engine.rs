@@ -331,8 +331,16 @@ pub fn build_args(
     push("30");
     push("--sleep-requests");
     push(&o.sleep_requests.to_string());
+    // yt-dlp applies --limit-rate to each part on its own, so five at once
+    // went five times over the limit. With a limit, the parts go one at a
+    // time and the limit is the total the user asked for.
+    let fragments = if o.limit_rate.is_some() {
+        1
+    } else {
+        o.concurrent_fragments
+    };
     push("--concurrent-fragments");
-    push(&o.concurrent_fragments.to_string());
+    push(&fragments.to_string());
     push("--ffmpeg-location");
     a.push(tools.ffmpeg.clone().into_os_string());
     let mut js_runtime = OsString::from("deno:");

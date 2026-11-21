@@ -20,7 +20,9 @@ tar = { version = "0.4.46", default-features = false }
 # Translations: gettext .po files (translations/), embedded in the binary. rspolib
 # parses them; tr supplies the tr!() macro and the translator registry.
 tr = { version = "0.1.11", default-features = false }
-ureq = "3.4.1"
+# platform-verifier: the system's certificates, so a company network or an
+# antivirus that inspects HTTPS with its own root (trusted by the system) works.
+ureq = { version = "3.4.1", features = ["platform-verifier"] }
 zip = { version = "9.2.1", default-features = false, features = ["deflate"] }
 
 [target.'cfg(unix)'.dependencies]

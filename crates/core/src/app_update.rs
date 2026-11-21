@@ -68,6 +68,7 @@ fn parse_state(text: &str) -> (Option<i64>, Option<String>) {
 /// Asks GitHub where `releases/latest` points, without following it.
 fn fetch_latest() -> Result<String, String> {
     let agent: ureq::Agent = ureq::Agent::config_builder()
+        .tls_config(crate::provision::download::tls())
         .timeout_global(Some(Duration::from_secs(15)))
         .max_redirects(0)
         .user_agent(concat!(
