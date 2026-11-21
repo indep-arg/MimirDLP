@@ -61,6 +61,14 @@ pub struct Format {
     pub size: Option<u64>,
     pub video: bool,
     pub audio: bool,
+    /// What yt-dlp's default order prefers after the resolution, highest
+    /// first: frame rate, dynamic range, then codec.
+    pub fps: u32,
+    pub hdr: u8,
+    pub codec: u8,
+    pub channels: u32,
+    /// YouTube's dynamic range compressed audio, which yt-dlp ranks last.
+    pub drc: bool,
 }
 
 /// What a download is set to get, as far as its size goes.
@@ -119,8 +127,8 @@ impl Metadata {
             self.formats
                 .iter()
                 .filter(|f| f.audio && !f.video)
-                .filter_map(|f| f.size)
-                .max()
+                .max_by_key(|f| (!f.drc, f.channels, f.codec, f.size))?
+                .size
         };
         let pick = |cap: Option<u32>, keep: &dyn Fn(&Format) -> bool| -> Option<&Format> {
             let offered: Vec<&Format> =
@@ -143,7 +151,7 @@ impl Metadata {
             fitting
                 .into_iter()
                 .filter(|f| height(f) == tallest)
-                .max_by_key(|f| f.size.unwrap_or(0))
+                .max_by_key(|f| (f.fps, f.hdr, f.codec, f.size))
         };
         // Nothing to choose from: the size of yt-dlp's own pick, which is
         // the best of everything.
@@ -210,6 +218,78 @@ struct FormatInfo {
     /// `"none"` when there is no video in it; missing when unknown.
     vcodec: Option<String>,
     acodec: Option<String>,
+    fps: Option<f64>,
+    dynamic_range: Option<String>,
+    audio_channels: Option<f64>,
+    format_id: Option<String>,
+    format_note: Option<String>,
+}
+
+/// yt-dlp's `vcodec` order: av01, vp9.2, vp9, h265, h264, vp8, mp4v, theora.
+fn video_codec_rank(codec: &str) -> u8 {
+    let codec = codec.to_ascii_lowercase();
+    let starts = |prefixes: &[&str]| prefixes.iter().any(|p| codec.starts_with(p));
+    if starts(&["av01", "av1"]) {
+        8
+    } else if starts(&["vp09.02", "vp9.02", "vp09.2", "vp9.2"]) {
+        7
+    } else if starts(&["vp09", "vp9"]) {
+        6
+    } else if starts(&["h265", "x265", "hevc", "hev", "hvc"]) {
+        5
+    } else if starts(&["h264", "x264", "avc"]) {
+        4
+    } else if starts(&["vp08", "vp8"]) {
+        3
+    } else if starts(&["mp4v", "h263"]) {
+        2
+    } else if starts(&["theora"]) {
+        1
+    } else {
+        0
+    }
+}
+
+/// yt-dlp's `acodec` order: flac, wav, opus, vorbis, aac, mp4a, mp3, then
+/// the surround ones.
+fn audio_codec_rank(codec: &str) -> u8 {
+    let codec = codec.to_ascii_lowercase();
+    let starts = |prefixes: &[&str]| prefixes.iter().any(|p| codec.starts_with(p));
+    if starts(&["flac", "alac"]) {
+        8
+    } else if starts(&["wav", "aiff"]) {
+        7
+    } else if starts(&["opus"]) {
+        6
+    } else if starts(&["vorbis", "ogg"]) {
+        5
+    } else if starts(&["aac"]) {
+        4
+    } else if starts(&["mp4a", "m4a", "mp4"]) {
+        3
+    } else if starts(&["mp3"]) {
+        2
+    } else if starts(&[
+        "ac-4", "ac4", "eac3", "e-ac-3", "ec-3", "ac-3", "ac3", "dts",
+    ]) {
+        1
+    } else {
+        0
+    }
+}
+
+/// yt-dlp's `hdr:12`: HDR up to 12 bits over SDR, Dolby Vision below it.
+fn hdr_rank(range: Option<&str>) -> u8 {
+    match range.map(str::to_ascii_lowercase).as_deref() {
+        None => 0,
+        Some("sdr") => 1,
+        Some("dv") => 2,
+        Some("hlg") => 4,
+        Some("hdr10") | Some("10") => 5,
+        Some("hdr10+") | Some("10+") => 6,
+        Some("hdr12") | Some("12") => 7,
+        Some(_) => 3,
+    }
 }
 
 impl FormatInfo {
@@ -233,12 +313,26 @@ impl FormatInfo {
             (Some(h), Some(w)) => (Some(h.min(w)), Some(h.max(w))),
             (h, w) => (h.or(w), None),
         };
+        let codec = if video {
+            self.vcodec.as_deref().map_or(0, video_codec_rank)
+        } else {
+            self.acodec.as_deref().map_or(0, audio_codec_rank)
+        };
+        let drc = [&self.format_id, &self.format_note].iter().any(|s| {
+            s.as_deref()
+                .is_some_and(|s| s.to_ascii_lowercase().contains("drc"))
+        });
         Some(Format {
             height: shorter.map(|n| n as u32),
             width: longer.map(|n| n as u32),
             size,
             video,
             audio,
+            fps: side(self.fps).map_or(0, |n| n.round() as u32),
+            hdr: hdr_rank(self.dynamic_range.as_deref()),
+            codec,
+            channels: side(self.audio_channels).map_or(0, |n| n as u32),
+            drc,
         })
     }
 }
@@ -486,13 +580,14 @@ mod tests {
         );
         // 128 kb/s for 100 s, from the bitrate.
         assert_eq!(video.formats[5].size, Some(1_600_000));
+        // VP9 over H.264 at the same height, as yt-dlp does.
         assert_eq!(
             video.estimate(Wanted::Video { cap: Some(720) }),
-            Some(28_000_000)
+            Some(23_000_000)
         );
         assert_eq!(
             video.estimate(Wanted::VideoOnly { cap: Some(720) }),
-            Some(25_000_000)
+            Some(20_000_000)
         );
         assert_eq!(
             video.estimate(Wanted::SingleFile { cap: None }),
@@ -525,6 +620,44 @@ mod tests {
             short.estimate(Wanted::Video { cap: Some(720) }),
             Some(2_500_000)
         );
+    }
+
+    /// Every resolution in several codecs, as YouTube does: the biggest
+    /// file is not what yt-dlp picks, and "Up to 1440p" came out larger
+    /// than the 4K download.
+    #[test]
+    fn the_estimate_picks_what_yt_dlp_would() {
+        let video = meta(
+            r#"{
+                "title": "v", "duration": 1516, "filesize_approx": 3000000000,
+                "formats": [
+                    {"height": 2160, "width": 3840, "vcodec": "av01.0.12M.08", "acodec": "none", "fps": 30, "dynamic_range": "SDR", "filesize": 2800000000},
+                    {"height": 2160, "width": 3840, "vcodec": "vp09.00.51.08", "acodec": "none", "fps": 30, "dynamic_range": "SDR", "filesize": 3900000000},
+                    {"height": 1440, "width": 2560, "vcodec": "av01.0.12M.08", "acodec": "none", "fps": 30, "dynamic_range": "SDR", "filesize": 1300000000},
+                    {"height": 1440, "width": 2560, "vcodec": "vp09.00.50.08", "acodec": "none", "fps": 30, "dynamic_range": "SDR", "filesize": 4300000000},
+                    {"height": 1080, "width": 1920, "vcodec": "avc1.640028", "acodec": "none", "fps": 60, "dynamic_range": "SDR", "filesize": 900000000},
+                    {"height": 1080, "width": 1920, "vcodec": "av01.0.08M.08", "acodec": "none", "fps": 30, "dynamic_range": "SDR", "filesize": 500000000},
+                    {"format_id": "251-drc", "vcodec": "none", "acodec": "opus", "audio_channels": 2, "filesize": 26000000},
+                    {"format_id": "251", "vcodec": "none", "acodec": "opus", "audio_channels": 2, "filesize": 25000000},
+                    {"format_id": "140", "vcodec": "none", "acodec": "mp4a.40.2", "audio_channels": 2, "filesize": 24000000}
+                ]
+            }"#,
+        );
+        assert_eq!(
+            video.estimate(Wanted::Video { cap: Some(2160) }),
+            Some(3_000_000_000)
+        );
+        // AV1 over the bigger VP9, plus Opus (not its DRC copy).
+        assert_eq!(
+            video.estimate(Wanted::Video { cap: Some(1440) }),
+            Some(1_325_000_000)
+        );
+        // 60 fps comes before the codec.
+        assert_eq!(
+            video.estimate(Wanted::Video { cap: Some(1080) }),
+            Some(925_000_000)
+        );
+        assert_eq!(video.estimate(Wanted::Audio), Some(25_000_000));
     }
 
     #[test]

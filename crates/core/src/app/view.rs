@@ -478,10 +478,9 @@ mod tests {
     fn video(height: u32) -> Format {
         Format {
             height: Some(height),
-            width: None,
-            size: None,
             video: true,
             audio: true,
+            ..Format::default()
         }
     }
 
@@ -521,11 +520,8 @@ mod tests {
         );
         // Music: no video to cap.
         let music = offering(vec![Format {
-            height: None,
-            width: None,
-            size: None,
-            video: false,
             audio: true,
+            ..Format::default()
         }]);
         assert_eq!(qualities(Some(&music), Quality::Best), ["best"]);
     }
