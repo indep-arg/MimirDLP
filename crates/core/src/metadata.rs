@@ -55,6 +55,8 @@ pub struct Format {
     /// The shorter side, which is what yt-dlp's `res:N` compares: a
     /// 1080x1920 short is "1080p".
     pub height: Option<u32>,
+    /// The longer side: 3840 for a 3840x1600 film, which is 4K.
+    pub width: Option<u32>,
     /// Bytes, exact or approximate.
     pub size: Option<u64>,
     pub video: bool,
@@ -89,6 +91,23 @@ impl Metadata {
             .filter(|f| f.video)
             .filter_map(|f| f.height)
             .max()
+    }
+
+    /// What the best format is called: "8K", "4K", or "1080p" and the like.
+    pub fn best_resolution(&self) -> Option<String> {
+        let best = self
+            .formats
+            .iter()
+            .filter(|f| f.video && f.height.is_some())
+            .max_by_key(|f| (f.height, f.width))?;
+        let (height, width) = (best.height?, best.width.unwrap_or(0));
+        Some(if height >= 4320 || width >= 7680 {
+            "8K".into()
+        } else if height >= 2160 || width >= 3840 {
+            "4K".into()
+        } else {
+            format!("{height}p")
+        })
     }
 
     /// About how big the download will be. Picks formats the way yt-dlp's
@@ -210,12 +229,13 @@ impl FormatInfo {
         let side = |n: Option<f64>| n.filter(|n| n.is_finite() && *n > 0.0);
         // yt-dlp's res:N sorts on the shorter side; either one when only
         // one is known.
-        let shorter = match (side(self.height), side(self.width)) {
-            (Some(h), Some(w)) => Some(h.min(w)),
-            (h, w) => h.or(w),
+        let (shorter, longer) = match (side(self.height), side(self.width)) {
+            (Some(h), Some(w)) => (Some(h.min(w)), Some(h.max(w))),
+            (h, w) => (h.or(w), None),
         };
         Some(Format {
             height: shorter.map(|n| n as u32),
+            width: longer.map(|n| n as u32),
             size,
             video,
             audio,
@@ -496,6 +516,7 @@ mod tests {
             }"#,
         );
         assert_eq!(short.max_height(), Some(1080));
+        assert_eq!(short.best_resolution().as_deref(), Some("1080p"));
         assert_eq!(
             short.estimate(Wanted::Video { cap: Some(1080) }),
             Some(9_500_000)
@@ -504,6 +525,22 @@ mod tests {
             short.estimate(Wanted::Video { cap: Some(720) }),
             Some(2_500_000)
         );
+    }
+
+    #[test]
+    fn the_best_resolution_has_the_name_people_know() {
+        let named = |w: u32, h: u32| {
+            meta(&format!(
+                r#"{{"title": "v", "formats": [{{"width": {w}, "height": {h}, "vcodec": "vp9"}}]}}"#
+            ))
+            .best_resolution()
+        };
+        assert_eq!(named(7680, 4320).as_deref(), Some("8K"));
+        assert_eq!(named(3840, 2160).as_deref(), Some("4K"));
+        assert_eq!(named(3840, 1600).as_deref(), Some("4K"));
+        assert_eq!(named(2560, 1440).as_deref(), Some("1440p"));
+        assert_eq!(meta(ARCHIVE_ORG).best_resolution().as_deref(), Some("720p"));
+        assert_eq!(meta(SOUNDCLOUD).best_resolution(), None);
     }
 
     #[test]

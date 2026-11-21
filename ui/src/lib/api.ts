@@ -34,6 +34,7 @@ export interface Item {
   quality: string;
   /** The qualities worth offering for this video (keys of `quality`). */
   qualities: string[];
+  bestResolution: string | null;
   status: "queued" | "downloading" | "completed" | "failed";
   progress: Progress | null;
   path: string | null;

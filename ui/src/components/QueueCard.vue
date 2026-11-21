@@ -30,8 +30,15 @@ const props = defineProps<{ item: Item; compact?: boolean }>();
 const title = computed(() => props.item.title ?? props.item.url);
 
 // "Up to 1080p" means nothing for a video that only goes up to 480p.
+function qualityLabel(key: string, label: string): string {
+  const best = props.item.bestResolution;
+  return key === "best" && best ? `${label} (${best})` : label;
+}
+
 const qualities = computed(() =>
-  choices("quality").filter((choice) => props.item.qualities.includes(choice.key)),
+  choices("quality")
+    .filter((choice) => props.item.qualities.includes(choice.key))
+    .map((choice) => ({ ...choice, label: qualityLabel(choice.key, choice.label) })),
 );
 
 const details = computed(() => {
@@ -121,7 +128,7 @@ async function copy() {
         <template v-else>
           <span class="chip">{{ choiceLabel("kind", item.kind) }}</span>
           <span v-if="item.kind === 'video'" class="chip">
-            {{ choiceLabel("quality", item.quality) }}
+            {{ qualityLabel(item.quality, choiceLabel("quality", item.quality)) }}
           </span>
         </template>
       </div>

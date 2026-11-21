@@ -84,6 +84,8 @@ pub struct ItemView {
     /// nothing for a video that only goes up to 480p. Always holds the one
     /// it has.
     pub qualities: Vec<&'static str>,
+    /// What "Best available" gets: "8K", "4K", "1080p"...
+    pub best_resolution: Option<String>,
     /// `queued`, `downloading`, `completed` or `failed`.
     pub status: &'static str,
     pub progress: Option<ProgressView>,
@@ -336,6 +338,7 @@ fn item(item: &QueueItem, live: bool) -> ItemView {
         kind: item.settings.kind.key(),
         quality: item.settings.quality.key(),
         qualities: qualities(meta, item.settings.quality),
+        best_resolution: meta.and_then(Metadata::best_resolution),
         status,
         progress,
         path,
@@ -475,6 +478,7 @@ mod tests {
     fn video(height: u32) -> Format {
         Format {
             height: Some(height),
+            width: None,
             size: None,
             video: true,
             audio: true,
@@ -518,6 +522,7 @@ mod tests {
         // Music: no video to cap.
         let music = offering(vec![Format {
             height: None,
+            width: None,
             size: None,
             video: false,
             audio: true,
