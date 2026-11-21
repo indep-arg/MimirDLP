@@ -1,8 +1,10 @@
 # Changelog
 
-All notable changes to Osprey (MimirDLP until version 0.8) are listed here, newest first. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the version numbers follow [Semantic Versioning](https://semver.org/).
+All notable changes to Osprey are listed here, newest first. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the version numbers follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
+
+## [0.9.0] - 2026-11-21
 
 MimirDLP is now Osprey, with a new interface.
 
@@ -24,7 +26,7 @@ MimirDLP is now Osprey, with a new interface.
 - The Download button is greyed out until there is a link waiting, and the buttons next to it are a little smaller so it stands out.
 - The queue's progress bar only shows once something has started.
 - The empty Download screen has an icon above its text.
-- Dependencies updated (zip 9.5, ureq 3.5.1 and others).
+- Dependencies updated (zip 9.7, ureq 3.5.2, pgp 0.21.1 and others).
 - For developers: the environment variables now start with `OSPREY_` (`OSPREY_APP_DIR`, `OSPREY_DEV_...`).
 
 ### Removed
