@@ -356,13 +356,21 @@ fn wanted(settings: &Settings) -> Wanted {
     }
 }
 
-/// The best available, and every cap below the tallest video on offer.
-/// All of them when the site doesn't say how tall its videos are, and only
-/// the best when it has no video at all (a music site).
+/// The best available, and every cap up to the first one that holds the
+/// tallest video on offer, so a 4K video lists "Up to 2160p" even when it
+/// is 3840x1600. All of them when the site doesn't say how tall its videos
+/// are, and only the best when it has no video at all (a music site).
 fn qualities(meta: Option<&Metadata>, chosen: Quality) -> Vec<&'static str> {
     let tallest = meta.and_then(Metadata::max_height);
     let no_video =
         meta.is_some_and(|m| !m.formats.is_empty() && !m.formats.iter().any(|f| f.video));
+    let ceiling = tallest.and_then(|tallest| {
+        Quality::ALL
+            .iter()
+            .filter_map(|q| q.cap())
+            .filter(|cap| *cap >= tallest)
+            .min()
+    });
     Quality::ALL
         .iter()
         .filter(|q| {
@@ -370,7 +378,7 @@ fn qualities(meta: Option<&Metadata>, chosen: Quality) -> Vec<&'static str> {
                 || match (q.cap(), tallest) {
                     (None, _) => true,
                     (Some(_), None) => !no_video,
-                    (Some(cap), Some(tallest)) => cap < tallest,
+                    (Some(cap), Some(tallest)) => cap < tallest || Some(cap) == ceiling,
                 }
         })
         .map(|q| q.key())
@@ -473,16 +481,29 @@ mod tests {
         }
     }
 
-    /// archive.org's Big Buck Bunny goes up to 720p: offering 4K, 1440p,
-    /// 1080p or 720p as a cap said nothing "Best available" doesn't.
     #[test]
     fn only_the_qualities_a_video_has_are_offered() {
         let bunny = offering(vec![video(300), video(360), video(720)]);
-        assert_eq!(qualities(Some(&bunny), Quality::Best), ["best", "480"]);
+        assert_eq!(
+            qualities(Some(&bunny), Quality::Best),
+            ["best", "720", "480"]
+        );
         // The one it was queued with stays, so the card can show it.
         assert_eq!(
             qualities(Some(&bunny), Quality::P1080),
-            ["best", "1080", "480"]
+            ["best", "1080", "720", "480"]
+        );
+        // A 4K video, and one in 4K for the cinema (3840x1600, measured on
+        // its shorter side as yt-dlp does): both offer "Up to 2160p".
+        let uhd = offering(vec![video(1080), video(2160)]);
+        assert_eq!(
+            qualities(Some(&uhd), Quality::Best),
+            Quality::ALL.iter().map(|q| q.key()).collect::<Vec<_>>()
+        );
+        let wide = offering(vec![video(1080), video(1600)]);
+        assert_eq!(
+            qualities(Some(&wide), Quality::Best),
+            ["best", "2160", "1440", "1080", "720", "480"]
         );
         // Not looked up (yet), or a site that doesn't say: everything.
         assert_eq!(qualities(None, Quality::Best).len(), Quality::ALL.len());
