@@ -42,6 +42,9 @@ param(
     [ValidateSet('warm', 'cold')][string]$State = 'warm',
     [int]$StartTimeoutSeconds = 20,
     [int]$CloseTimeoutSeconds = 10,
+    # How long the webview's helper processes get to exit after the app.
+    # WebView2 shuts them down on its own, a moment after its host is gone.
+    [int]$OrphanGraceSeconds = 5,
     # Above 0: a single long run that samples memory instead of the loop.
     [int]$SoakMinutes = 0,
     [string]$OutDir = (Join-Path $env:TEMP 'osprey-stress')
@@ -193,7 +196,12 @@ for ($i = 1; $i -le $Runs; $i++) {
         if ($app.WaitForExit($CloseTimeoutSeconds * 1000)) {
             $row.CloseMs = [int]$closing.ElapsedMilliseconds
         } else {
-            $notes += "HANG: still open $CloseTimeoutSeconds s after closing"
+            # Not responding: its main thread is stuck. Responding: the
+            # window works, the app just doesn't leave.
+            $app.Refresh()
+            $responsive = if ($app.Responding) { 'window responding' } else { 'window not responding' }
+            $left = @(Get-Descendants $app.Id | ForEach-Object { $_.Name }) -join ', '
+            $notes += "HANG: still open $CloseTimeoutSeconds s after closing ($responsive; children: $left)"
             $app.Kill(); $app.WaitForExit()
         }
     }
@@ -201,8 +209,14 @@ for ($i = 1; $i -le $Runs; $i++) {
 
     # What it left behind.
     if ($row.ExitCode -ne 0 -and $notes -notmatch 'HANG') { $notes += "exit code $($row.ExitCode)" }
-    Start-Sleep -Milliseconds 300
-    $alive = @($children | Where-Object { Get-Process -Id $_.ProcessId -ErrorAction SilentlyContinue })
+    # A child still there right after the app is not left behind yet:
+    # only one that outlives the grace period is.
+    $grace = [Diagnostics.Stopwatch]::StartNew()
+    do {
+        $alive = @($children | Where-Object { Get-Process -Id $_.ProcessId -ErrorAction SilentlyContinue })
+        if (-not $alive.Count) { break }
+        Start-Sleep -Milliseconds 200
+    } while ($grace.Elapsed.TotalSeconds -lt $OrphanGraceSeconds)
     if ($alive.Count) { $notes += 'ORPHANS: ' + (($alive | ForEach-Object { "$($_.Name)#$($_.ProcessId)" }) -join ', ') }
     $leftovers = @(Get-ChildItem $dir -File -ErrorAction SilentlyContinue |
         Where-Object { $_.Name -match '\.(tmp|part|new|lock|bak)$' })

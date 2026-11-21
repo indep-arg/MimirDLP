@@ -29,6 +29,10 @@ use tauri_plugin_dialog::{DialogExt, MessageDialogKind};
 /// download reports its progress far more often than anyone can read it.
 const BETWEEN_SNAPSHOTS: Duration = Duration::from_millis(60);
 
+/// The longest the app stays after its window was asked to close. Nothing
+/// prevents the close, so past this point it is stuck, not busy.
+const EXIT_DEADLINE: Duration = Duration::from_secs(3);
+
 pub struct Shared {
     app: Mutex<App>,
     pub paths: Paths,
@@ -216,6 +220,15 @@ fn main() {
                 // running download is stopped rather than left behind.
                 window::remember(window, &shared.paths);
                 shared.app().shutdown();
+                // Everything worth keeping is saved by now. Closing normally
+                // takes a tenth of a second, but a webview closed while it is
+                // still starting can keep the app from ever exiting (seen on
+                // Windows CI, the first launch on a fresh runner). Leave
+                // anyway rather than linger with no window.
+                std::thread::spawn(|| {
+                    std::thread::sleep(EXIT_DEADLINE);
+                    std::process::exit(0);
+                });
             }
         })
         .run(tauri::generate_context!())
