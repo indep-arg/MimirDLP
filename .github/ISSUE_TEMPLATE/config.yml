@@ -3,6 +3,6 @@ contact_links:
   - name: A site isn't supported or broke for everyone
     url: https://github.com/yt-dlp/yt-dlp/issues
     about: Site support comes from yt-dlp. If the latest yt-dlp fails too, report it there.
-  - name: Help translate MimirDLP
-    url: https://hosted.weblate.org/engage/mimirdlp/
-    about: Translations are done on Weblate, in the browser.
+  - name: Help translate Osprey
+    url: https://github.com/indep-arg/Osprey/blob/main/docs/TRANSLATING.md
+    about: Each language is one file in crates/core/translations/. The guide says how to edit or add one.

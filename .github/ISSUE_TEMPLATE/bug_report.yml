@@ -5,7 +5,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for taking the time. Before reporting, open ☰ > Setup and updates and press "Check for updates" (in the Flatpak, update MimirDLP itself): an old yt-dlp is the most common reason a site stops working.
+        Thanks for taking the time. Before reporting, open ☰ > Setup and updates and press "Check for updates": an old yt-dlp is the most common reason a site stops working.
   - type: textarea
     id: what
     attributes:
@@ -22,18 +22,18 @@ body:
     id: diagnostics
     attributes:
       label: Diagnostic information
-      description: In the app, open ☰ > Setup and updates, press "Copy diagnostic information" and paste it here. It holds the versions of MimirDLP and its tools, and nothing personal.
+      description: In the app, open ☰ > Setup and updates, press "Copy diagnostic information" and paste it here. It holds the versions of Osprey and its tools, and nothing personal.
       render: text
   - type: input
     id: version
     attributes:
-      label: MimirDLP version
-      description: Only if you can't paste the diagnostic information. Shown in ☰ > About MimirDLP, for example 0.1.0.
+      label: Osprey version
+      description: Only if you can't paste the diagnostic information. Shown in ☰ > About Osprey, for example 0.1.0.
   - type: input
     id: ytdlp
     attributes:
       label: yt-dlp version
-      description: Only if you can't paste the diagnostic information. Shown in ☰ > About MimirDLP too.
+      description: Only if you can't paste the diagnostic information. Shown in ☰ > About Osprey too.
   - type: dropdown
     id: os
     attributes:
@@ -41,16 +41,6 @@ body:
       options:
         - Windows
         - Linux
-    validations:
-      required: true
-  - type: dropdown
-    id: install
-    attributes:
-      label: How it was installed
-      options:
-        - Portable (.zip or .tar.gz from the release page)
-        - winget
-        - Flatpak
     validations:
       required: true
   - type: textarea

@@ -2,11 +2,11 @@
 # must never rewrite their line endings (Windows checkouts default to
 # core.autocrlf=true, which turned LF into CRLF and broke the signature
 # tests on the Windows runner).
-src/provision/testdata/* -text
-src/provision/ytdlp-signing-key.asc -text
+crates/core/src/provision/testdata/* -text
+crates/core/src/provision/ytdlp-signing-key.asc -text
 
-# Translations: tests/translations.rs compares the template byte for byte
-# and the .po files are compiled into the binary, so they stay LF on every
-# checkout (Weblate writes LF too).
-po/*.po text eol=lf
-po/*.pot text eol=lf
+# Translations: crates/core/tests/translations.rs compares the template
+# and the .po files byte for byte, and the .po files are compiled into the
+# binary, so they stay LF on every checkout.
+crates/core/translations/*.po text eol=lf
+crates/core/translations/*.pot text eol=lf

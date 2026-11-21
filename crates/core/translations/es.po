@@ -1,0 +1,1557 @@
+# Spanish translation of Osprey.
+msgid ""
+msgstr ""
+"Project-Id-Version: Osprey\n"
+"Language: es\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: crates/core/src/app/mod.rs
+msgid "The tools can't be changed while a download is running."
+msgstr "Las herramientas no se pueden cambiar mientras hay una descarga en curso."
+
+#: crates/core/src/app/mod.rs
+#, python-brace-format
+msgid "Could not open {url}: {e}"
+msgstr "No se pudo abrir {url}: {e}"
+
+#: crates/core/src/app/mod.rs
+#, python-brace-format
+msgid "Could not find the folder this app is in: {e}"
+msgstr "No se encontró la carpeta donde está esta aplicación: {e}"
+
+#: crates/core/src/app/mod.rs
+msgid "Where to save downloads"
+msgstr "Dónde guardar las descargas"
+
+#: crates/core/src/app/queue.rs
+msgid "The output folder doesn't exist yet."
+msgstr "La carpeta de destino todavía no existe."
+
+#: crates/core/src/app/queue.rs
+msgid "The file isn't there any more."
+msgstr "El archivo ya no está."
+
+#: crates/core/src/app/queue.rs
+#, python-brace-format
+msgid "Could not open it: {e}"
+msgstr "No se pudo abrir: {e}"
+
+#: crates/core/src/app/queue.rs
+msgid "Stopping the recording..."
+msgstr "Deteniendo la grabación..."
+
+#: crates/core/src/app/queue.rs
+msgid "Stopping the download..."
+msgstr "Deteniendo la descarga..."
+
+#: crates/core/src/app/queue.rs
+#, python-brace-format
+msgid "Link copied: {url}"
+msgstr "Enlace copiado: {url}"
+
+#: crates/core/src/app/queue.rs
+msgid "That doesn't look like a link (it should start with http)."
+msgstr "Eso no parece un enlace (debería empezar con http)."
+
+#: crates/core/src/app/queue.rs
+msgid "Paste a link first."
+msgstr "Primero pega un enlace."
+
+#: crates/core/src/app/queue.rs
+msgid "That link is already in the queue."
+msgstr "Ese enlace ya está en la cola."
+
+#: crates/core/src/app/queue.rs
+#, python-brace-format
+msgid "{n} of those links is already in the queue."
+msgid_plural "{n} of those links are already in the queue."
+msgstr[0] "{n} de esos enlaces ya está en la cola."
+msgstr[1] "{n} de esos enlaces ya están en la cola."
+
+#: crates/core/src/app/queue.rs
+msgid "the lookup was interrupted"
+msgstr "la consulta se interrumpió"
+
+#: crates/core/src/app/queue.rs
+#, python-brace-format
+msgid "Restored {n} link from the last session."
+msgid_plural "Restored {n} links from the last session."
+msgstr[0] "Se recuperó {n} enlace de la sesión anterior."
+msgstr[1] "Se recuperaron {n} enlaces de la sesión anterior."
+
+#: crates/core/src/app/queue.rs
+#, python-brace-format
+msgid "Could not save the queue: {e}"
+msgstr "No se pudo guardar la cola: {e}"
+
+#: crates/core/src/app/queue.rs
+msgid "Add at least one link first."
+msgstr "Primero agrega al menos un enlace."
+
+#: crates/core/src/app/queue.rs
+#, python-brace-format
+msgid "Saving into: {folder}"
+msgstr "Guardando en: {folder}"
+
+#: crates/core/src/app/queue.rs
+#, python-brace-format
+msgid "No thumbnail: a .{ext} file can't hold one."
+msgstr "Sin miniatura: un archivo .{ext} no puede llevarla."
+
+#: crates/core/src/app/queue.rs
+#, python-brace-format
+msgid "Saved: {path}"
+msgstr "Guardado: {path}"
+
+#: crates/core/src/app/queue.rs
+msgid "This is a live stream. Stop ends the recording and saves what it got."
+msgstr "Es una transmisión en vivo. Al detenerla, termina la grabación y se guarda lo grabado."
+
+#: crates/core/src/app/queue.rs
+msgid "Finished, with nothing new to download"
+msgstr "Terminado, no había nada nuevo que descargar"
+
+#: crates/core/src/app/queue.rs
+msgid "Download completed"
+msgstr "Descarga completada"
+
+#: crates/core/src/app/queue.rs
+#, python-brace-format
+msgid "Download completed ({n} file)"
+msgid_plural "Download completed ({n} files)"
+msgstr[0] "Descarga completada ({n} archivo)"
+msgstr[1] "Descarga completada ({n} archivos)"
+
+#: crates/core/src/app/queue.rs
+msgid "Stopped as configured (the limit or the history said so)"
+msgstr "Detenido según lo configurado (por el límite o el historial)"
+
+#: crates/core/src/app/queue.rs
+msgid "Download cancelled. A partial file was kept, so starting again resumes it."
+msgstr "Descarga cancelada. Se conservó el archivo parcial, así que al volver a empezar continúa donde quedó."
+
+#: crates/core/src/app/queue.rs
+msgid "Recording stopped and saved"
+msgstr "Grabación detenida y guardada"
+
+#: crates/core/src/app/settings.rs
+msgid "Could not find the home folder."
+msgstr "No se encontró la carpeta personal."
+
+#: crates/core/src/app/settings.rs
+msgid "Osprey is now in the applications menu."
+msgstr "Osprey ya está en el menú de aplicaciones."
+
+#: crates/core/src/app/settings.rs
+msgid "Osprey was removed from the applications menu."
+msgstr "Osprey se quitó del menú de aplicaciones."
+
+#: crates/core/src/app/settings.rs
+#, python-brace-format
+msgid "Could not change the applications menu: {e}"
+msgstr "No se pudo cambiar el menú de aplicaciones: {e}"
+
+#: crates/core/src/app/settings.rs
+#, python-brace-format
+msgid "Could not save the settings: {e}"
+msgstr "No se pudieron guardar los ajustes: {e}"
+
+#: crates/core/src/app/settings.rs
+#, python-brace-format
+msgid "History cleared ({n} entry)."
+msgid_plural "History cleared ({n} entries)."
+msgstr[0] "Historial borrado ({n} entrada)."
+msgstr[1] "Historial borrado ({n} entradas)."
+
+#: crates/core/src/app/settings.rs
+msgid "There is no history file yet."
+msgstr "Todavía no hay archivo de historial."
+
+#: crates/core/src/app/settings.rs
+#, python-brace-format
+msgid "Could not clear the history: {e}"
+msgstr "No se pudo borrar el historial: {e}"
+
+#: crates/core/src/app/setup.rs
+#, python-brace-format
+msgid "This folder can't be written to: {folder} ({e})."
+msgstr "No se puede escribir en esta carpeta: {folder} ({e})."
+
+#: crates/core/src/app/setup.rs
+msgid "Osprey keeps its tools, settings and history next to itself. Move its folder somewhere you can write to (not Program Files), such as your user folder or a USB stick."
+msgstr "Osprey guarda sus herramientas, ajustes e historial junto a sí misma. Mueve su carpeta a un lugar donde puedas escribir (no Program Files), como tu carpeta de usuario o una memoria USB."
+
+#: crates/core/src/app/setup.rs
+msgid "Diagnostic information copied. Paste it into your bug report."
+msgstr "Información de diagnóstico copiada. Pégala en tu reporte de error."
+
+#: crates/core/src/app/setup.rs
+msgid "Checking for updates... (requires internet)"
+msgstr "Buscando actualizaciones... (requiere internet)"
+
+#: crates/core/src/app/setup.rs
+#, python-brace-format
+msgid "Could not check {component} for updates: {reason}"
+msgstr "No se pudo buscar actualizaciones de {component}: {reason}"
+
+#: crates/core/src/app/setup.rs
+msgid "Some components are missing or broken, installing them now"
+msgstr "Faltan componentes o alguno está dañado, instalándolos ahora"
+
+#: crates/core/src/app/setup.rs
+#, python-brace-format
+msgid "Could not save the choice of yt-dlp builds: {e}"
+msgstr "No se pudo guardar la elección de versiones de yt-dlp: {e}"
+
+#: crates/core/src/app/setup.rs
+msgid "Some components are missing or broken"
+msgstr "Algunos componentes faltan o están dañados"
+
+#: crates/core/src/app/setup.rs
+msgid "Installation completed"
+msgstr "Instalación completada"
+
+#: crates/core/src/app/setup.rs
+msgid "Update completed"
+msgstr "Actualización completada"
+
+#: crates/core/src/app/setup.rs
+msgid "Full reinstallation completed"
+msgstr "Reinstalación completa terminada"
+
+#: crates/core/src/app/setup.rs
+msgid "yt-dlp now comes from the nightly builds"
+msgstr "yt-dlp ahora viene de las versiones nightly"
+
+#: crates/core/src/app/setup.rs
+msgid "yt-dlp now comes from the stable releases"
+msgstr "yt-dlp ahora viene de las versiones estables"
+
+#: crates/core/src/app/setup.rs
+#, python-brace-format
+msgid "Binaries located in: {folder}"
+msgstr "Programas ubicados en: {folder}"
+
+#: crates/core/src/config.rs
+msgid "Video and audio"
+msgstr "Video y audio"
+
+#: crates/core/src/config.rs
+msgid "Audio only"
+msgstr "Solo audio"
+
+#: crates/core/src/config.rs
+msgid "Best quality (video plus audio)"
+msgstr "Mejor calidad (video más audio)"
+
+#: crates/core/src/config.rs
+msgid "Best single file (merged if the site has none)"
+msgstr "Mejor archivo único (se une si el sitio no lo tiene)"
+
+#: crates/core/src/config.rs
+msgid "Video only, without audio"
+msgstr "Solo video, sin audio"
+
+#: crates/core/src/config.rs
+msgid "A format string of my own"
+msgstr "Una cadena de formato propia"
+
+#: crates/core/src/config.rs
+msgid "Best available"
+msgstr "Máx. calidad disponible"
+
+#: crates/core/src/config.rs
+msgid "Up to 2160p (4K)"
+msgstr "Hasta 2160p (4K)"
+
+#: crates/core/src/config.rs
+msgid "Up to 1440p"
+msgstr "Hasta 1440p"
+
+#: crates/core/src/config.rs
+msgid "Up to 1080p"
+msgstr "Hasta 1080p"
+
+#: crates/core/src/config.rs
+msgid "Up to 720p"
+msgstr "Hasta 720p"
+
+#: crates/core/src/config.rs
+msgid "Up to 480p"
+msgstr "Hasta 480p"
+
+#: crates/core/src/config.rs
+msgid "MP3 (most compatible)"
+msgstr "MP3 (el más compatible)"
+
+#: crates/core/src/config.rs
+msgid "Opus (smallest)"
+msgstr "Opus (el más pequeño)"
+
+#: crates/core/src/config.rs
+msgid "FLAC (lossless)"
+msgstr "FLAC (sin pérdida)"
+
+#: crates/core/src/config.rs
+msgid "ALAC (lossless)"
+msgstr "ALAC (sin pérdida)"
+
+#: crates/core/src/config.rs
+msgid "WAV (uncompressed)"
+msgstr "WAV (sin comprimir)"
+
+#: crates/core/src/config.rs
+msgid "MKV (recommended)"
+msgstr "MKV (recomendado)"
+
+#: crates/core/src/config.rs
+msgid "MP4 (most compatible)"
+msgstr "MP4 (el más compatible)"
+
+#: crates/core/src/config.rs
+msgid "Leave it alone"
+msgstr "Dejarlo como está"
+
+#: crates/core/src/config.rs
+msgid "Rewrap (fast, keeps the codecs)"
+msgstr "Reempaquetar (rápido, mantiene los códecs)"
+
+#: crates/core/src/config.rs
+msgid "Re-encode (slow, always works)"
+msgstr "Recodificar (lento, siempre funciona)"
+
+#: crates/core/src/config.rs
+msgid "As JPG (recommended)"
+msgstr "Como JPG (recomendado)"
+
+#: crates/core/src/config.rs
+msgid "As it comes"
+msgstr "Tal como viene"
+
+#: crates/core/src/config.rs
+msgid "As PNG"
+msgstr "Como PNG"
+
+#: crates/core/src/config.rs
+msgid "Don't download"
+msgstr "No descargar"
+
+#: crates/core/src/config.rs
+msgid "Save as a subtitle file"
+msgstr "Guardar como archivo de subtítulos"
+
+#: crates/core/src/config.rs
+msgid "Embed in the video"
+msgstr "Incrustar en el video"
+
+#: crates/core/src/config.rs
+msgid "Save and embed"
+msgstr "Guardar e incrustar"
+
+#: crates/core/src/config.rs
+msgid "Off"
+msgstr "Desactivado"
+
+#: crates/core/src/config.rs
+msgid "Mark as chapters"
+msgstr "Marcar como capítulos"
+
+#: crates/core/src/config.rs
+msgid "Cut out of the file"
+msgstr "Recortar del archivo"
+
+#: crates/core/src/config.rs
+msgid "Sponsors only"
+msgstr "Solo patrocinios"
+
+#: crates/core/src/config.rs
+msgid "Sponsors, self-promotion, interaction"
+msgstr "Patrocinios, autopromoción, interacción"
+
+#: crates/core/src/config.rs
+msgid "Everything SponsorBlock covers"
+msgstr "Todo lo que cubre SponsorBlock"
+
+#: crates/core/src/config.rs
+msgid "A list of my own"
+msgstr "Una lista propia"
+
+#: crates/core/src/config.rs
+msgid "Follow system"
+msgstr "Según el sistema"
+
+#: crates/core/src/config.rs ui/src/components/MainMenu.vue
+msgid "Light"
+msgstr "Claro"
+
+#: crates/core/src/config.rs ui/src/components/MainMenu.vue
+msgid "Dark"
+msgstr "Oscuro"
+
+#: crates/core/src/config.rs
+msgid "Don't use cookies"
+msgstr "No usar cookies"
+
+#: crates/core/src/config.rs
+msgid "Follow the link"
+msgstr "Según el enlace"
+
+#: crates/core/src/config.rs
+msgid "Just this video"
+msgstr "Solo este video"
+
+#: crates/core/src/config.rs
+msgid "The whole playlist"
+msgstr "La lista completa"
+
+#: crates/core/src/config.rs
+msgid "Title [ID].ext"
+msgstr "Título [ID].ext"
+
+#: crates/core/src/config.rs
+msgid "Title.ext"
+msgstr "Título.ext"
+
+#: crates/core/src/config.rs
+msgid "ID.ext"
+msgstr "ID.ext"
+
+#: crates/core/src/config.rs
+msgid "Title - Channel [ID].ext"
+msgstr "Título - Canal [ID].ext"
+
+#: crates/core/src/config.rs
+msgid "A template of my own"
+msgstr "Una plantilla propia"
+
+#: crates/core/src/config.rs
+msgid "The speed limit should look like 500K or 4.2M, or be empty."
+msgstr "El límite de velocidad debe tener la forma 500K o 4.2M, o quedar vacío."
+
+#: crates/core/src/config.rs
+msgid "Concurrent fragments should be a whole number of 1 or more."
+msgstr "Las partes simultáneas deben ser un número entero de 1 o más."
+
+#: crates/core/src/config.rs
+msgid "The sleep between requests should be a number such as 0, 1.5 or 2."
+msgstr "La pausa entre solicitudes debe ser un número como 0, 1.5 o 2."
+
+#: crates/core/src/config.rs
+msgid "Retries should be a whole number such as 3 or 10, or empty."
+msgstr "Los reintentos deben ser un número entero, como 3 o 10, o quedar vacíos."
+
+#: crates/core/src/config.rs
+msgid "The wait for a stream should be seconds or a range, such as 60 or 60-3600."
+msgstr "La espera de una transmisión debe ser en segundos o un rango, como 60 o 60-3600."
+
+#: crates/core/src/config.rs
+msgid "The download limit should be a whole number, or empty."
+msgstr "El límite de descargas debe ser un número entero, o quedar vacío."
+
+#: crates/core/src/config.rs
+msgid "Playlist items should look like 1-5, 8 or 2,4,6."
+msgstr "Los elementos de la lista deben tener la forma 1-5, 8 o 2,4,6."
+
+#: crates/core/src/config.rs
+msgid "The container to convert to should be a name such as mp4 or mkv."
+msgstr "El contenedor de destino debe ser un nombre como mp4 o mkv."
+
+#: crates/core/src/config.rs
+msgid "The custom format string can't be empty."
+msgstr "La cadena de formato propia no puede quedar vacía."
+
+#: crates/core/src/config.rs
+msgid "The custom name template can't be empty."
+msgstr "La plantilla de nombre propia no puede quedar vacía."
+
+#: crates/core/src/config.rs
+msgid "With auto-generated subtitles, write each language code, such as en or en,es: YouTube offers a machine translation into every language, and asking for all of them gets the download blocked."
+msgstr "Con subtítulos automáticos, escribe el código de cada idioma, como en o en,es: YouTube ofrece una traducción automática a cada idioma, y pedirlas todas hace que bloquee la descarga."
+
+#: crates/core/src/config.rs
+msgid "Pick at least one SponsorBlock category."
+msgstr "Elige al menos una categoría de SponsorBlock."
+
+#: crates/core/src/config.rs
+msgid "There is an empty category in the SponsorBlock list."
+msgstr "Hay una categoría vacía en la lista de SponsorBlock."
+
+#: crates/core/src/config.rs
+#, python-brace-format
+msgid "Unknown SponsorBlock category: {bare}"
+msgstr "Categoría de SponsorBlock desconocida: {bare}"
+
+#: crates/core/src/config.rs
+#, python-brace-format
+msgid "'{bare}' can only be marked, not removed."
+msgstr "«{bare}» solo se puede marcar, no recortar."
+
+#: crates/core/src/explain.rs
+msgid "YouTube wants to make sure you're not a bot. Wait a while and try again."
+msgstr "YouTube quiere asegurarse de que no eres un bot. Espera un rato y vuelve a intentarlo."
+
+#: crates/core/src/explain.rs
+msgid "YouTube wants to make sure you're not a bot. Use the cookies of a browser where you're signed in to YouTube: Settings, Advanced options, Signing in."
+msgstr "YouTube quiere asegurarse de que no eres un bot. Usa las cookies de un navegador donde hayas iniciado sesión en YouTube: Ajustes, Opciones avanzadas, Inicio de sesión."
+
+#: crates/core/src/explain.rs
+msgid "The video password isn't right. Check it in Settings, Advanced options, Signing in, and add the link again."
+msgstr "La contraseña del video no es correcta. Revísala en Ajustes, Opciones avanzadas, Inicio de sesión, y vuelve a agregar el enlace."
+
+#: crates/core/src/explain.rs
+msgid "This video is protected by a password. Type it in Settings, Advanced options, Signing in, and add the link again."
+msgstr "Este video está protegido con contraseña. Escríbela en Ajustes, Opciones avanzadas, Inicio de sesión, y vuelve a agregar el enlace."
+
+#: crates/core/src/explain.rs
+msgid "Only the channel's members can watch this video. The Flatpak can't read your browser's cookies to sign in; the portable version can."
+msgstr "Solo los miembros del canal pueden ver este video. El Flatpak no puede leer las cookies de tu navegador para iniciar sesión; la versión portable sí."
+
+#: crates/core/src/explain.rs
+msgid "Only the channel's members can watch this video. Use the cookies of a browser where you're signed in with a member account: Settings, Advanced options, Signing in."
+msgstr "Solo los miembros del canal pueden ver este video. Usa las cookies de un navegador donde hayas iniciado sesión con una cuenta de miembro: Ajustes, Opciones avanzadas, Inicio de sesión."
+
+#: crates/core/src/explain.rs
+msgid "This video needs you signed in (it's private or age-restricted). The Flatpak can't read your browser's cookies to sign in; the portable version can."
+msgstr "Este video requiere iniciar sesión (es privado o tiene restricción de edad). El Flatpak no puede leer las cookies de tu navegador para iniciar sesión; la versión portable sí."
+
+#: crates/core/src/explain.rs
+msgid "This video needs you signed in (it's private or age-restricted). Use the cookies of a browser where you're signed in: Settings, Advanced options, Signing in."
+msgstr "Este video requiere iniciar sesión (es privado o tiene restricción de edad). Usa las cookies de un navegador donde hayas iniciado sesión: Ajustes, Opciones avanzadas, Inicio de sesión."
+
+#: crates/core/src/explain.rs
+msgid "This video isn't available in your country."
+msgstr "Este video no está disponible en tu país."
+
+#: crates/core/src/explain.rs
+msgid "This stream or premiere hasn't started yet. Try again when it starts, or set a wait for scheduled streams in Settings, Advanced options."
+msgstr "Esta transmisión o estreno todavía no empezó. Vuelve a intentarlo cuando empiece, o configura una espera para transmisiones programadas en Ajustes, Opciones avanzadas."
+
+#: crates/core/src/explain.rs
+msgid "The site got too many requests from you and is refusing more for now. Wait a while (an hour usually does it) and try again."
+msgstr "El sitio recibió demasiadas solicitudes tuyas y por ahora rechaza más. Espera un rato (en general basta con una hora) y vuelve a intentarlo."
+
+#: crates/core/src/explain.rs
+msgid "The site refused the download (error 403). A newer yt-dlp usually fixes it, and it comes with the next update of the app."
+msgstr "El sitio rechazó la descarga (error 403). Un yt-dlp más nuevo suele solucionarlo, y llega con la próxima actualización de la aplicación."
+
+#: crates/core/src/explain.rs
+msgid "The site refused the download (error 403). Update yt-dlp in ☰, Setup and updates, and try again."
+msgstr "El sitio rechazó la descarga (error 403). Actualiza yt-dlp en ☰, Instalación y actualizaciones, y vuelve a intentarlo."
+
+#: crates/core/src/explain.rs
+msgid "Nothing was found at this link (error 404). Check that it's right and that the video still exists."
+msgstr "No se encontró nada en este enlace (error 404). Comprueba que sea correcto y que el video todavía exista."
+
+#: crates/core/src/explain.rs
+msgid "The site had a problem on its side. Try again later."
+msgstr "El sitio tuvo un problema de su lado. Vuelve a intentarlo más tarde."
+
+#: crates/core/src/explain.rs
+msgid "The quality or format you picked isn't available for this video. Pick another one on its card."
+msgstr "La calidad o el formato que elegiste no está disponible para este video. Elige otro en su tarjeta."
+
+#: crates/core/src/explain.rs
+msgid "yt-dlp doesn't support this site or kind of link."
+msgstr "yt-dlp no admite este sitio o este tipo de enlace."
+
+#: crates/core/src/explain.rs
+msgid "The disk is full. Free some space and try again."
+msgstr "El disco está lleno. Libera espacio y vuelve a intentarlo."
+
+#: crates/core/src/explain.rs
+msgid "This video is unavailable: it was removed or made private, or the link is wrong."
+msgstr "Este video no está disponible: se eliminó o se hizo privado, o el enlace es incorrecto."
+
+#: crates/core/src/explain.rs
+msgid "Couldn't reach the site. Check your internet connection and try again."
+msgstr "No se pudo conectar con el sitio. Comprueba tu conexión a internet y vuelve a intentarlo."
+
+#: crates/core/src/live.rs
+msgid "Nothing was recorded yet."
+msgstr "Todavía no se grabó nada."
+
+#: crates/core/src/live.rs
+msgid "The recording has no file name."
+msgstr "La grabación no tiene nombre de archivo."
+
+#: crates/core/src/live.rs
+#, python-brace-format
+msgid "Could not start FFmpeg: {e}"
+msgstr "No se pudo iniciar FFmpeg: {e}"
+
+#: crates/core/src/live.rs
+msgid "FFmpeg took too long to save the recording."
+msgstr "FFmpeg tardó demasiado en guardar la grabación."
+
+#: crates/core/src/live.rs
+#, python-brace-format
+msgid "FFmpeg could not save the recording: {error}"
+msgstr "FFmpeg no pudo guardar la grabación: {error}"
+
+#: crates/core/src/live.rs
+#, python-brace-format
+msgid "Could not move the recording into place: {e}"
+msgstr "No se pudo mover la grabación a su lugar: {e}"
+
+#: crates/core/src/metadata.rs
+msgid "Timed out looking up this link."
+msgstr "Se agotó el tiempo al consultar este enlace."
+
+#: crates/core/src/metadata.rs crates/core/src/runner.rs
+#, python-brace-format
+msgid "Could not start {tool}: {e}"
+msgstr "No se pudo iniciar {tool}: {e}"
+
+#: crates/core/src/metadata.rs
+msgid "yt-dlp could not look up this link."
+msgstr "yt-dlp no pudo consultar este enlace."
+
+#: crates/core/src/metadata.rs
+msgid "yt-dlp returned no information for this link."
+msgstr "yt-dlp no devolvió información sobre este enlace."
+
+#: crates/core/src/metadata.rs
+#, python-brace-format
+msgid "Could not read yt-dlp's output: {e}"
+msgstr "No se pudo leer la respuesta de yt-dlp: {e}"
+
+#: crates/core/src/provision/archive.rs
+#, python-brace-format
+msgid "The archive didn't contain {files} (unexpected layout)."
+msgstr "El archivo comprimido no contenía {files} (estructura inesperada)."
+
+#: crates/core/src/provision/archive.rs
+#, python-brace-format
+msgid "Could not install {name}: {e}"
+msgstr "No se pudo instalar {name}: {e}"
+
+#: crates/core/src/provision/archive.rs
+#, python-brace-format
+msgid "Could not read the archive: {e}"
+msgstr "No se pudo leer el archivo comprimido: {e}"
+
+#: crates/core/src/provision/download.rs
+#, python-brace-format
+msgid "Download failed ({e}), retrying... (attempt {n}/{attempts})"
+msgstr "La descarga falló ({e}), reintentando... (intento {n}/{attempts})"
+
+#: crates/core/src/provision/download.rs
+#, python-brace-format
+msgid "Failed to download {name} after {attempts} attempts ({e})"
+msgstr "No se pudo descargar {name} tras {attempts} intentos ({e})"
+
+#: crates/core/src/provision/download.rs
+msgid "Please check your internet connection and try again."
+msgstr "Revisa tu conexión a internet y vuelve a intentarlo."
+
+#: crates/core/src/provision/download.rs
+#, python-brace-format
+msgid "no data received for {seconds} seconds"
+msgstr "no se recibieron datos durante {seconds} segundos"
+
+#: crates/core/src/provision/download.rs
+msgid "the download stopped unexpectedly"
+msgstr "la descarga se detuvo inesperadamente"
+
+#: crates/core/src/provision/download.rs
+msgid "the file is unexpectedly large"
+msgstr "el archivo es inesperadamente grande"
+
+#: crates/core/src/provision/mod.rs
+msgid "Nightly (recommended)"
+msgstr "Nightly (recomendada)"
+
+#: crates/core/src/provision/mod.rs
+msgid "Stable"
+msgstr "Estable"
+
+#: crates/core/src/provision/mod.rs
+msgid "This platform isn't supported (only Linux and Windows on x86_64)."
+msgstr "Esta plataforma no es compatible (solo Linux y Windows en x86_64)."
+
+#: crates/core/src/provision/mod.rs
+#, python-brace-format
+msgid "Could not get the signature: {e}"
+msgstr "No se pudo obtener la firma: {e}"
+
+#: crates/core/src/provision/mod.rs
+#, python-brace-format
+msgid "Cannot create directory: {dir} ({e})"
+msgstr "No se puede crear la carpeta: {dir} ({e})"
+
+#: crates/core/src/provision/mod.rs
+#, python-brace-format
+msgid "Checking who signed {file}..."
+msgstr "Comprobando quién firmó {file}..."
+
+#: crates/core/src/provision/mod.rs
+#, python-brace-format
+msgid "Signed by the expected key ({key})"
+msgstr "Firmado con la clave esperada ({key})"
+
+#: crates/core/src/provision/mod.rs
+#, python-brace-format
+msgid "Checking SHA256 for {file}..."
+msgstr "Comprobando el SHA256 de {file}..."
+
+#: crates/core/src/provision/mod.rs
+msgid "A newer release was published during the download; its checksum matches."
+msgstr "Se publicó una versión más nueva durante la descarga; su suma de verificación coincide."
+
+#: crates/core/src/provision/mod.rs
+#, python-brace-format
+msgid "Hash mismatch for {file}!"
+msgstr "¡El hash de {file} no coincide!"
+
+#: crates/core/src/provision/mod.rs
+#, python-brace-format
+msgid "Expected: {expected}"
+msgstr "Esperado: {expected}"
+
+#: crates/core/src/provision/mod.rs
+#, python-brace-format
+msgid "Actual:   {actual}"
+msgstr "Obtenido: {actual}"
+
+#: crates/core/src/provision/mod.rs
+#, python-brace-format
+msgid "The download of {file} didn't match its published checksum."
+msgstr "La descarga de {file} no coincide con su suma de verificación publicada."
+
+#: crates/core/src/provision/mod.rs
+msgid "Hash verification passed"
+msgstr "Verificación del hash correcta"
+
+#: crates/core/src/provision/mod.rs
+msgid "Extracting..."
+msgstr "Extrayendo..."
+
+#: crates/core/src/provision/mod.rs
+#, python-brace-format
+msgid "{component} installed successfully"
+msgstr "{component} se instaló correctamente"
+
+#: crates/core/src/provision/platform.rs
+#, python-brace-format
+msgid "Could not find the checksum for {asset}."
+msgstr "No se encontró la suma de verificación de {asset}."
+
+#: crates/core/src/provision/signature.rs
+#, python-brace-format
+msgid "the signature can't be read ({e})"
+msgstr "no se puede leer la firma ({e})"
+
+#: crates/core/src/provision/signature.rs
+msgid "the checksum file is not signed by the expected key"
+msgstr "el archivo de sumas de verificación no está firmado con la clave esperada"
+
+#: crates/core/src/provision/signature.rs
+#, python-brace-format
+msgid "the signing key can't be read ({e})"
+msgstr "no se puede leer la clave de firma ({e})"
+
+#: crates/core/src/provision/signature.rs
+#, python-brace-format
+msgid "the signing key is {fingerprint}, not {expected}"
+msgstr "la clave de firma es {fingerprint}, no {expected}"
+
+#: crates/core/src/provision/signature.rs
+#, python-brace-format
+msgid "the signing key is not valid ({e})"
+msgstr "la clave de firma no es válida ({e})"
+
+#: crates/core/src/provision/signature.rs
+#, python-brace-format
+msgid "Refusing to trust the checksums: {reason}."
+msgstr "No se confía en las sumas de verificación: {reason}."
+
+#: crates/core/src/runner.rs
+msgid "yt-dlp could not be started. Reinstall it from Setup."
+msgstr "No se pudo iniciar yt-dlp. Reinstálalo desde Instalación."
+
+#: crates/core/src/runner.rs
+msgid "Saving what was recorded..."
+msgstr "Guardando lo grabado..."
+
+#: crates/core/src/runner.rs
+#, python-brace-format
+msgid "yt-dlp exited with code {code}."
+msgstr "yt-dlp terminó con el código {code}."
+
+#: crates/core/src/runner.rs
+msgid "yt-dlp stopped unexpectedly."
+msgstr "yt-dlp se detuvo inesperadamente."
+
+#: crates/core/src/runner.rs
+msgid "Extracting audio..."
+msgstr "Extrayendo el audio..."
+
+#: crates/core/src/runner.rs
+msgid "Rewrapping the container..."
+msgstr "Reempaquetando el contenedor..."
+
+#: crates/core/src/runner.rs
+msgid "Re-encoding the video..."
+msgstr "Recodificando el video..."
+
+#: crates/core/src/runner.rs
+msgid "Merging video and audio..."
+msgstr "Uniendo video y audio..."
+
+#: crates/core/src/runner.rs
+msgid "Converting the thumbnail..."
+msgstr "Convirtiendo la miniatura..."
+
+#: crates/core/src/runner.rs
+msgid "Embedding the thumbnail..."
+msgstr "Incrustando la miniatura..."
+
+#: crates/core/src/runner.rs
+msgid "Embedding metadata..."
+msgstr "Incrustando los metadatos..."
+
+#: crates/core/src/runner.rs
+msgid "Embedding subtitles..."
+msgstr "Incrustando los subtítulos..."
+
+#: crates/core/src/runner.rs
+msgid "Looking up SponsorBlock segments..."
+msgstr "Consultando los segmentos de SponsorBlock..."
+
+#: crates/core/src/runner.rs
+msgid "Applying SponsorBlock..."
+msgstr "Aplicando SponsorBlock..."
+
+#: crates/core/src/runner.rs
+msgid "Moving the file into place..."
+msgstr "Moviendo el archivo a su lugar..."
+
+#: ui/src/components/AppHeader.vue ui/src/components/MainMenu.vue ui/src/views/SetupView.vue
+msgid "Components"
+msgstr "Componentes"
+
+#: ui/src/components/AppHeader.vue
+msgid "Setup"
+msgstr "Instalación"
+
+#: ui/src/components/AppHeader.vue ui/src/components/MainMenu.vue
+msgid "Settings"
+msgstr "Ajustes"
+
+#: ui/src/components/AppHeader.vue
+msgid "About"
+msgstr "Acerca de"
+
+#: ui/src/components/AppHeader.vue
+msgid "Back"
+msgstr "Atrás"
+
+#: ui/src/components/AppHeader.vue
+msgid "Paste a video or playlist link..."
+msgstr "Pega el enlace de un video o una lista..."
+
+#: ui/src/components/AppHeader.vue
+msgid "Add"
+msgstr "Agregar"
+
+#: ui/src/components/AppHeader.vue
+msgid "Menu"
+msgstr "Menú"
+
+#: ui/src/components/MainMenu.vue
+msgid "System"
+msgstr "Sistema"
+
+#: ui/src/components/MainMenu.vue
+msgid "System language"
+msgstr "Idioma del sistema"
+
+#: ui/src/components/MainMenu.vue
+msgid "Theme"
+msgstr "Tema"
+
+#: ui/src/components/MainMenu.vue
+msgid "Language"
+msgstr "Idioma"
+
+#: ui/src/components/MainMenu.vue
+msgid "Setup and updates"
+msgstr "Instalación y actualizaciones"
+
+#: ui/src/components/MainMenu.vue
+msgid "About Osprey"
+msgstr "Acerca de Osprey"
+
+#: ui/src/components/QueueCard.vue
+msgid "Playlist"
+msgstr "Lista"
+
+#: ui/src/components/QueueCard.vue
+#, python-brace-format
+msgid "Playlist, {n} video"
+msgid_plural "Playlist, {n} videos"
+msgstr[0] "Lista, {n} video"
+msgstr[1] "Lista, {n} videos"
+
+#: ui/src/components/QueueCard.vue
+#, python-brace-format
+msgid "at {speed} MB/s"
+msgstr "a {speed} MB/s"
+
+#: ui/src/components/QueueCard.vue
+#, python-brace-format
+msgid "{time} left"
+msgstr "quedan {time}"
+
+#: ui/src/components/QueueCard.vue
+msgid "Looking up this link..."
+msgstr "Consultando este enlace..."
+
+#: ui/src/components/QueueCard.vue
+#, python-brace-format
+msgid "Could not look this link up: {e}"
+msgstr "No se pudo consultar este enlace: {e}"
+
+#: ui/src/components/QueueCard.vue ui/src/views/DownloadView.vue ui/src/views/SettingsView.vue
+msgid "Download"
+msgstr "Descargar"
+
+#: ui/src/components/QueueCard.vue ui/src/views/SettingsView.vue
+msgid "Quality"
+msgstr "Calidad"
+
+#: ui/src/components/QueueCard.vue
+msgid "Queued"
+msgstr "En cola"
+
+#: ui/src/components/QueueCard.vue
+msgid "Processing"
+msgstr "Procesando"
+
+#: ui/src/components/QueueCard.vue
+msgid "Recording live"
+msgstr "Grabando en vivo"
+
+#: ui/src/components/QueueCard.vue
+msgid "Downloading"
+msgstr "Descargando"
+
+#: ui/src/components/QueueCard.vue
+msgid "Nothing new to download"
+msgstr "Nada nuevo para descargar"
+
+#: ui/src/components/QueueCard.vue
+msgid "Completed"
+msgstr "Completado"
+
+#: ui/src/components/QueueCard.vue
+msgid "Failed"
+msgstr "Falló"
+
+#: ui/src/components/QueueCard.vue
+msgid "Retry"
+msgstr "Reintentar"
+
+#: ui/src/components/QueueCard.vue
+msgid "Open the file"
+msgstr "Abrir el archivo"
+
+#: ui/src/components/QueueCard.vue
+msgid "Show in folder"
+msgstr "Mostrar en la carpeta"
+
+#: ui/src/components/QueueCard.vue
+msgid "Copy link"
+msgstr "Copiar enlace"
+
+#: ui/src/components/QueueCard.vue
+msgid "Remove"
+msgstr "Quitar"
+
+#: ui/src/views/AboutView.vue
+#, python-brace-format
+msgid "Version {version}"
+msgstr "Versión {version}"
+
+#: ui/src/views/AboutView.vue
+#, python-brace-format
+msgid "Using yt-dlp {version}"
+msgstr "Usa yt-dlp {version}"
+
+#: ui/src/views/AboutView.vue
+msgid "Download videos and music from YouTube and many other sites."
+msgstr "Descarga videos y música de YouTube y muchos otros sitios."
+
+#: ui/src/views/AboutView.vue
+msgid "Website"
+msgstr "Sitio web"
+
+#: ui/src/views/AboutView.vue
+msgid "Report a problem"
+msgstr "Reportar un problema"
+
+#: ui/src/views/AboutView.vue
+msgid "Free software under the AGPL-3.0 license."
+msgstr "Software libre con licencia AGPL-3.0."
+
+#: ui/src/views/DownloadView.vue
+#, python-brace-format
+msgid "Downloading queue: {done} of {total} done"
+msgstr "Descargando la cola: {done} de {total} terminados"
+
+#: ui/src/views/DownloadView.vue
+msgid "All done."
+msgstr "Todo listo."
+
+#: ui/src/views/DownloadView.vue
+#, python-brace-format
+msgid "Ready: {done} of {total} done"
+msgstr "En espera: {done} de {total} terminados"
+
+#: ui/src/views/DownloadView.vue
+#, python-brace-format
+msgid "yt-dlp is {n} day old. Sites change often; if a download fails, update Osprey from your software center or with flatpak update."
+msgid_plural "yt-dlp is {n} days old. Sites change often; if a download fails, update Osprey from your software center or with flatpak update."
+msgstr[0] "yt-dlp tiene {n} día de antigüedad. Los sitios cambian a menudo; si una descarga falla, actualiza Osprey desde tu tienda de software o con flatpak update."
+msgstr[1] "yt-dlp tiene {n} días de antigüedad. Los sitios cambian a menudo; si una descarga falla, actualiza Osprey desde tu tienda de software o con flatpak update."
+
+#: ui/src/views/DownloadView.vue
+#, python-brace-format
+msgid "yt-dlp is {n} day old. Sites change often; if a download fails, update it first."
+msgid_plural "yt-dlp is {n} days old. Sites change often; if a download fails, update it first."
+msgstr[0] "yt-dlp tiene {n} día de antigüedad. Los sitios cambian a menudo; si una descarga falla, actualízalo primero."
+msgstr[1] "yt-dlp tiene {n} días de antigüedad. Los sitios cambian a menudo; si una descarga falla, actualízalo primero."
+
+#: ui/src/views/DownloadView.vue
+#, python-brace-format
+msgid "Osprey {version} is available."
+msgstr "Osprey {version} está disponible."
+
+#: ui/src/views/DownloadView.vue
+msgid "What's new"
+msgstr "Ver novedades"
+
+#: ui/src/views/DownloadView.vue
+msgid "Later"
+msgstr "Más tarde"
+
+#: ui/src/views/DownloadView.vue ui/src/views/SetupView.vue
+msgid "Check for updates"
+msgstr "Buscar actualizaciones"
+
+#: ui/src/views/DownloadView.vue
+msgid "Download a video"
+msgstr "Descarga un video"
+
+#: ui/src/views/DownloadView.vue
+msgid "Paste a link from YouTube or almost any other site above."
+msgstr "Pega arriba un enlace de YouTube o de otro sitio compatible."
+
+#: ui/src/views/DownloadView.vue
+msgid "Stop and save"
+msgstr "Detener y guardar"
+
+#: ui/src/views/DownloadView.vue
+msgid "Stop"
+msgstr "Detener"
+
+#: ui/src/views/DownloadView.vue
+msgid "Open folder"
+msgstr "Abrir carpeta"
+
+#: ui/src/views/DownloadView.vue
+msgid "Clear finished"
+msgstr "Limpiar lista"
+
+#: ui/src/views/DownloadView.vue
+msgid "Hide activity"
+msgstr "Ocultar actividad"
+
+#: ui/src/views/DownloadView.vue
+msgid "Show activity"
+msgstr "Mostrar actividad"
+
+#: ui/src/views/DownloadView.vue
+msgid "Nothing yet. Every step of the download will be listed here."
+msgstr "Nada todavía. Cada paso de la descarga aparecerá aquí."
+
+#: ui/src/views/SettingsView.vue
+msgid "The history file doesn't exist yet."
+msgstr "El archivo de historial todavía no existe."
+
+#: ui/src/views/SettingsView.vue
+#, python-brace-format
+msgid "{n} video in the history"
+msgid_plural "{n} videos in the history"
+msgstr[0] "{n} video en el historial"
+msgstr[1] "{n} videos en el historial"
+
+#: ui/src/views/SettingsView.vue
+msgid "These apply to every link you queue from now on. Links already in the queue keep what they were queued with."
+msgstr "Se aplican a cada enlace que agregues a partir de ahora. Los enlaces que ya están en la cola conservan los ajustes con los que se agregaron."
+
+#: ui/src/views/SettingsView.vue
+msgid "What to download"
+msgstr "Qué descargar"
+
+#: ui/src/views/SettingsView.vue
+msgid "Format"
+msgstr "Formato"
+
+#: ui/src/views/SettingsView.vue
+msgid "Format string"
+msgstr "Cadena de formato"
+
+#: ui/src/views/SettingsView.vue
+msgid "Container"
+msgstr "Contenedor"
+
+#: ui/src/views/SettingsView.vue
+msgid "Convert the container"
+msgstr "Convertir el contenedor"
+
+#: ui/src/views/SettingsView.vue
+msgid "Convert to"
+msgstr "Convertir a"
+
+#: ui/src/views/SettingsView.vue
+msgid "Convert it to another format"
+msgstr "Convertirlo a otro formato"
+
+#: ui/src/views/SettingsView.vue
+msgid "Audio format"
+msgstr "Formato de audio"
+
+#: ui/src/views/SettingsView.vue
+msgid "Audio quality (0 best, 10 smallest)"
+msgstr "Calidad de audio (0 la mejor, 10 la más pequeña)"
+
+#: ui/src/views/SettingsView.vue
+msgid "The audio is kept exactly as the site serves it."
+msgstr "El audio se guarda tal como lo entrega el sitio."
+
+#: ui/src/views/SettingsView.vue
+msgid "Where to save"
+msgstr "Dónde guardar"
+
+#: ui/src/views/SettingsView.vue
+msgid "Choose..."
+msgstr "Elegir..."
+
+#: ui/src/views/SettingsView.vue
+msgid "Leave it empty to use your Downloads folder."
+msgstr "Déjalo vacío para usar tu carpeta Descargas."
+
+#: ui/src/views/SettingsView.vue
+msgid "Leave it empty to use the downloads folder next to this app."
+msgstr "Déjalo vacío para usar la carpeta downloads junto a esta aplicación."
+
+#: ui/src/views/SettingsView.vue
+msgid "Extras"
+msgstr "Extras"
+
+#: ui/src/views/SettingsView.vue
+msgid "Embed the thumbnail"
+msgstr "Incrustar la miniatura"
+
+#: ui/src/views/SettingsView.vue
+msgid "Thumbnail format"
+msgstr "Formato de la miniatura"
+
+#: ui/src/views/SettingsView.vue
+msgid "Embed title, artist and date"
+msgstr "Incrustar título, artista y fecha"
+
+#: ui/src/views/SettingsView.vue
+msgid "Embed chapters"
+msgstr "Incrustar capítulos"
+
+#: ui/src/views/SettingsView.vue
+msgid "Subtitles"
+msgstr "Subtítulos"
+
+#: ui/src/views/SettingsView.vue
+msgid "Languages"
+msgstr "Idiomas"
+
+#: ui/src/views/SettingsView.vue
+msgid "all but live chat"
+msgstr "todos menos el chat en vivo"
+
+#: ui/src/views/SettingsView.vue
+msgid "Include auto-generated subtitles"
+msgstr "Incluir subtítulos generados automáticamente"
+
+#: ui/src/views/SettingsView.vue
+msgid "Segments"
+msgstr "Segmentos"
+
+#: ui/src/views/SettingsView.vue
+msgid "Categories"
+msgstr "Categorías"
+
+#: ui/src/views/SettingsView.vue
+msgid "Cut exactly at keyframes (re-encodes, much slower)"
+msgstr "Cortar justo en los fotogramas clave (recodifica, mucho más lento)"
+
+#: ui/src/views/SettingsView.vue
+msgid "Desktop"
+msgstr "Escritorio"
+
+#: ui/src/views/SettingsView.vue
+msgid "Show Osprey in the applications menu"
+msgstr "Mostrar Osprey en el menú de aplicaciones"
+
+#: ui/src/views/SettingsView.vue
+msgid "Adds a launcher and the icon to your user folder, so Osprey can be started from the menu and shows its icon in the taskbar. Turning it off removes them."
+msgstr "Agrega un acceso y el icono en tu carpeta de usuario, para abrir Osprey desde el menú y que se vea su icono en la barra de tareas. Al desactivarlo se quitan."
+
+#: ui/src/views/SettingsView.vue
+msgid "Updates"
+msgstr "Actualizaciones"
+
+#: ui/src/views/SettingsView.vue
+msgid "Tell me when a new version of Osprey is out"
+msgstr "Avisarme cuando salga una nueva versión de Osprey"
+
+#: ui/src/views/SettingsView.vue
+msgid "Looks at Osprey's release page on GitHub once a day, when the app starts. Nothing about you or your downloads is sent, and nothing is installed by itself."
+msgstr "Mira la página de versiones de Osprey en GitHub una vez al día, al abrir la aplicación. No se envía nada sobre ti ni sobre tus descargas, y no se instala nada por sí solo."
+
+#: ui/src/views/SettingsView.vue
+msgid "Hide advanced options"
+msgstr "Ocultar opciones avanzadas"
+
+#: ui/src/views/SettingsView.vue
+msgid "Advanced options"
+msgstr "Opciones avanzadas"
+
+#: ui/src/views/SettingsView.vue
+msgid "Signing in, playlists, history, file names, speed limits"
+msgstr "Inicio de sesión, listas, historial, nombres de archivo, límites de velocidad"
+
+#: ui/src/views/SettingsView.vue
+msgid "Signing in"
+msgstr "Inicio de sesión"
+
+#: ui/src/views/SettingsView.vue
+msgid "Video password"
+msgstr "Contraseña del video"
+
+#: ui/src/views/SettingsView.vue
+msgid "none"
+msgstr "ninguna"
+
+#: ui/src/views/SettingsView.vue
+msgid "For videos the site protects with a password, such as on Vimeo. It is used for the links you add next and is never saved: it is forgotten when the app closes."
+msgstr "Para videos que el sitio protege con contraseña, como en Vimeo. Se usa para los enlaces que agregues a continuación y nunca se guarda: se olvida al cerrar la aplicación."
+
+#: ui/src/views/SettingsView.vue
+msgid "Use cookies from"
+msgstr "Usar las cookies de"
+
+#: ui/src/views/SettingsView.vue
+msgid "Profile (empty for the last used)"
+msgstr "Perfil (vacío para el último usado)"
+
+#: ui/src/views/SettingsView.vue
+msgid "default"
+msgstr "predeterminado"
+
+#: ui/src/views/SettingsView.vue
+msgid "Only for videos that need you signed in. Firefox works best: Chrome, Edge and other Chromium browsers may have to be closed first, and recent versions on Windows can't be read at all."
+msgstr "Solo para videos que requieren iniciar sesión. Firefox es el que mejor funciona: Chrome, Edge y otros navegadores basados en Chromium pueden necesitar cerrarse antes, y sus versiones recientes en Windows directamente no se pueden leer."
+
+#: ui/src/views/SettingsView.vue
+msgid "Automation and naming"
+msgstr "Automatización y nombres"
+
+#: ui/src/views/SettingsView.vue
+msgid "Playlists"
+msgstr "Listas"
+
+#: ui/src/views/SettingsView.vue
+msgid "Items (empty for all)"
+msgstr "Elementos (vacío para todos)"
+
+#: ui/src/views/SettingsView.vue
+msgid "Start from the end of the playlist"
+msgstr "Empezar por el final de la lista"
+
+#: ui/src/views/SettingsView.vue
+msgid "One folder per playlist, numbered"
+msgstr "Una carpeta por lista, numerada"
+
+#: ui/src/views/SettingsView.vue
+msgid "Keep a history and skip what was downloaded before"
+msgstr "Llevar un historial y saltar lo que ya se descargó"
+
+#: ui/src/views/SettingsView.vue
+msgid "History file"
+msgstr "Archivo de historial"
+
+#: ui/src/views/SettingsView.vue
+msgid "Stop as soon as a video is already in the history"
+msgstr "Detenerse en cuanto un video ya esté en el historial"
+
+#: ui/src/views/SettingsView.vue
+msgid "This deletes the history file for good."
+msgstr "Esto borra el archivo de historial para siempre."
+
+#: ui/src/views/SettingsView.vue ui/src/views/SetupView.vue
+msgid "Cancel"
+msgstr "Cancelar"
+
+#: ui/src/views/SettingsView.vue
+msgid "Clear"
+msgstr "Borrar"
+
+#: ui/src/views/SettingsView.vue
+msgid "Hide entries"
+msgstr "Ocultar entradas"
+
+#: ui/src/views/SettingsView.vue
+msgid "View entries"
+msgstr "Ver entradas"
+
+#: ui/src/views/SettingsView.vue
+msgid "Clear history"
+msgstr "Borrar historial"
+
+#: ui/src/views/SettingsView.vue
+msgid "The history is empty."
+msgstr "El historial está vacío."
+
+#: ui/src/views/SettingsView.vue
+msgid "Stop after this many files"
+msgstr "Detenerse tras esta cantidad de archivos"
+
+#: ui/src/views/SettingsView.vue
+msgid "no limit"
+msgstr "sin límite"
+
+#: ui/src/views/SettingsView.vue
+msgid "File names"
+msgstr "Nombres de archivo"
+
+#: ui/src/views/SettingsView.vue
+msgid "Template"
+msgstr "Plantilla"
+
+#: ui/src/views/SettingsView.vue
+msgid "Plain ASCII file names"
+msgstr "Nombres de archivo solo en ASCII"
+
+#: ui/src/views/SettingsView.vue
+msgid "Network and other"
+msgstr "Red y otros"
+
+#: ui/src/views/SettingsView.vue
+msgid "Speed limit"
+msgstr "Límite de velocidad"
+
+#: ui/src/views/SettingsView.vue
+msgid "Parts downloaded at once"
+msgstr "Partes descargadas a la vez"
+
+#: ui/src/views/SettingsView.vue
+msgid "Seconds between requests"
+msgstr "Segundos entre solicitudes"
+
+#: ui/src/views/SettingsView.vue
+msgid "Retries after a network error"
+msgstr "Reintentos tras un error de red"
+
+#: ui/src/views/SettingsView.vue
+msgid "Record live streams from the start"
+msgstr "Grabar las transmisiones en vivo desde el principio"
+
+#: ui/src/views/SettingsView.vue
+msgid "Wait for a scheduled stream (seconds)"
+msgstr "Esperar una transmisión programada (segundos)"
+
+#: ui/src/views/SettingsView.vue
+msgid "Keep the original upload date on the file"
+msgstr "Conservar en el archivo la fecha de publicación original"
+
+#: ui/src/views/SettingsView.vue
+msgid "Keep going when one video of a playlist fails"
+msgstr "Seguir cuando falla un video de una lista"
+
+#: ui/src/views/SettingsView.vue
+msgid "Verbose log (for troubleshooting)"
+msgstr "Registro detallado (para resolver problemas)"
+
+#: ui/src/views/SetupView.vue
+msgid "yt-dlp, FFmpeg and Deno come with this package and are updated together with Osprey, from your software center or with flatpak update."
+msgstr "yt-dlp, FFmpeg y Deno vienen con este paquete y se actualizan junto con Osprey, desde tu tienda de software o con flatpak update."
+
+#: ui/src/views/SetupView.vue
+#, python-brace-format
+msgid "yt-dlp, FFmpeg and Deno are kept in {folder}, and updated from here."
+msgstr "yt-dlp, FFmpeg y Deno se guardan en {folder} y se actualizan desde aquí."
+
+#: ui/src/views/SetupView.vue
+msgid "yt-dlp, FFmpeg and Deno are kept in the bin folder next to this app. Nothing is installed on your system."
+msgstr "yt-dlp, FFmpeg y Deno se guardan en la carpeta bin junto a esta aplicación. No se instala nada en tu sistema."
+
+#: ui/src/views/SetupView.vue
+msgid "To download, Osprey needs yt-dlp, FFmpeg and Deno, about 200 MB. They are kept in your user folder."
+msgstr "Para descargar, Osprey necesita yt-dlp, FFmpeg y Deno, unos 200 MB. Se guardan en tu carpeta de usuario."
+
+#: ui/src/views/SetupView.vue
+msgid "To download, Osprey needs yt-dlp, FFmpeg and Deno, about 200 MB. They are kept next to the app; nothing is installed on your system."
+msgstr "Para descargar, Osprey necesita yt-dlp, FFmpeg y Deno, unos 200 MB. Se guardan junto a la aplicación; no se instala nada en tu sistema."
+
+#: ui/src/views/SetupView.vue
+msgid "Checking..."
+msgstr "Comprobando..."
+
+#: ui/src/views/SetupView.vue
+msgid "Not found in this package"
+msgstr "No se encuentra en este paquete"
+
+#: ui/src/views/SetupView.vue
+msgid "Not installed"
+msgstr "No instalado"
+
+#: ui/src/views/SetupView.vue
+msgid "Installed but not responding"
+msgstr "Instalado, pero no responde"
+
+#: ui/src/views/SetupView.vue
+#, python-brace-format
+msgid "Version {version} ({n} day old, update Osprey)"
+msgid_plural "Version {version} ({n} days old, update Osprey)"
+msgstr[0] "Versión {version} (de hace {n} día, actualiza Osprey)"
+msgstr[1] "Versión {version} (de hace {n} días, actualiza Osprey)"
+
+#: ui/src/views/SetupView.vue
+#, python-brace-format
+msgid "Version {version} (included with Osprey)"
+msgstr "Versión {version} (incluida con Osprey)"
+
+#: ui/src/views/SetupView.vue
+#, python-brace-format
+msgid "Version {version} ({n} day old, check for updates)"
+msgid_plural "Version {version} ({n} days old, check for updates)"
+msgstr[0] "Versión {version} (de hace {n} día, busca actualizaciones)"
+msgstr[1] "Versión {version} (de hace {n} días, busca actualizaciones)"
+
+#: ui/src/views/SetupView.vue
+#, python-brace-format
+msgid "Version {version} (installed)"
+msgstr "Versión {version} (instalada)"
+
+#: ui/src/views/SetupView.vue
+#, python-brace-format
+msgid "Version {version} (up to date)"
+msgstr "Versión {version} (al día)"
+
+#: ui/src/views/SetupView.vue
+#, python-brace-format
+msgid "Version {version} (update available)"
+msgstr "Versión {version} (hay una actualización)"
+
+#: ui/src/views/SetupView.vue
+#, python-brace-format
+msgid "Version {version} (installed before update tracking, reinstall to enable it)"
+msgstr "Versión {version} (instalada antes del control de actualizaciones, reinstala para activarlo)"
+
+#: ui/src/views/SetupView.vue
+#, python-brace-format
+msgid "Version {version} (update check failed)"
+msgstr "Versión {version} (falló la búsqueda de actualizaciones)"
+
+#: ui/src/views/SetupView.vue
+msgid "Looking at what is installed..."
+msgstr "Revisando lo que está instalado..."
+
+#: ui/src/views/SetupView.vue
+msgid "Working..."
+msgstr "Trabajando..."
+
+#: ui/src/views/SetupView.vue
+msgid "Checking for updates..."
+msgstr "Buscando actualizaciones..."
+
+#: ui/src/views/SetupView.vue
+#, python-brace-format
+msgid "Step {step} of {total}: getting {component}..."
+msgstr "Paso {step} de {total}: obteniendo {component}..."
+
+#: ui/src/views/SetupView.vue
+msgid "Welcome to Osprey"
+msgstr "Te damos la bienvenida a Osprey"
+
+#: ui/src/views/SetupView.vue
+msgid "Getting ready..."
+msgstr "Preparando..."
+
+#: ui/src/views/SetupView.vue
+#, python-brace-format
+msgid "Not everything could be installed: {error}"
+msgstr "No se pudo instalar todo: {error}"
+
+#: ui/src/views/SetupView.vue
+msgid "Nothing is installed yet."
+msgstr "Todavía no hay nada instalado."
+
+#: ui/src/views/SetupView.vue
+msgid "Try again"
+msgstr "Reintentar"
+
+#: ui/src/views/SetupView.vue
+msgid "Install"
+msgstr "Instalar"
+
+#: ui/src/views/SetupView.vue
+msgid "Show details"
+msgstr "Ver detalles"
+
+#: ui/src/views/SetupView.vue
+msgid "Hide details"
+msgstr "Ocultar detalles"
+
+#: ui/src/views/SetupView.vue
+msgid "yt-dlp builds"
+msgstr "Versiones de yt-dlp"
+
+#: ui/src/views/SetupView.vue
+msgid "Nightly builds get fixes for sites that changed within a day. Stable releases are tested for longer but come weeks apart."
+msgstr "Las versiones nightly reciben arreglos para sitios que cambiaron en menos de un día. Las versiones estables se prueban durante más tiempo, pero salen con semanas de diferencia."
+
+#: ui/src/views/SetupView.vue
+msgid "This will re-download and reinstall ALL components."
+msgstr "Esto volverá a descargar y reinstalar TODOS los componentes."
+
+#: ui/src/views/SetupView.vue
+msgid "Reinstall"
+msgstr "Reinstalar"
+
+#: ui/src/views/SetupView.vue
+msgid "Install missing components"
+msgstr "Instalar los componentes que faltan"
+
+#: ui/src/views/SetupView.vue
+msgid "Update outdated components"
+msgstr "Actualizar los componentes desactualizados"
+
+#: ui/src/views/SetupView.vue
+msgid "Reinstall all"
+msgstr "Reinstalar todo"
+
+#: ui/src/views/SetupView.vue
+msgid "Activity"
+msgstr "Actividad"
+
+#: ui/src/views/SetupView.vue
+msgid "Copy diagnostic information"
+msgstr "Copiar información de diagnóstico"
+
+#: ui/src/views/SetupView.vue
+msgid "Nothing yet. Each download and check will be listed here."
+msgstr "Nada todavía. Cada descarga y comprobación aparecerá aquí."

@@ -1,0 +1,468 @@
+/* Osprey's look: the colors of both themes, the type, and the handful of
+   shapes every screen is built from (buttons, cards, fields, rows). */
+
+:root {
+  --font: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, "Inter", "Cantarell",
+    "Noto Sans", sans-serif;
+  --mono: "Cascadia Mono", "JetBrains Mono", "DejaVu Sans Mono", ui-monospace, monospace;
+
+  --radius-s: 8px;
+  --radius-m: 12px;
+  --radius-l: 16px;
+  --page-width: 880px;
+  --header-height: 60px;
+
+  /* The brand: the logo's own sky, from teal to blue. */
+  --brand-a: #22c1c3;
+  --brand-b: #2f6bea;
+  --brand: linear-gradient(135deg, var(--brand-a), var(--brand-b));
+
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+:root,
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #111318;
+  --bg-glow: rgba(47, 107, 234, 0.1);
+  --surface: #191c23;
+  --surface-2: #22262f;
+  --surface-3: #2b303b;
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.16);
+  --text: #eceef3;
+  --muted: #98a0af;
+  --faint: #6b7382;
+  --accent: #5b9dff;
+  --accent-soft: rgba(91, 157, 255, 0.14);
+  --on-accent: #ffffff;
+  --success: #46d39a;
+  --warning: #f2b84b;
+  --danger: #ff6b6b;
+  --danger-solid: #d9363e;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.22);
+  --shadow-pop: 0 12px 40px rgba(0, 0, 0, 0.5);
+  --header: rgba(17, 19, 24, 0.78);
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #f3f5f9;
+  --bg-glow: rgba(47, 107, 234, 0.08);
+  --surface: #ffffff;
+  --surface-2: #eff2f6;
+  --surface-3: #e3e8ef;
+  --border: rgba(16, 24, 40, 0.09);
+  --border-strong: rgba(16, 24, 40, 0.2);
+  --text: #171a21;
+  --muted: #5d6676;
+  --faint: #8a93a3;
+  --accent: #2563eb;
+  --accent-soft: rgba(37, 99, 235, 0.1);
+  --on-accent: #ffffff;
+  --success: #12875a;
+  --warning: #a86400;
+  --danger: #c9302c;
+  --danger-solid: #d9363e;
+  --shadow: 0 1px 2px rgba(16, 24, 40, 0.06), 0 6px 20px rgba(16, 24, 40, 0.06);
+  --shadow-pop: 0 12px 36px rgba(16, 24, 40, 0.18);
+  --header: rgba(243, 245, 249, 0.8);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(900px 420px at 85% -10%, var(--bg-glow), transparent 70%), var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 14px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+  /* An app, not a document: text is selected where it is useful only. */
+  user-select: none;
+  cursor: default;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+button,
+input {
+  font: inherit;
+  color: inherit;
+}
+
+img {
+  display: block;
+}
+
+::selection {
+  background: var(--accent-soft);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Scrollbars thin and quiet, in both webviews. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--surface-3) transparent;
+}
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--surface-3);
+  border-radius: 10px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--faint);
+}
+
+.selectable {
+  user-select: text;
+  cursor: text;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.caption {
+  font-size: 12.5px;
+}
+
+.warning-text {
+  color: var(--warning);
+}
+
+.danger-text {
+  color: var(--danger);
+}
+
+/* Every screen's content: one width, centered, the same room around it,
+   so nothing moves when the screen changes. */
+.page {
+  width: 100%;
+  max-width: var(--page-width);
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.spacer {
+  flex: 1;
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 16px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--text);
+  font-weight: 550;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background 0.15s var(--ease),
+    border-color 0.15s var(--ease),
+    transform 0.1s var(--ease),
+    box-shadow 0.15s var(--ease),
+    opacity 0.15s;
+}
+.btn:hover:not(:disabled) {
+  background: var(--surface-3);
+  border-color: var(--border-strong);
+}
+.btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+.btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.btn svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+
+.btn-primary {
+  border-color: transparent;
+  background: var(--brand);
+  color: var(--on-accent);
+  box-shadow: 0 4px 14px rgba(47, 107, 234, 0.32);
+}
+.btn-primary:hover:not(:disabled) {
+  background: var(--brand);
+  border-color: transparent;
+  filter: brightness(1.08);
+  box-shadow: 0 6px 20px rgba(47, 107, 234, 0.42);
+}
+.btn-primary:disabled {
+  box-shadow: none;
+  filter: saturate(0.4);
+}
+
+.btn-danger {
+  border-color: transparent;
+  background: var(--danger-solid);
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(217, 54, 62, 0.3);
+}
+.btn-danger:hover:not(:disabled) {
+  background: var(--danger-solid);
+  border-color: transparent;
+  filter: brightness(1.1);
+}
+
+.btn-ghost {
+  border-color: transparent;
+  background: transparent;
+}
+.btn-ghost:hover:not(:disabled),
+.btn-ghost.active {
+  background: var(--surface-2);
+  border-color: transparent;
+}
+
+.btn-large {
+  height: 42px;
+  padding: 0 22px;
+  font-size: 15px;
+}
+.btn-small {
+  height: 30px;
+  padding: 0 12px;
+  font-size: 12.5px;
+}
+.btn-small svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* A button that is only an icon; its name is its tooltip. */
+.icon-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition:
+    background 0.15s var(--ease),
+    color 0.15s var(--ease),
+    transform 0.1s var(--ease);
+}
+.icon-btn:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+.icon-btn:active {
+  transform: scale(0.92);
+}
+.icon-btn.active {
+  background: var(--surface-2);
+  color: var(--text);
+}
+.icon-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Cards */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-l);
+  box-shadow: var(--shadow);
+}
+
+.section-title {
+  margin: 0 0 10px 4px;
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: -0.005em;
+}
+
+/* A card's rows with a line between each two. */
+.rows > * + * {
+  border-top: 1px solid var(--border);
+}
+.row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-height: 56px;
+  padding: 10px 18px;
+}
+.row-label {
+  flex: 1;
+  min-width: 0;
+}
+.row-note {
+  padding: 10px 18px 12px;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+/* Fields */
+.field {
+  width: 100%;
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-s);
+  background: var(--surface-2);
+  color: var(--text);
+  outline: none;
+  cursor: text;
+  user-select: text;
+  transition:
+    border-color 0.15s var(--ease),
+    box-shadow 0.15s var(--ease),
+    background 0.15s var(--ease);
+}
+.field::placeholder {
+  color: var(--faint);
+}
+.field:hover {
+  border-color: var(--border-strong);
+}
+.field:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+/* A small fixed label: a choice that can't be changed any more. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 12.5px;
+  white-space: nowrap;
+}
+
+/* Notices: one line that says something changed, tinted by its tone. */
+.notice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: var(--radius-m);
+  border: 1px solid color-mix(in srgb, var(--tone) 35%, transparent);
+  background: color-mix(in srgb, var(--tone) 10%, var(--surface));
+  font-size: 13px;
+}
+.notice > svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  color: var(--tone);
+}
+.notice-text {
+  flex: 1;
+  min-width: 0;
+}
+
+/* What appears and goes */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.18s var(--ease);
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+.page-enter-active {
+  transition:
+    opacity 0.22s var(--ease),
+    transform 0.22s var(--ease);
+}
+.page-enter-from {
+  opacity: 0;
+  transform: translateY(6px);
+}
+
+.list-enter-active,
+.list-leave-active {
+  transition:
+    opacity 0.25s var(--ease),
+    transform 0.25s var(--ease);
+}
+.list-enter-from {
+  opacity: 0;
+  transform: translateY(-8px) scale(0.985);
+}
+.list-leave-to {
+  opacity: 0;
+  transform: scale(0.97);
+}
+.list-leave-active {
+  position: absolute;
+  width: 100%;
+}
+.list-move {
+  transition: transform 0.25s var(--ease);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.spin {
+  animation: spin 0.9s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

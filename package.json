@@ -1,0 +1,29 @@
+{
+  "name": "osprey",
+  "private": true,
+  "version": "0.9.0",
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/indep-arg/Osprey.git"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc --noEmit && vite build",
+    "typecheck": "vue-tsc --noEmit",
+    "tauri": "tauri"
+  },
+  "dependencies": {
+    "@lucide/vue": "^1.71.0",
+    "@tauri-apps/api": "^2.12.4",
+    "vue": "^3.5.45"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.12.4",
+    "@vitejs/plugin-vue": "^6.0.10",
+    "typescript": "^6.0.3",
+    "vite": "^8.3.7",
+    "vue-tsc": "^3.3.14"
+  }
+}

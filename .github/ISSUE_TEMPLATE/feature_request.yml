@@ -1,5 +1,5 @@
 name: Feature request
-description: An idea to make MimirDLP better.
+description: An idea to make Osprey better.
 labels: ["enhancement"]
 body:
   - type: textarea
