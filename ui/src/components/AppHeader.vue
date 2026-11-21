@@ -71,7 +71,8 @@ function paste(event: ClipboardEvent) {
             @paste="paste"
           />
         </label>
-        <button type="submit" class="btn btn-primary"><Plus /> {{ t("Add") }}</button>
+        <!-- Not a second blue button: Download is the one thing to press. -->
+        <button type="submit" class="btn"><Plus /> {{ t("Add") }}</button>
       </form>
       <h1 v-else-if="!welcoming" class="title">{{ title }}</h1>
     </div>
@@ -104,7 +105,6 @@ function paste(event: ClipboardEvent) {
   padding: 0 12px;
   border-bottom: 1px solid var(--border);
   background: var(--header);
-  backdrop-filter: blur(16px) saturate(1.4);
 }
 .side {
   display: flex;
@@ -123,7 +123,7 @@ function paste(event: ClipboardEvent) {
 }
 .title {
   font-size: 16px;
-  font-weight: 650;
+  font-weight: 600;
   text-align: center;
 }
 .link {
@@ -137,10 +137,10 @@ function paste(event: ClipboardEvent) {
   flex: 1;
   gap: 10px;
   min-width: 0;
-  height: 38px;
-  padding: 0 14px;
+  height: 36px;
+  padding: 0 12px;
   border: 1px solid var(--border);
-  border-radius: 999px;
+  border-radius: var(--radius-s);
   background: var(--surface-2);
   cursor: text;
   transition:

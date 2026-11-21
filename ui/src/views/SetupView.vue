@@ -330,7 +330,6 @@ async function copyDiagnostics() {
 .logo {
   width: 104px;
   height: 104px;
-  filter: drop-shadow(0 12px 28px rgba(47, 107, 234, 0.35));
 }
 .welcome h1 {
   font-size: 26px;

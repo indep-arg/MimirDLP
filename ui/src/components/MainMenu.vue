@@ -124,7 +124,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", escape));
   gap: 4px;
   padding: 8px 4px;
   border: none;
-  border-radius: 9px;
+  border-radius: var(--radius-s);
   background: transparent;
   color: var(--muted);
   font-size: 12.5px;
@@ -162,7 +162,7 @@ hr {
   width: 100%;
   padding: 10px 12px;
   border: none;
-  border-radius: 10px;
+  border-radius: var(--radius-s);
   background: transparent;
   text-align: left;
   cursor: pointer;

@@ -236,7 +236,7 @@ onBeforeUnmount(close);
   gap: 16px;
   min-height: 34px;
   padding: 6px 10px;
-  border-radius: 8px;
+  border-radius: var(--radius-s);
   white-space: nowrap;
   cursor: pointer;
 }

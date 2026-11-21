@@ -231,7 +231,7 @@ async function copy() {
   flex: none;
   width: 168px;
   aspect-ratio: 16 / 9;
-  border-radius: 10px;
+  border-radius: var(--radius-m);
   overflow: hidden;
   background: var(--surface-2);
 }
@@ -292,7 +292,7 @@ async function copy() {
   display: -webkit-box;
   overflow: hidden;
   font-size: 15px;
-  font-weight: 650;
+  font-weight: 600;
   line-height: 1.3;
   letter-spacing: -0.005em;
   overflow-wrap: anywhere;
@@ -310,7 +310,7 @@ async function copy() {
   align-items: center;
   gap: 8px;
   font-size: 13px;
-  font-weight: 550;
+  font-weight: 500;
 }
 .status svg {
   width: 16px;

@@ -6,6 +6,9 @@ All notable changes to Osprey are listed here, newest first. The format follows 
 
 ### Changed
 
+- A plainer look that sits better on the desktop: flat buttons in the logo's blue instead of a glowing gradient, corners close to the system's own instead of pills, no glow behind the window or the logo, and one blue button per screen (Download; Add is now an ordinary button next to the link field).
+- A queue where some links failed says so in amber; red, and a red bar, are kept for when nothing worked.
+
 - With a speed limit, parts are downloaded one at a time, so the limit is the total speed. yt-dlp applies it to each part, and five at once went five times over it.
 - A card offers only the qualities its video has ("Up to 1080p" is gone for a video that goes up to 720p), and its size follows the quality and the kind chosen.
 - Certificates are checked against the system's own, so installing and updating the tools works behind an antivirus or a company network that inspects HTTPS. When a certificate isn't trusted, the app says so instead of blaming the internet connection.

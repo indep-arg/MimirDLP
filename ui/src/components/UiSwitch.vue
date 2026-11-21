@@ -32,7 +32,7 @@ defineEmits<{ "update:modelValue": [value: boolean] }>();
   transition: background 0.2s var(--ease);
 }
 .switch.on {
-  background: var(--brand);
+  background: var(--accent-solid);
 }
 .switch:disabled {
   opacity: 0.5;

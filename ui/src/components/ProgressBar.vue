@@ -33,7 +33,7 @@ defineProps<{ value: number; unknown?: boolean; thin?: boolean; danger?: boolean
   height: 100%;
   min-width: 0;
   border-radius: inherit;
-  background: var(--brand);
+  background: var(--accent-solid);
   transition: width 0.3s var(--ease);
 }
 .danger .fill {

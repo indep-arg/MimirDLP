@@ -73,6 +73,10 @@ const staleNotice = computed(() => {
         age,
       );
 });
+const summaryTone = computed(() => {
+  if (queue.value.failed === 0) return "muted";
+  return queue.value.failed === total.value ? "danger-text" : "warning-text";
+});
 const canUpdateTools = computed(() => !queue.value.usesTools && props.snap.setup.job === null);
 </script>
 
@@ -116,12 +120,13 @@ const canUpdateTools = computed(() => !queue.value.usesTools && props.snap.setup
 
     <footer class="footer">
       <div v-if="total > 0" class="progress">
-        <span class="caption" :class="queue.failed ? 'danger-text' : 'muted'">{{ summary }}</span>
+        <!-- Red only when nothing worked; some failures are a warning. -->
+        <span class="caption" :class="summaryTone">{{ summary }}</span>
         <!-- An empty bar under a queue nobody started yet says nothing. -->
         <ProgressBar
           v-if="queue.running || queue.done > 0"
           thin
-          :danger="queue.failed > 0 && !queue.running"
+          :danger="queue.failed > 0 && queue.failed === total"
           :value="queue.fraction"
         />
       </div>
@@ -185,7 +190,7 @@ const canUpdateTools = computed(() => !queue.value.usesTools && props.snap.setup
 }
 .empty h2 {
   font-size: 22px;
-  font-weight: 650;
+  font-weight: 600;
   letter-spacing: -0.01em;
 }
 .empty-icon {
