@@ -45,6 +45,10 @@ param(
     # How long the webview's helper processes get to exit after the app.
     # WebView2 shuts them down on its own, a moment after its host is gone.
     [int]$OrphanGraceSeconds = 5,
+    # The app's window, told apart from others of the process by its title.
+    # A debug build also has a console window, which must not be mistaken
+    # for it.
+    [string]$WindowTitle = 'Osprey',
     # Above 0: a single long run that samples memory instead of the loop.
     [int]$SoakMinutes = 0,
     [string]$OutDir = (Join-Path $env:TEMP 'osprey-stress')
@@ -60,6 +64,50 @@ if (-not (Test-Path (Join-Path $toolsBin 'yt-dlp.exe'))) {
 }
 $name = [IO.Path]::GetFileNameWithoutExtension($Exe)
 $cores = [Environment]::ProcessorCount
+
+# .NET's MainWindowHandle picks one window of the process by itself: with a
+# debug build's console around it can be the console, or none at all, and
+# CloseMainWindow then closes the wrong thing or nothing. The app's own
+# window is looked up by its title instead.
+if (-not ('StressWindows' -as [type])) {
+    Add-Type -TypeDefinition @'
+using System;
+using System.Runtime.InteropServices;
+using System.Text;
+public static class StressWindows {
+    delegate bool EnumProc(IntPtr hwnd, IntPtr param);
+    [DllImport("user32.dll")] static extern bool EnumWindows(EnumProc proc, IntPtr param);
+    [DllImport("user32.dll")] static extern uint GetWindowThreadProcessId(IntPtr hwnd, out uint pid);
+    [DllImport("user32.dll")] static extern bool IsWindowVisible(IntPtr hwnd);
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)] static extern int GetWindowText(IntPtr hwnd, StringBuilder text, int max);
+    [DllImport("user32.dll")] public static extern bool IsHungAppWindow(IntPtr hwnd);
+    [DllImport("user32.dll")] public static extern bool PostMessage(IntPtr hwnd, uint msg, IntPtr w, IntPtr l);
+    // The visible top-level window of process `pid` titled `title`, or zero.
+    public static IntPtr Find(int pid, string title) {
+        IntPtr found = IntPtr.Zero;
+        EnumWindows((hwnd, param) => {
+            uint owner;
+            GetWindowThreadProcessId(hwnd, out owner);
+            if (owner != (uint)pid || !IsWindowVisible(hwnd)) { return true; }
+            var text = new StringBuilder(256);
+            GetWindowText(hwnd, text, text.Capacity);
+            if (text.ToString() != title) { return true; }
+            found = hwnd;
+            return false;
+        }, IntPtr.Zero);
+        return found;
+    }
+}
+'@
+}
+
+# Asks the app's window to close, as its close button does. False when
+# there was no window to ask.
+function Close-AppWindow($proc) {
+    $hwnd = [StressWindows]::Find($proc.Id, $WindowTitle)
+    if ($hwnd -eq [IntPtr]::Zero) { return $false }
+    [StressWindows]::PostMessage($hwnd, 0x0010, [IntPtr]::Zero, [IntPtr]::Zero) # WM_CLOSE
+}
 
 if (Test-Path $OutDir) { Remove-Item $OutDir -Recurse -Force }
 New-Item -ItemType Directory -Path $OutDir | Out-Null
@@ -101,10 +149,9 @@ function Wait-Window($proc, [int]$timeoutSeconds) {
     $watch = [Diagnostics.Stopwatch]::StartNew()
     while ($watch.Elapsed.TotalSeconds -lt $timeoutSeconds) {
         if ($proc.HasExited) { return $null }
-        $proc.Refresh()
-        # On Windows the app starts hidden, and a hidden helper window comes
-        # first, with no title. The real one has it.
-        if ($proc.MainWindowHandle -ne [IntPtr]::Zero -and $proc.MainWindowTitle) {
+        # The app starts hidden and shows its window once the page has
+        # drawn: this is when someone sees it.
+        if ([StressWindows]::Find($proc.Id, $WindowTitle) -ne [IntPtr]::Zero) {
             return [int]$watch.ElapsedMilliseconds
         }
         Start-Sleep -Milliseconds 20
@@ -149,7 +196,7 @@ if ($SoakMinutes -gt 0) {
     }
     $rows | Export-Csv $csv -NoTypeInformation
     if ($app.HasExited) { Write-Host "FAIL: the app exited by itself with code $($app.ExitCode)."; exit 1 }
-    [void]$app.CloseMainWindow()
+    if (-not (Close-AppWindow $app)) { Write-Host "FAIL: no window titled '$WindowTitle' to close." }
     if (-not $app.WaitForExit($CloseTimeoutSeconds * 1000)) { $app.Kill(); Write-Host "FAIL: it did not close." }
     $first = $rows[[math]::Min(2, $rows.Count - 1)]
     $last = $rows[-1]
@@ -192,23 +239,28 @@ for ($i = 1; $i -le $Runs; $i++) {
         $row.Children = $children.Count
 
         $closing = [Diagnostics.Stopwatch]::StartNew()
-        [void]$app.CloseMainWindow()
-        if ($app.WaitForExit($CloseTimeoutSeconds * 1000)) {
+        $asked = Close-AppWindow $app
+        if (-not $asked) {
+            $notes += "NO WINDOW: nothing titled '$WindowTitle' to close"
+            $app.Kill(); $app.WaitForExit()
+        } elseif ($app.WaitForExit($CloseTimeoutSeconds * 1000)) {
             $row.CloseMs = [int]$closing.ElapsedMilliseconds
         } else {
-            # Not responding: its main thread is stuck. Responding: the
-            # window works, the app just doesn't leave.
-            $app.Refresh()
-            $responsive = if ($app.Responding) { 'window responding' } else { 'window not responding' }
+            # Still there: hung means its main thread is stuck; responding
+            # means the window works but the app doesn't leave.
+            $hwnd = [StressWindows]::Find($app.Id, $WindowTitle)
+            $window = if ($hwnd -eq [IntPtr]::Zero) { 'window gone' }
+                elseif ([StressWindows]::IsHungAppWindow($hwnd)) { 'window hung' }
+                else { 'window responding' }
             $left = @(Get-Descendants $app.Id | ForEach-Object { $_.Name }) -join ', '
-            $notes += "HANG: still open $CloseTimeoutSeconds s after closing ($responsive; children: $left)"
+            $notes += "HANG: still open $CloseTimeoutSeconds s after closing ($window; children: $left)"
             $app.Kill(); $app.WaitForExit()
         }
     }
     $row.ExitCode = $app.ExitCode
 
     # What it left behind.
-    if ($row.ExitCode -ne 0 -and $notes -notmatch 'HANG') { $notes += "exit code $($row.ExitCode)" }
+    if ($row.ExitCode -ne 0 -and $notes -notmatch 'HANG|NO WINDOW') { $notes += "exit code $($row.ExitCode)" }
     # A child still there right after the app is not left behind yet:
     # only one that outlives the grace period is.
     $grace = [Diagnostics.Stopwatch]::StartNew()

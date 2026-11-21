@@ -216,19 +216,18 @@ fn main() {
             if let tauri::WindowEvent::CloseRequested { .. } = event
                 && let Some(shared) = window.try_state::<Arc<Shared>>()
             {
-                // The window opens next time as it is closed now, and a
-                // running download is stopped rather than left behind.
-                window::remember(window, &shared.paths);
-                shared.app().shutdown();
-                // Everything worth keeping is saved by now. Closing normally
-                // takes a tenth of a second, but a webview closed while it is
-                // still starting can keep the app from ever exiting (seen on
-                // Windows CI, the first launch on a fresh runner). Leave
-                // anyway rather than linger with no window.
+                // Closing takes a tenth of a second. Should anything below,
+                // or the webview going away after it, ever get stuck, the
+                // app still leaves rather than linger with no window. Started
+                // first so that it covers the saving too.
                 std::thread::spawn(|| {
                     std::thread::sleep(EXIT_DEADLINE);
                     std::process::exit(0);
                 });
+                // The window opens next time as it is closed now, and a
+                // running download is stopped rather than left behind.
+                window::remember(window, &shared.paths);
+                shared.app().shutdown();
             }
         })
         .run(tauri::generate_context!())
