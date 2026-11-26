@@ -25,14 +25,15 @@ defineEmits<{ "update:modelValue": [value: boolean] }>();
   width: 44px;
   height: 26px;
   padding: 0;
-  border: none;
+  border: 1px solid var(--control-border);
   border-radius: 999px;
-  background: var(--surface-3);
+  background: var(--switch-off);
   cursor: pointer;
   transition: background 0.2s var(--ease);
 }
 .switch.on {
   background: var(--accent-solid);
+  border-color: var(--accent-solid);
 }
 .switch:disabled {
   opacity: 0.5;

@@ -168,7 +168,7 @@ onBeforeUnmount(close);
   width: 100%;
   height: 36px;
   padding: 0 10px 0 12px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--control-border);
   border-radius: var(--radius-s);
   background: var(--surface-2);
   text-align: left;
@@ -179,7 +179,7 @@ onBeforeUnmount(close);
     background 0.15s var(--ease);
 }
 .select:hover:not(:disabled) {
-  border-color: var(--border-strong);
+  border-color: var(--control-border);
 }
 .select.open {
   border-color: var(--accent);
