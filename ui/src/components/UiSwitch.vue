@@ -25,7 +25,7 @@ defineEmits<{ "update:modelValue": [value: boolean] }>();
   width: 44px;
   height: 26px;
   padding: 0;
-  border: 1px solid var(--control-border);
+  border: none;
   border-radius: 999px;
   background: var(--switch-off);
   cursor: pointer;
