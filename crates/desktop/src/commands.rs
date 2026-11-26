@@ -95,7 +95,12 @@ pub fn add_links(shared: Held<'_>, input: String) -> LinkField {
 /// The window got the focus with `input` in the link field: a link copied
 /// meanwhile is offered when the field is empty. Returns what to put in it.
 #[tauri::command(async)]
-pub fn offer_clipboard(app: AppHandle, shared: Held<'_>, input: String) -> Option<String> {
+pub fn offer_clipboard(
+    app: AppHandle,
+    shared: Held<'_>,
+    input: String,
+    offered: Option<String>,
+) -> Option<String> {
     // Debug builds: screenshots shouldn't show whatever the developer copied.
     if cfg!(debug_assertions) && std::env::var_os("OSPREY_DEV_NO_CLIPBOARD").is_some() {
         return None;
@@ -104,6 +109,14 @@ pub fn offer_clipboard(app: AppHandle, shared: Held<'_>, input: String) -> Optio
         return None;
     }
     let copied = app.clipboard().read_text().ok();
+    if copied
+        .as_deref()
+        .map(str::trim)
+        .filter(|text| !text.is_empty())
+        == offered.as_deref()
+    {
+        return offered;
+    }
     dispatch(&shared, Message::Queue(queue::Message::UrlInput(input)));
     dispatch(&shared, Message::Queue(queue::Message::Clipboard(copied)));
     let offered = shared.app().queue.url_input().to_string();

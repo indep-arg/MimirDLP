@@ -178,7 +178,8 @@ export const api = {
   windowReady: () => invoke<void>("window_ready"),
   devHints: () => invoke<DevHints>("dev_hints"),
   addLinks: (input: string) => invoke<LinkField>("add_links", { input }),
-  offerClipboard: (input: string) => invoke<string | null>("offer_clipboard", { input }),
+  offerClipboard: (input: string, offered: string | null) =>
+    invoke<string | null>("offer_clipboard", { input, offered }),
   queue: (action: QueueAction, id?: number, value?: string) =>
     invoke<void>("queue_do", { action, id: id ?? null, value: value ?? null }),
   setup: (action: SetupAction, value?: string) =>

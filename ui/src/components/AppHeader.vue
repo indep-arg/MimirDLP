@@ -9,6 +9,10 @@ import { addLinks, canOpen, navigate, store } from "../lib/store";
 import MainMenu from "./MainMenu.vue";
 
 const menuOpen = ref(store.dev.menu);
+const linkPlaceholder = computed(() => {
+  const clipboard = store.clipboardOffer;
+  return !store.input.trim() && clipboard ? clipboard : t("Paste a video or playlist link...");
+});
 
 const title = computed(() => {
   switch (store.page) {
@@ -66,7 +70,7 @@ function paste(event: ClipboardEvent) {
             type="text"
             spellcheck="false"
             autocomplete="off"
-            :placeholder="t('Paste a video or playlist link...')"
+            :placeholder="linkPlaceholder"
             :aria-label="t('Paste a video or playlist link...')"
             @paste="paste"
           />
@@ -138,7 +142,7 @@ function paste(event: ClipboardEvent) {
   min-width: 0;
   height: 36px;
   padding: 0 12px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--control-border);
   border-radius: var(--radius-s);
   background: var(--surface-2);
   cursor: text;
@@ -147,7 +151,7 @@ function paste(event: ClipboardEvent) {
     box-shadow 0.15s var(--ease);
 }
 .link-field:hover {
-  border-color: var(--border-strong);
+  border-color: var(--control-border);
 }
 .link-field:focus-within {
   border-color: var(--accent);

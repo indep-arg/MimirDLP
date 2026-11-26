@@ -1238,9 +1238,8 @@ pub fn validate_categories(categories: &str, mode: Sponsor) -> Result<(), String
 /// than one link, which the Download screen splits before asking.
 pub fn valid_url(url: &str) -> bool {
     let url = url.trim();
-    (url.starts_with("http://") || url.starts_with("https://"))
-        && url.len() > 10
-        && !url.contains(char::is_whitespace)
+    !url.contains(char::is_whitespace)
+        && url::Url::parse(url).is_ok_and(|parsed| matches!(parsed.scheme(), "http" | "https"))
 }
 
 /// How the window was left, so the next launch opens it the same way.
@@ -2039,6 +2038,15 @@ youtube b
         assert!(!valid_url("https://a.example/x https://b.example/y"));
         assert!(!valid_url("https://a.example/x\nhttps://b.example/y"));
         assert!(valid_url("  https://a.example/x  "));
+    }
+
+    #[test]
+    fn a_link_must_parse_as_http_or_https() {
+        assert!(valid_url("http://example.com/video"));
+        assert!(valid_url("https://example.com/video"));
+        assert!(!valid_url("https://%"));
+        assert!(!valid_url("ftp://example.com/video"));
+        assert!(!valid_url("javascript:alert(1)"));
     }
 
     /// One pasted line break used to end the value early and turn the

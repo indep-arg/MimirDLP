@@ -31,7 +31,7 @@ Windows may warn that the app is unknown, because it isn't code signed yet: choo
 
 ## Use
 
-1. Copy a link and switch to Osprey: the link is already in the box (Ctrl+V works too). Press **Add**.
+1. Copy a link and switch to Osprey: it appears in gray in the link box. Press **Add** (or Ctrl+V to paste it as text).
 2. Choose video or audio, and the quality, on the card that appears.
 3. Press **Download**.
 

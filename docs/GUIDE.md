@@ -72,7 +72,7 @@ The same Setup screen chooses which yt-dlp builds to use. **Nightly**, the defau
 
 ## Downloading
 
-Works on any site yt-dlp supports. On the Download screen, paste one link or several (separated by spaces or new lines). A link you copied elsewhere appears in the empty box when you switch to Osprey; it's only queued when you press Add, and one you clear isn't put back. Each link is looked up and added to the queue as a card, where you can pick its format and quality until it starts.
+Works on any site yt-dlp supports. On the Download screen, paste one link or several (separated by spaces or new lines). A link you copied elsewhere appears in gray in the empty box when you switch to Osprey; press Add to queue it, or type another link instead. It's only queued when you press Add, and one you clear isn't put back. Each link is looked up and added to the queue as a card, where you can pick its format and quality until it starts.
 
 Press Download and they run one at a time, each with its own progress bar. A finished card can open its file or show it in its folder, any card can copy its link, and a failed one says why, with Retry under it. Stop also stops the FFmpeg that yt-dlp may have started, and keeps the partial file so starting again resumes it. Closing the window does the same.
 

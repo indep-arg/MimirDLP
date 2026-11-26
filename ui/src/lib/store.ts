@@ -27,6 +27,8 @@ interface Store {
   leaveSetupWhenReady: boolean;
   /** What is typed in the link field. */
   input: string;
+  /** A valid link offered from the clipboard, shown as a placeholder. */
+  clipboardOffer: string;
   logs: { queue: Log; setup: Log };
   /** The system's own light or dark mode. */
   systemDark: boolean;
@@ -43,6 +45,7 @@ export const store = reactive<Store>({
   page: "download",
   leaveSetupWhenReady: false,
   input: "",
+  clipboardOffer: "",
   logs: { queue: emptyLog(), setup: emptyLog() },
   systemDark: window.matchMedia("(prefers-color-scheme: dark)").matches,
   dev: { menu: false, advanced: false },
@@ -135,14 +138,16 @@ export async function start() {
 
 async function offerClipboard() {
   if (store.input.trim() !== "") return;
-  const offered = await api.offerClipboard(store.input);
-  if (offered && store.input.trim() === "") store.input = offered;
+  const offered = await api.offerClipboard(store.input, store.clipboardOffer || null);
+  if (store.input.trim() === "") store.clipboardOffer = offered ?? "";
 }
 
 export async function addLinks() {
   // What couldn't be queued stays in the field, to be fixed; why is said
   // next to the Download button (the snapshot's queue.problem).
-  const field = await api.addLinks(store.input);
+  const input = store.input.trim() ? store.input : store.clipboardOffer;
+  store.clipboardOffer = "";
+  const field = await api.addLinks(input);
   store.input = field.input;
 }
 
