@@ -851,6 +851,10 @@ msgstr ""
 msgid "Moving the file into place..."
 msgstr ""
 
+#: ui/src/components/AppHeader.vue
+msgid "Paste a video or playlist link..."
+msgstr ""
+
 #: ui/src/components/AppHeader.vue ui/src/components/MainMenu.vue ui/src/views/SetupView.vue
 msgid "Components"
 msgstr ""
@@ -869,10 +873,6 @@ msgstr ""
 
 #: ui/src/components/AppHeader.vue
 msgid "Back"
-msgstr ""
-
-#: ui/src/components/AppHeader.vue
-msgid "Paste a video or playlist link..."
 msgstr ""
 
 #: ui/src/components/AppHeader.vue
@@ -1021,20 +1021,20 @@ msgstr ""
 
 #: ui/src/views/DownloadView.vue
 #, python-brace-format
-msgid "Downloading queue: {done} of {total} done, {n} failed"
-msgid_plural "Downloading queue: {done} of {total} done, {n} failed"
+msgid "Downloading: {done} of {total} complete, {n} failed"
+msgid_plural "Downloading: {done} of {total} complete, {n} failed"
 msgstr[0] ""
 msgstr[1] ""
 
 #: ui/src/views/DownloadView.vue
 #, python-brace-format
-msgid "Downloading queue: {done} of {total} done"
+msgid "Downloading: {done} of {total} complete"
 msgstr ""
 
 #: ui/src/views/DownloadView.vue
 #, python-brace-format
-msgid "Finished, but {n} download failed."
-msgid_plural "Finished, but {n} downloads failed."
+msgid "Queue finished with {n} failed download."
+msgid_plural "Queue finished with {n} failed downloads."
 msgstr[0] ""
 msgstr[1] ""
 
@@ -1044,27 +1044,27 @@ msgstr ""
 
 #: ui/src/views/DownloadView.vue
 #, python-brace-format
-msgid "Ready: {done} of {total} done, {n} failed"
-msgid_plural "Ready: {done} of {total} done, {n} failed"
+msgid "Queue ready: {done} of {total} complete, {n} failed"
+msgid_plural "Queue ready: {done} of {total} complete, {n} failed"
 msgstr[0] ""
 msgstr[1] ""
 
 #: ui/src/views/DownloadView.vue
 #, python-brace-format
-msgid "Ready: {done} of {total} done"
+msgid "Queue ready: {done} of {total} complete"
 msgstr ""
 
 #: ui/src/views/DownloadView.vue
 #, python-brace-format
-msgid "yt-dlp is {n} day old. Sites change often; if a download fails, update Osprey from your software center or with flatpak update."
-msgid_plural "yt-dlp is {n} days old. Sites change often; if a download fails, update Osprey from your software center or with flatpak update."
+msgid "The installed version of yt-dlp is {n} day old. Sites change often; if a download fails, update Osprey using the same method you used to install it."
+msgid_plural "The installed version of yt-dlp is {n} days old. Sites change often; if a download fails, update Osprey using the same method you used to install it."
 msgstr[0] ""
 msgstr[1] ""
 
 #: ui/src/views/DownloadView.vue
 #, python-brace-format
-msgid "yt-dlp is {n} day old. Sites change often; if a download fails, update it first."
-msgid_plural "yt-dlp is {n} days old. Sites change often; if a download fails, update it first."
+msgid "The installed version of yt-dlp is {n} day old. Sites change often; if a download fails, update yt-dlp first."
+msgid_plural "The installed version of yt-dlp is {n} days old. Sites change often; if a download fails, update yt-dlp first."
 msgstr[0] ""
 msgstr[1] ""
 
@@ -1086,15 +1086,15 @@ msgid "Check for updates"
 msgstr ""
 
 #: ui/src/views/DownloadView.vue
-msgid "Download a video"
+msgid "Add a link to get started"
 msgstr ""
 
 #: ui/src/views/DownloadView.vue
-msgid "Paste a link from YouTube or almost any other site above."
+msgid "Paste a YouTube or other supported link in the box above."
 msgstr ""
 
 #: ui/src/views/DownloadView.vue
-msgid "Copy a link anywhere and come back: it will be in the box already. Ctrl+V works too."
+msgid "Copy a link and return to Osprey: it will appear in the field above. You can also paste with Ctrl+V."
 msgstr ""
 
 #: ui/src/views/DownloadView.vue
@@ -1110,11 +1110,11 @@ msgid "Download"
 msgstr ""
 
 #: ui/src/views/DownloadView.vue
-msgid "Open folder"
+msgid "Open downloads"
 msgstr ""
 
 #: ui/src/views/DownloadView.vue
-msgid "Clear finished"
+msgid "Remove finished items"
 msgstr ""
 
 #: ui/src/views/DownloadView.vue
@@ -1126,7 +1126,7 @@ msgid "Show activity"
 msgstr ""
 
 #: ui/src/views/DownloadView.vue
-msgid "Nothing yet. Every step of the download will be listed here."
+msgid "No activity yet. Download steps will appear here."
 msgstr ""
 
 #: ui/src/views/SettingsView.vue

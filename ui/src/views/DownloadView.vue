@@ -34,26 +34,30 @@ const summary = computed(() => {
   if (queue.value.running) {
     return failed
       ? tn(
-          "Downloading queue: {done} of {total} done, {n} failed",
-          "Downloading queue: {done} of {total} done, {n} failed",
+          "Downloading: {done} of {total} complete, {n} failed",
+          "Downloading: {done} of {total} complete, {n} failed",
           failed,
           counts,
         )
-      : t("Downloading queue: {done} of {total} done", counts);
+      : t("Downloading: {done} of {total} complete", counts);
   }
   if (queue.value.done === total.value) {
     return failed
-      ? tn("Finished, but {n} download failed.", "Finished, but {n} downloads failed.", failed)
+      ? tn(
+          "Queue finished with {n} failed download.",
+          "Queue finished with {n} failed downloads.",
+          failed,
+        )
       : t("All done.");
   }
   return failed
     ? tn(
-        "Ready: {done} of {total} done, {n} failed",
-        "Ready: {done} of {total} done, {n} failed",
+        "Queue ready: {done} of {total} complete, {n} failed",
+        "Queue ready: {done} of {total} complete, {n} failed",
         failed,
         counts,
       )
-    : t("Ready: {done} of {total} done", counts);
+    : t("Queue ready: {done} of {total} complete", counts);
 });
 
 // Sites change their pages all the time and yt-dlp follows within days, so
@@ -64,13 +68,13 @@ const staleNotice = computed(() => {
   if (age === null) return null;
   return props.snap.setup.bundled
     ? tn(
-        "yt-dlp is {n} day old. Sites change often; if a download fails, update Osprey from your software center or with flatpak update.",
-        "yt-dlp is {n} days old. Sites change often; if a download fails, update Osprey from your software center or with flatpak update.",
+        "The installed version of yt-dlp is {n} day old. Sites change often; if a download fails, update Osprey using the same method you used to install it.",
+        "The installed version of yt-dlp is {n} days old. Sites change often; if a download fails, update Osprey using the same method you used to install it.",
         age,
       )
     : tn(
-        "yt-dlp is {n} day old. Sites change often; if a download fails, update it first.",
-        "yt-dlp is {n} days old. Sites change often; if a download fails, update it first.",
+        "The installed version of yt-dlp is {n} day old. Sites change often; if a download fails, update yt-dlp first.",
+        "The installed version of yt-dlp is {n} days old. Sites change often; if a download fails, update yt-dlp first.",
         age,
       );
 });
@@ -108,10 +112,14 @@ const canUpdateTools = computed(() => !queue.value.usesTools && props.snap.setup
     </div>
 
     <div v-if="total === 0" class="empty">
-      <h2>{{ t("Download a video") }}</h2>
-      <p class="muted">{{ t("Paste a link from YouTube or almost any other site above.") }}</p>
+      <h2>{{ t("Add a link to get started") }}</h2>
+      <p class="muted">{{ t("Paste a YouTube or other supported link in the box above.") }}</p>
       <p class="caption muted">
-        {{ t("Copy a link anywhere and come back: it will be in the box already. Ctrl+V works too.") }}
+        {{
+          t(
+            "Copy a link and return to Osprey: it will appear in the field above. You can also paste with Ctrl+V.",
+          )
+        }}
       </p>
     </div>
     <div v-else class="list-scroll">
@@ -132,23 +140,23 @@ const canUpdateTools = computed(() => !queue.value.usesTools && props.snap.setup
         />
       </div>
       <div class="actions">
-        <button v-if="queue.running" class="btn btn-danger btn-large" @click="api.queue('stop')">
+        <button v-if="queue.running" class="btn btn-danger" @click="api.queue('stop')">
           <Square /> {{ queue.recording ? t("Stop and save") : t("Stop") }}
         </button>
         <!-- Greyed out until there is something to download. -->
         <button
           v-else
-          class="btn btn-primary btn-large"
+          class="btn btn-primary"
           :disabled="!queue.hasQueued"
           @click="api.queue('start')"
         >
           <Download /> {{ t("Download") }}
         </button>
         <button class="btn" @click="api.queue('folder')">
-          <FolderOpen /> {{ t("Open folder") }}
+          <FolderOpen /> {{ t("Open downloads") }}
         </button>
         <button v-if="queue.hasFinished" class="btn" @click="api.queue('clear')">
-          <Trash2 /> {{ t("Clear finished") }}
+          <Trash2 /> {{ t("Remove finished items") }}
         </button>
         <span v-if="queue.problem" class="problem danger-text">{{ queue.problem }}</span>
         <span class="spacer" />
@@ -159,7 +167,7 @@ const canUpdateTools = computed(() => !queue.value.usesTools && props.snap.setup
       <div v-if="showLog" class="log">
         <LogPanel
           :lines="store.logs.queue.lines"
-          :empty="t('Nothing yet. Every step of the download will be listed here.')"
+          :empty="t('No activity yet. Download steps will appear here.')"
         />
       </div>
     </footer>
