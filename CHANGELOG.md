@@ -4,6 +4,10 @@ All notable changes to Osprey are listed here, newest first. The format follows 
 
 ## [Unreleased]
 
+### Added
+
+- A copied HTTP or HTTPS link appears as a gray suggestion in the link field; it is queued only when you press Add.
+
 ### Changed
 
 - A plainer look that sits better on the desktop: flat buttons in the logo's blue instead of a glowing gradient, corners close to the system's own instead of pills, no glow behind the window or the logo, and one blue button per screen (Download; Add is now an ordinary button next to the link field).
@@ -16,6 +20,7 @@ All notable changes to Osprey are listed here, newest first. The format follows 
 - With a speed limit, parts are downloaded one at a time, so the limit is the total speed. yt-dlp applies it to each part, and five at once went five times over it.
 - A card offers only the qualities its video has ("Up to 1080p" is gone for a video that goes up to 720p), and its size follows the quality and the kind chosen.
 - Certificates are checked against the system's own, so installing and updating the tools works behind an antivirus or a company network that inspects HTTPS. When a certificate isn't trusted, the app says so instead of blaming the internet connection.
+- Improved control contrast and consistency, and clarified download status messages and action labels.
 
 ### Fixed
 
@@ -24,6 +29,10 @@ All notable changes to Osprey are listed here, newest first. The format follows 
 - A queue where downloads failed said "All done." with a full bar. It now says how many failed.
 - When a folder, a file or a link couldn't be opened, nothing was said outside the activity log. It is now said next to the buttons, or on the About page.
 - Screen readers heard two "Download" controls on a card: the kind of download is now called "What to download".
+
+### Security
+
+- Updated the transitive `cookie` dependency to 0.18.3 to address RUSTSEC-2026-0594.
 
 ## [0.9.0] - 2026-11-21
 
