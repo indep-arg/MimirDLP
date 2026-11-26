@@ -8,29 +8,30 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
-lzma-rust2 = { version = "0.25.0", default-features = false, features = ["std", "xz", "optimization"] }
+lzma-rust2 = { version = "0.26.0", default-features = false, features = ["std", "xz", "optimization"] }
 pgp = { version = "0.21.0", default-features = false }
 rspolib = "0.1.2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-sha2 = "0.11.0"
+sha2 = "0.11.2"
 # The language the system is set to, for the default translation.
 sys-locale = "0.3.2"
 tar = { version = "0.4.46", default-features = false }
 # Translations: gettext .po files (translations/), embedded in the binary. rspolib
 # parses them; tr supplies the tr!() macro and the translator registry.
 tr = { version = "0.1.11", default-features = false }
+url = "2.5.9"
 # platform-verifier: the system's certificates, so a company network or an
 # antivirus that inspects HTTPS with its own root (trusted by the system) works.
 ureq = { version = "3.4.1", features = ["platform-verifier"] }
-zip = { version = "9.2.1", default-features = false, features = ["deflate"] }
+zip = { version = "9.8.2", default-features = false, features = ["deflate"] }
 
 [target.'cfg(unix)'.dependencies]
 # kill(2) on a process group, to stop yt-dlp along with what it started.
 libc = "0.2.189"
 
 [dev-dependencies]
-lzma-rust2 = { version = "0.25.0", default-features = false, features = ["std", "xz", "encoder"] }
+lzma-rust2 = { version = "0.26.0", default-features = false, features = ["std", "xz", "encoder"] }
 # tests/translations.rs reads the source to find every translatable text.
 proc-macro2 = "1.0.107"
 syn = { version = "3.0.9", default-features = false, features = ["parsing"] }

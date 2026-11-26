@@ -1662,9 +1662,9 @@ checksum = "aa9a19cbb55df58761df49b23516a86d432839add4af60fc256da840f66ed35b"
 
 [[package]]
 name = "form_urlencoded"
-version = "1.2.2"
+version = "1.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cb4cb245038516f5f85277875cdaa4f7d2c9a0fa0468de06ed190163b1581fcf"
+checksum = "afa489199eaffb1211795df1c6236ce1ad0d41a6fa45250add73e3b02420f06e"
 dependencies = [
  "percent-encoding",
 ]
@@ -2826,11 +2826,11 @@ checksum = "5d15f86d12da44cd8d4ec3c73984537eb7f4cadcb9776a575a0a8a05ca11005c"
 
 [[package]]
 name = "lzma-rust2"
-version = "0.25.0"
+version = "0.26.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ef1d73c59a56771343712b22ea5615092c612c16ba291c0979e3105dfeec4890"
+checksum = "4c7861572250348d13073a9035c6a83f3e583ec9a76a65ce92f338fe1107d8f5"
 dependencies = [
- "sha2 0.11.1",
+ "sha2 0.11.2",
 ]
 
 [[package]]
@@ -3376,12 +3376,13 @@ dependencies = [
  "rspolib",
  "serde",
  "serde_json",
- "sha2 0.11.1",
+ "sha2 0.11.2",
  "syn 3.0.10",
  "sys-locale",
  "tar",
  "tr",
  "ureq",
+ "url",
  "zip",
 ]
 
@@ -4276,7 +4277,7 @@ dependencies = [
  "security-framework",
  "security-framework-sys",
  "webpki-root-certs",
- "windows-sys 0.52.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -4684,9 +4685,9 @@ dependencies = [
 
 [[package]]
 name = "sha2"
-version = "0.11.1"
+version = "0.11.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "47d7069beb7d6ac7b9acd1039986e73443f24234f41074da099d6f994ac9ad19"
+checksum = "5b0e5c7d67bc53f435386b2130fdc900488c5703770f6d8a4633060e34288a27"
 dependencies = [
  "cfg-if",
  "cpufeatures 0.3.1",
@@ -5206,7 +5207,7 @@ dependencies = [
  "semver",
  "serde",
  "serde_json",
- "sha2 0.11.1",
+ "sha2 0.11.2",
  "syn 2.0.119",
  "tauri-utils",
  "thiserror 2.0.21",
@@ -5922,9 +5923,9 @@ dependencies = [
 
 [[package]]
 name = "url"
-version = "2.5.8"
+version = "2.5.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ff67a8a4397373c3ef660812acab3268222035010ab8680ec4215f38ba3d0eed"
+checksum = "f00cd2407bb42c0ef17be88d4cf020f5cceffd121665bac9b8b9493a369b3b1a"
 dependencies = [
  "form_urlencoded",
  "idna",
@@ -6991,9 +6992,9 @@ dependencies = [
 
 [[package]]
 name = "zip"
-version = "9.7.0"
+version = "9.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "08687262e7c0f1284b259686f322805a8adaa8ef4d7210e76448950b3f083bf7"
+checksum = "2d8dbe089cf6b0448b78f5fc50139ab5aaa40d08ac07cdc1baf2c13add35fcce"
 dependencies = [
  "constant_time_eq",
  "crc32fast",
